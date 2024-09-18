@@ -1,0 +1,24 @@
+{
+  "name": "app-name",
+  "elionaMinVersion": "v11.0.0",
+  "displayName": {
+    "en": "App Name",
+    "de": "App Name"
+  },
+  "description": {
+    "en": "The App Name app is used to access App Name.",
+    "de": "Die App Name App ermöglicht den Zugriff auf App Name."
+  },
+  "dashboardTemplateNames": [
+    "App Name"
+  ],
+  "apiUrl": "v1",
+  "apiSpecificationPath": "/version/openapi.json",
+  "documentationUrl": "https://doc.eliona.io/eliona/referenzen/app-entwicklung",
+  "useEnvironment": [
+    "CONNECTION_STRING",
+    "INIT_CONNECTION_STRING",
+    "API_ENDPOINT",
+    "API_TOKEN"
+  ]
+}
