@@ -16,10 +16,10 @@
 package broker
 
 import (
-	assetmodel "open-bos/model/asset"
-	confmodel "open-bos/model/conf"
+	appmodel "open-bos/app/model"
+	"open-bos/eliona"
 )
 
-func GetDevices(config confmodel.Configuration) (assetmodel.Root, error) {
-	return assetmodel.Root{}, nil
+func GetDevices(config appmodel.Configuration) (eliona.Root, error) {
+	return eliona.Root{}, nil
 }

@@ -19,10 +19,11 @@ create schema if not exists open_bos;
 create table if not exists open_bos.configuration
 (
 	id                   bigserial primary key,
-	api_access_change_me text not null,
+	gwid                 text not null,
+	client_id             text not null,
+	client_secret         text not null,
 	refresh_interval     integer not null default 60,
 	request_timeout      integer not null default 120,
-	asset_filter         json not null,
 	active               boolean not null default false,
 	enable               boolean not null default false,
 	project_ids          text[] not null,

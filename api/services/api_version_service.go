@@ -18,6 +18,7 @@ package apiservices
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	apiserver "open-bos/api/generated"
@@ -43,24 +44,66 @@ func NewVersionAPIService() apiserver.VersionAPIServicer {
 func (s *VersionAPIService) GetOpenAPI(ctx context.Context) (apiserver.ImplResponse, error) {
 	bytes, err := os.ReadFile("openapi.yaml")
 	if err != nil {
-		log.Error("services", "%s: %v", "GetOpenAPI", err)
+		log.Error("services", "GetOpenAPI - Error reading openapi.yaml: %v", err)
 		return apiserver.ImplResponse{Code: http.StatusNotFound}, err
 	}
+
 	var body interface{}
 	err = yaml.Unmarshal(bytes, &body)
 	if err != nil {
-		log.Error("services", "%s: %v", "GetOpenAPI", err)
+		log.Error("services", "GetOpenAPI - Error unmarshalling YAML: %v", err)
 		return apiserver.ImplResponse{Code: http.StatusInternalServerError}, err
 	}
+
 	if err := tryJSONEncoding(body); err != nil {
-		log.Error("services", "openapi file not encodable to JSON: %v", err)
+		log.Error("services", "GetOpenAPI - openapi file not encodable to JSON: %v", err)
 		return apiserver.ImplResponse{Code: http.StatusInternalServerError}, nil
 	}
+
 	return apiserver.Response(http.StatusOK, body), nil
 }
 
 func tryJSONEncoding(i interface{}) error {
-	return json.NewEncoder(io.Discard).Encode(i)
+	if err := json.NewEncoder(io.Discard).Encode(i); err != nil {
+		unsupportedTypeErr := checkForUnsupportedTypes(i, "")
+		if unsupportedTypeErr != nil {
+			return fmt.Errorf("encoding json: %v, unsupportedTypeErr: %v", err, unsupportedTypeErr)
+		}
+	}
+	return nil
+}
+
+func checkForUnsupportedTypes(i interface{}, path string) error {
+	switch x := i.(type) {
+	case map[interface{}]interface{}:
+		// Log the error immediately because this is not JSON-compatible
+		err := fmt.Errorf("unsupported type map[interface{}]interface{} at path '%s'", path)
+		log.Error("services", "%v", err)
+		return err
+	case []interface{}:
+		for idx, v := range x {
+			newPath := fmt.Sprintf("%s[%d]", path, idx)
+			if err := checkForUnsupportedTypes(v, newPath); err != nil {
+				return err
+			}
+		}
+	case map[string]interface{}:
+		for k, v := range x {
+			newPath := fmt.Sprintf("%s.%s", path, k)
+			if err := checkForUnsupportedTypes(v, newPath); err != nil {
+				return err
+			}
+		}
+	case string, int, float64, bool, nil:
+		// These are valid JSON types, no action needed
+		return nil
+	default:
+		// Log any other unsupported types
+		err := fmt.Errorf("unsupported type at path '%s': %T", path, x)
+		log.Error("services", "%v", err)
+		return err
+	}
+	return nil
 }
 
 var BuildTimestamp string // injected during linking, see Dockerfile

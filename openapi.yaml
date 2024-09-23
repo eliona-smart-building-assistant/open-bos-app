@@ -225,11 +225,19 @@ components:
           description: Internal identifier for the configured API (created automatically).
           readOnly: true
           nullable: true
-        apiAccessChangeMe:
+        gwid:
           type: string
-          format: string
-          description: There should be things like API address, access keys and so on.
-          example: 10.10.10.101
+          description: The ID of the gateway device used in the API requests (gwid).
+          example: "123456789"
+        clientID:
+          type: string
+          description: The client ID used for OAuth 2.0 authentication.
+          example: "your-client-id"
+        clientSecret:
+          type: string
+          format: password
+          description: The client secret used for OAuth 2.0 authentication.
+          example: "your-client-secret"
         enable:
           type: boolean
           description: Flag to enable or disable fetching from this API
@@ -244,15 +252,6 @@ components:
           description: Timeout in seconds
           default: 120
           nullable: true
-        assetFilter:
-          $ref: "#/components/schemas/AssetFilter"
-          nullable: true
-          example:
-            [
-              [{ "parameter": "deviceName", "regex": "Main.*" }, { "parameter": "deviceType", "regex": "110" }],
-              [{ "parameter": "macAddress", "regex": "(70:82:0e:12:28:cc|70:56:06:12:.*)" }],
-              [{ "parameter": "ipAddress", "regex": "192\\.168\\..*" }],
-            ]
         active:
           type: boolean
           readOnly: true

@@ -18,7 +18,6 @@ package dbhelper
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
 	appmodel "open-bos/app/model"
@@ -94,16 +93,13 @@ func DeleteConfig(ctx context.Context, configID int64) error {
 }
 
 func toDbConfig(ctx context.Context, appConfig appmodel.Configuration) (dbConfig dbgen.Configuration, err error) {
-	dbConfig.APIAccessChangeMe = appConfig.ApiAccessChangeMe
+	dbConfig.Gwid = appConfig.Gwid
+	dbConfig.ClientID = appConfig.ClientID
+	dbConfig.ClientSecret = appConfig.ClientSecret
 
 	dbConfig.ID = appConfig.Id
 	dbConfig.RefreshInterval = appConfig.RefreshInterval
 	dbConfig.RequestTimeout = appConfig.RequestTimeout
-	af, err := json.Marshal(appConfig.AssetFilter)
-	if err != nil {
-		return dbgen.Configuration{}, fmt.Errorf("marshalling assetFilter: %v", err)
-	}
-	dbConfig.AssetFilter = af
 	dbConfig.Active = appConfig.Active
 	dbConfig.Enable = appConfig.Enable
 	dbConfig.ProjectIds = appConfig.ProjectIDs
@@ -117,17 +113,14 @@ func toDbConfig(ctx context.Context, appConfig appmodel.Configuration) (dbConfig
 }
 
 func toAppConfig(dbConfig *dbgen.Configuration) (appConfig appmodel.Configuration, err error) {
-	appConfig.ApiAccessChangeMe = dbConfig.APIAccessChangeMe
+	appConfig.Gwid = dbConfig.Gwid
+	appConfig.ClientID = dbConfig.ClientID
+	appConfig.ClientSecret = dbConfig.ClientSecret
 
 	appConfig.Id = dbConfig.ID
 	appConfig.Enable = dbConfig.Enable
 	appConfig.RefreshInterval = dbConfig.RefreshInterval
 	appConfig.RequestTimeout = dbConfig.RequestTimeout
-	var af [][]appmodel.FilterRule
-	if err := json.Unmarshal(dbConfig.AssetFilter, &af); err != nil {
-		return appmodel.Configuration{}, fmt.Errorf("unmarshalling assetFilter: %v", err)
-	}
-	appConfig.AssetFilter = af
 	appConfig.Active = dbConfig.Active
 	appConfig.ProjectIDs = dbConfig.ProjectIds
 	appConfig.UserId = dbConfig.UserID
