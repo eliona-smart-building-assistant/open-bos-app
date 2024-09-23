@@ -1,16 +1,16 @@
 {
-  "name": "app-name",
+  "name": "open-bos",
   "elionaMinVersion": "v11.0.0",
   "displayName": {
-    "en": "App Name",
-    "de": "App Name"
+    "en": "OpenBOS",
+    "de": "OpenBOS"
   },
   "description": {
-    "en": "The App Name app is used to access App Name.",
-    "de": "Die App Name App ermöglicht den Zugriff auf App Name."
+    "en": "The OpenBOS app is used to access OpenBOS.",
+    "de": "Die OpenBOS App ermöglicht den Zugriff auf OpenBOS."
   },
   "dashboardTemplateNames": [
-    "App Name"
+    "OpenBOS"
   ],
   "apiUrl": "v1",
   "apiSpecificationPath": "/version/openapi.json",

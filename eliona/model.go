@@ -16,10 +16,10 @@
 package eliona
 
 import (
-	appmodel "app-name/app/model"
-	conf "app-name/db/helper"
 	"context"
 	"fmt"
+	appmodel "open-bos/app/model"
+	conf "open-bos/db/helper"
 
 	"github.com/eliona-smart-building-assistant/go-eliona/asset"
 	"github.com/eliona-smart-building-assistant/go-eliona/utils"
@@ -95,7 +95,7 @@ func (r *Root) GetName() string {
 }
 
 func (r *Root) GetDescription() string {
-	return "Root asset for App Name devices"
+	return "Root asset for OpenBOS devices"
 }
 
 func (r *Root) GetAssetType() string {

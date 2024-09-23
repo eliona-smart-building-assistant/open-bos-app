@@ -17,17 +17,17 @@ openapi: 3.0.3
 
 info:
   version: 1.0.0
-  title: App Name app API
-  description: API to access and configure the App Name app
+  title: OpenBOS app API
+  description: API to access and configure the OpenBOS app
 externalDocs:
-  description: Find out more about the App Name app
-  url: https://github.com/eliona-smart-building-assistant/app-name-app
+  description: Find out more about the OpenBOS app
+  url: https://github.com/eliona-smart-building-assistant/open-bos-app
 servers:
   - url: "https://{server}/v1"
     variables:
       server:
-        default: app-name
-  - url: "https://{environment}.eliona.io/apps/app-name/api/v1"
+        default: open-bos
+  - url: "https://{environment}.eliona.io/apps/open-bos/api/v1"
     variables:
       environment:
         default: name
@@ -36,17 +36,17 @@ tags:
   - name: Configuration
     description: Configure the app
     externalDocs:
-      url: https://github.com/eliona-smart-building-assistant/app-name-app
+      url: https://github.com/eliona-smart-building-assistant/open-bos-app
 
   - name: Version
     description: API version
     externalDocs:
-      url: https://github.com/eliona-smart-building-assistant/app-name-app
+      url: https://github.com/eliona-smart-building-assistant/open-bos-app
 
   - name: Customization
     description: Help to customize Eliona environment
     externalDocs:
-      url: https://github.com/eliona-smart-building-assistant/app-name-app
+      url: https://github.com/eliona-smart-building-assistant/open-bos-app
 
 paths:
   /configs:

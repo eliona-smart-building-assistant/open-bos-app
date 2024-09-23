@@ -16,7 +16,7 @@
 package main
 
 import (
-	"app-name/app"
+	"open-bos/app"
 	"time"
 
 	elionaapp "github.com/eliona-smart-building-assistant/go-eliona/app"

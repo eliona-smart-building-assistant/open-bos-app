@@ -16,12 +16,12 @@
 package apiservices
 
 import (
-	apiserver "app-name/api/generated"
-	appmodel "app-name/app/model"
-	dbhelper "app-name/db/helper"
 	"context"
 	"errors"
 	"net/http"
+	apiserver "open-bos/api/generated"
+	appmodel "open-bos/app/model"
+	dbhelper "open-bos/db/helper"
 )
 
 // ConfigurationAPIService is a service that implements the logic for the ConfigurationAPIServicer

@@ -16,13 +16,13 @@
 package dbhelper
 
 import (
-	appmodel "app-name/app/model"
-	dbgen "app-name/db/generated"
 	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
+	appmodel "open-bos/app/model"
+	dbgen "open-bos/db/generated"
 
 	"github.com/eliona-smart-building-assistant/go-eliona/frontend"
 	"github.com/eliona-smart-building-assistant/go-utils/common"

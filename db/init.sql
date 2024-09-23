@@ -13,10 +13,10 @@
 --  DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 --  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-create schema if not exists app_schema_name;
+create schema if not exists open_bos;
 
 -- Should be editable by eliona frontend.
-create table if not exists app_schema_name.configuration
+create table if not exists open_bos.configuration
 (
 	id                   bigserial primary key,
 	api_access_change_me text not null,
@@ -29,10 +29,10 @@ create table if not exists app_schema_name.configuration
 	user_id              text not null
 );
 
-create table if not exists app_schema_name.asset
+create table if not exists open_bos.asset
 (
 	id               bigserial primary key,
-	configuration_id bigserial not null references app_schema_name.configuration(id) ON DELETE CASCADE,
+	configuration_id bigserial not null references open_bos.configuration(id) ON DELETE CASCADE,
 	project_id       text      not null,
 	global_asset_id  text      not null,
 	provider_id      text      not null,

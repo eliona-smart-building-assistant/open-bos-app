@@ -1,4 +1,4 @@
-module app-name
+module open-bos
 
 go 1.23
 

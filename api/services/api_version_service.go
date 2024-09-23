@@ -16,11 +16,11 @@
 package apiservices
 
 import (
-	apiserver "app-name/api/generated"
 	"context"
 	"encoding/json"
 	"io"
 	"net/http"
+	apiserver "open-bos/api/generated"
 	"os"
 
 	"github.com/eliona-smart-building-assistant/go-utils/common"

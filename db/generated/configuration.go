@@ -169,15 +169,15 @@ var ConfigurationWhere = struct {
 	ProjectIds        whereHelpertypes_StringArray
 	UserID            whereHelperstring
 }{
-	ID:                whereHelperint64{field: "\"app_schema_name\".\"configuration\".\"id\""},
-	APIAccessChangeMe: whereHelperstring{field: "\"app_schema_name\".\"configuration\".\"api_access_change_me\""},
-	RefreshInterval:   whereHelperint32{field: "\"app_schema_name\".\"configuration\".\"refresh_interval\""},
-	RequestTimeout:    whereHelperint32{field: "\"app_schema_name\".\"configuration\".\"request_timeout\""},
-	AssetFilter:       whereHelpertypes_JSON{field: "\"app_schema_name\".\"configuration\".\"asset_filter\""},
-	Active:            whereHelperbool{field: "\"app_schema_name\".\"configuration\".\"active\""},
-	Enable:            whereHelperbool{field: "\"app_schema_name\".\"configuration\".\"enable\""},
-	ProjectIds:        whereHelpertypes_StringArray{field: "\"app_schema_name\".\"configuration\".\"project_ids\""},
-	UserID:            whereHelperstring{field: "\"app_schema_name\".\"configuration\".\"user_id\""},
+	ID:                whereHelperint64{field: "\"open_bos\".\"configuration\".\"id\""},
+	APIAccessChangeMe: whereHelperstring{field: "\"open_bos\".\"configuration\".\"api_access_change_me\""},
+	RefreshInterval:   whereHelperint32{field: "\"open_bos\".\"configuration\".\"refresh_interval\""},
+	RequestTimeout:    whereHelperint32{field: "\"open_bos\".\"configuration\".\"request_timeout\""},
+	AssetFilter:       whereHelpertypes_JSON{field: "\"open_bos\".\"configuration\".\"asset_filter\""},
+	Active:            whereHelperbool{field: "\"open_bos\".\"configuration\".\"active\""},
+	Enable:            whereHelperbool{field: "\"open_bos\".\"configuration\".\"enable\""},
+	ProjectIds:        whereHelpertypes_StringArray{field: "\"open_bos\".\"configuration\".\"project_ids\""},
+	UserID:            whereHelperstring{field: "\"open_bos\".\"configuration\".\"user_id\""},
 }
 
 // ConfigurationRels is where relationship names are stored.
@@ -548,7 +548,7 @@ func (o *Configuration) Assets(mods ...qm.QueryMod) assetQuery {
 	}
 
 	queryMods = append(queryMods,
-		qm.Where("\"app_schema_name\".\"asset\".\"configuration_id\"=?", o.ID),
+		qm.Where("\"open_bos\".\"asset\".\"configuration_id\"=?", o.ID),
 	)
 
 	return Assets(queryMods...)
@@ -609,8 +609,8 @@ func (configurationL) LoadAssets(ctx context.Context, e boil.ContextExecutor, si
 	}
 
 	query := NewQuery(
-		qm.From(`app_schema_name.asset`),
-		qm.WhereIn(`app_schema_name.asset.configuration_id in ?`, argsSlice...),
+		qm.From(`open_bos.asset`),
+		qm.WhereIn(`open_bos.asset.configuration_id in ?`, argsSlice...),
 	)
 	if mods != nil {
 		mods.Apply(query)
@@ -690,7 +690,7 @@ func (o *Configuration) AddAssets(ctx context.Context, exec boil.ContextExecutor
 			}
 		} else {
 			updateQuery := fmt.Sprintf(
-				"UPDATE \"app_schema_name\".\"asset\" SET %s WHERE %s",
+				"UPDATE \"open_bos\".\"asset\" SET %s WHERE %s",
 				strmangle.SetParamNames("\"", "\"", 1, []string{"configuration_id"}),
 				strmangle.WhereClause("\"", "\"", 2, assetPrimaryKeyColumns),
 			)
@@ -731,10 +731,10 @@ func (o *Configuration) AddAssets(ctx context.Context, exec boil.ContextExecutor
 
 // Configurations retrieves all the records using an executor.
 func Configurations(mods ...qm.QueryMod) configurationQuery {
-	mods = append(mods, qm.From("\"app_schema_name\".\"configuration\""))
+	mods = append(mods, qm.From("\"open_bos\".\"configuration\""))
 	q := NewQuery(mods...)
 	if len(queries.GetSelect(q)) == 0 {
-		queries.SetSelect(q, []string{"\"app_schema_name\".\"configuration\".*"})
+		queries.SetSelect(q, []string{"\"open_bos\".\"configuration\".*"})
 	}
 
 	return configurationQuery{q}
@@ -755,7 +755,7 @@ func FindConfiguration(ctx context.Context, exec boil.ContextExecutor, iD int64,
 		sel = strings.Join(strmangle.IdentQuoteSlice(dialect.LQ, dialect.RQ, selectCols), ",")
 	}
 	query := fmt.Sprintf(
-		"select %s from \"app_schema_name\".\"configuration\" where \"id\"=$1", sel,
+		"select %s from \"open_bos\".\"configuration\" where \"id\"=$1", sel,
 	)
 
 	q := queries.Raw(query, iD)
@@ -817,9 +817,9 @@ func (o *Configuration) Insert(ctx context.Context, exec boil.ContextExecutor, c
 			return err
 		}
 		if len(wl) != 0 {
-			cache.query = fmt.Sprintf("INSERT INTO \"app_schema_name\".\"configuration\" (\"%s\") %%sVALUES (%s)%%s", strings.Join(wl, "\",\""), strmangle.Placeholders(dialect.UseIndexPlaceholders, len(wl), 1, 1))
+			cache.query = fmt.Sprintf("INSERT INTO \"open_bos\".\"configuration\" (\"%s\") %%sVALUES (%s)%%s", strings.Join(wl, "\",\""), strmangle.Placeholders(dialect.UseIndexPlaceholders, len(wl), 1, 1))
 		} else {
-			cache.query = "INSERT INTO \"app_schema_name\".\"configuration\" %sDEFAULT VALUES%s"
+			cache.query = "INSERT INTO \"open_bos\".\"configuration\" %sDEFAULT VALUES%s"
 		}
 
 		var queryOutput, queryReturning string
@@ -891,7 +891,7 @@ func (o *Configuration) Update(ctx context.Context, exec boil.ContextExecutor, c
 			return 0, errors.New("dbgen: unable to update configuration, could not build whitelist")
 		}
 
-		cache.query = fmt.Sprintf("UPDATE \"app_schema_name\".\"configuration\" SET %s WHERE %s",
+		cache.query = fmt.Sprintf("UPDATE \"open_bos\".\"configuration\" SET %s WHERE %s",
 			strmangle.SetParamNames("\"", "\"", 1, wl),
 			strmangle.WhereClause("\"", "\"", len(wl)+1, configurationPrimaryKeyColumns),
 		)
@@ -982,7 +982,7 @@ func (o ConfigurationSlice) UpdateAll(ctx context.Context, exec boil.ContextExec
 		args = append(args, pkeyArgs...)
 	}
 
-	sql := fmt.Sprintf("UPDATE \"app_schema_name\".\"configuration\" SET %s WHERE %s",
+	sql := fmt.Sprintf("UPDATE \"open_bos\".\"configuration\" SET %s WHERE %s",
 		strmangle.SetParamNames("\"", "\"", 1, colNames),
 		strmangle.WhereClauseRepeated(string(dialect.LQ), string(dialect.RQ), len(colNames)+1, configurationPrimaryKeyColumns, len(o)))
 
@@ -1083,7 +1083,7 @@ func (o *Configuration) Upsert(ctx context.Context, exec boil.ContextExecutor, u
 			conflict = make([]string, len(configurationPrimaryKeyColumns))
 			copy(conflict, configurationPrimaryKeyColumns)
 		}
-		cache.query = buildUpsertQueryPostgres(dialect, "\"app_schema_name\".\"configuration\"", updateOnConflict, ret, update, conflict, insert, opts...)
+		cache.query = buildUpsertQueryPostgres(dialect, "\"open_bos\".\"configuration\"", updateOnConflict, ret, update, conflict, insert, opts...)
 
 		cache.valueMapping, err = queries.BindMapping(configurationType, configurationMapping, insert)
 		if err != nil {
@@ -1148,7 +1148,7 @@ func (o *Configuration) Delete(ctx context.Context, exec boil.ContextExecutor) (
 	}
 
 	args := queries.ValuesFromMapping(reflect.Indirect(reflect.ValueOf(o)), configurationPrimaryKeyMapping)
-	sql := "DELETE FROM \"app_schema_name\".\"configuration\" WHERE \"id\"=$1"
+	sql := "DELETE FROM \"open_bos\".\"configuration\" WHERE \"id\"=$1"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -1222,7 +1222,7 @@ func (o ConfigurationSlice) DeleteAll(ctx context.Context, exec boil.ContextExec
 		args = append(args, pkeyArgs...)
 	}
 
-	sql := "DELETE FROM \"app_schema_name\".\"configuration\" WHERE " +
+	sql := "DELETE FROM \"open_bos\".\"configuration\" WHERE " +
 		strmangle.WhereClauseRepeated(string(dialect.LQ), string(dialect.RQ), 1, configurationPrimaryKeyColumns, len(o))
 
 	if boil.IsDebug(ctx) {
@@ -1296,7 +1296,7 @@ func (o *ConfigurationSlice) ReloadAll(ctx context.Context, exec boil.ContextExe
 		args = append(args, pkeyArgs...)
 	}
 
-	sql := "SELECT \"app_schema_name\".\"configuration\".* FROM \"app_schema_name\".\"configuration\" WHERE " +
+	sql := "SELECT \"open_bos\".\"configuration\".* FROM \"open_bos\".\"configuration\" WHERE " +
 		strmangle.WhereClauseRepeated(string(dialect.LQ), string(dialect.RQ), 1, configurationPrimaryKeyColumns, len(*o))
 
 	q := queries.Raw(sql, args...)
@@ -1319,7 +1319,7 @@ func ConfigurationExistsG(ctx context.Context, iD int64) (bool, error) {
 // ConfigurationExists checks if the Configuration row exists.
 func ConfigurationExists(ctx context.Context, exec boil.ContextExecutor, iD int64) (bool, error) {
 	var exists bool
-	sql := "select exists(select 1 from \"app_schema_name\".\"configuration\" where \"id\"=$1 limit 1)"
+	sql := "select exists(select 1 from \"open_bos\".\"configuration\" where \"id\"=$1 limit 1)"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)

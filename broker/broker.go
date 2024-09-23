@@ -16,8 +16,8 @@
 package broker
 
 import (
-	assetmodel "app-name/model/asset"
-	confmodel "app-name/model/conf"
+	assetmodel "open-bos/model/asset"
+	confmodel "open-bos/model/conf"
 )
 
 func GetDevices(config confmodel.Configuration) (assetmodel.Root, error) {

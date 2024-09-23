@@ -16,14 +16,14 @@
 package eliona
 
 import (
-	appmodel "app-name/app/model"
 	"fmt"
+	appmodel "open-bos/app/model"
 
 	"github.com/eliona-smart-building-assistant/go-eliona/asset"
 	"github.com/eliona-smart-building-assistant/go-utils/log"
 )
 
-const ClientReference string = "app-name"
+const ClientReference string = "open-bos"
 
 func UpsertAssetData(config appmodel.Configuration, assets []ExampleDevice) error {
 	for _, projectId := range config.ProjectIDs {
