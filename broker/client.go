@@ -21,11 +21,6 @@ type OpenBOSClient struct {
 	clientSecret string
 }
 
-type FunctionalBlockTemplate struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-}
-
 func NewOpenBOSClient(gatewayID, clientID, clientSecret string) (*OpenBOSClient, error) {
 	client := &OpenBOSClient{
 		GatewayID:    gatewayID,
@@ -86,8 +81,50 @@ func (c *OpenBOSClient) authenticateWithClientCredentials() error {
 	return nil
 }
 
-func (c *OpenBOSClient) GetFunctionalBlockTemplate() (*FunctionalBlockTemplate, error) {
-	url := fmt.Sprintf("%s/gateway/%s/api/v1/ontology/functionalblocktemplate", baseURL, c.GatewayID)
+type DataPoint struct {
+	BusUnitId     *string  `json:"busUnitId"`
+	Id            string   `json:"id"`
+	Name          string   `json:"name"`
+	Description   string   `json:"description"`
+	Tags          []string `json:"tags"`
+	Direction     string   `json:"direction"`
+	TypeId        string   `json:"typeId"`
+	DisplayUnitId *string  `json:"displayUnitId"`
+	PublicId      string   `json:"publicId"`
+}
+
+type Property struct {
+	DefaultValue  *string  `json:"defaultValue"`
+	Id            string   `json:"id"`
+	Name          string   `json:"name"`
+	Description   string   `json:"description"`
+	Tags          []string `json:"tags"`
+	Direction     string   `json:"direction"`
+	TypeId        string   `json:"typeId"`
+	DisplayUnitId *string  `json:"displayUnitId"`
+	PublicId      string   `json:"publicId"`
+}
+
+type AssetTemplate struct {
+	Datapoints         []DataPoint   `json:"datapoints"`
+	Properties         []Property    `json:"properties"`
+	Usages             []interface{} `json:"usages"`
+	Id                 string        `json:"id"`
+	Icon               string        `json:"icon"`
+	IconFillColor      *string       `json:"iconFillColor"`
+	Name               string        `json:"name"`
+	Tags               []string      `json:"tags"`
+	ParentId           *string       `json:"parentId"`
+	Version            string        `json:"version"`
+	InstancesCount     int           `json:"instancesCount"`
+	PublicId           string        `json:"publicId"`
+	IsExternal         bool          `json:"isExternal"`
+	SupportMasterSlave bool          `json:"supportMasterSlave"`
+	IsDefault          bool          `json:"isDefault"`
+}
+
+func (c *OpenBOSClient) getAssetTemplates() ([]AssetTemplate, error) {
+	url := fmt.Sprintf("%s/gateway/%s/api/v1/ontology/functionalblocktemplate/details", baseURL, c.GatewayID)
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -109,13 +146,13 @@ func (c *OpenBOSClient) GetFunctionalBlockTemplate() (*FunctionalBlockTemplate, 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("unexpected status code: %d body: %s", resp.StatusCode, string(body))
 	}
-	fmt.Println(string(body))
 
-	var template FunctionalBlockTemplate
-	err = json.Unmarshal(body, &template)
+	var templates []AssetTemplate
+	err = json.Unmarshal(body, &templates)
 	if err != nil {
 		return nil, fmt.Errorf("unmarshalling: %v", err)
 	}
+	fmt.Printf("%+v", templates)
 
-	return &template, nil
+	return templates, nil
 }

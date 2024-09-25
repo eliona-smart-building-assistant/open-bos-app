@@ -26,7 +26,7 @@ func GetDevices(config appmodel.Configuration) (eliona.Root, error) {
 	if err != nil {
 		return eliona.Root{}, fmt.Errorf("creating instance of client: %v", err)
 	}
-	_, err = client.GetFunctionalBlockTemplate()
+	_, err = client.getAssetTemplates()
 	if err != nil {
 		return eliona.Root{}, fmt.Errorf("getting functional block template: %v", err)
 	}
