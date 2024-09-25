@@ -16,10 +16,19 @@
 package broker
 
 import (
+	"fmt"
 	appmodel "open-bos/app/model"
 	"open-bos/eliona"
 )
 
 func GetDevices(config appmodel.Configuration) (eliona.Root, error) {
+	client, err := NewOpenBOSClient(config.Gwid, config.ClientID, config.ClientSecret)
+	if err != nil {
+		return eliona.Root{}, fmt.Errorf("creating instance of client: %v", err)
+	}
+	_, err = client.GetFunctionalBlockTemplate()
+	if err != nil {
+		return eliona.Root{}, fmt.Errorf("getting functional block template: %v", err)
+	}
 	return eliona.Root{}, nil
 }

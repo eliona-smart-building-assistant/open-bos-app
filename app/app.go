@@ -17,10 +17,12 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	apiserver "open-bos/api/generated"
 	apiservices "open-bos/api/services"
 	appmodel "open-bos/app/model"
+	"open-bos/broker"
 	dbhelper "open-bos/db/helper"
 	"open-bos/eliona"
 	"sync"
@@ -101,7 +103,12 @@ func CollectData() {
 }
 
 func collectResources(config *appmodel.Configuration) error {
-	// Do the magic here
+	root, err := broker.GetDevices(*config)
+	if err != nil {
+		log.Error("broker", "getting all devices: %v", err)
+		return err
+	}
+	fmt.Println(root)
 	return nil
 }
 
