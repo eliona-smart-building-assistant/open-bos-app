@@ -30,7 +30,6 @@ import (
 
 	"github.com/eliona-smart-building-assistant/go-eliona/app"
 	"github.com/eliona-smart-building-assistant/go-eliona/asset"
-	"github.com/eliona-smart-building-assistant/go-eliona/dashboard"
 	"github.com/eliona-smart-building-assistant/go-eliona/frontend"
 	"github.com/eliona-smart-building-assistant/go-utils/common"
 	"github.com/eliona-smart-building-assistant/go-utils/db"
@@ -105,6 +104,12 @@ func collectResources(config *appmodel.Configuration) error {
 	if err != nil {
 		log.Error("broker", "getting asset types: %v", err)
 		return err
+	}
+	for _, assetType := range assetTypes {
+		if err := asset.InitAssetType(assetType)(nil); err != nil {
+			log.Error("eliona", "initializing asset type: %v", err)
+			return err
+		}
 	}
 	fmt.Println(assetTypes)
 	return nil
