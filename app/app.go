@@ -48,8 +48,6 @@ func Initialize() {
 	// Init the app before the first run.
 	app.Init(conn, app.AppName(),
 		app.ExecSqlFile("db/init.sql"),
-		asset.InitAssetTypeFiles("resources/asset-types/*.json"),
-		dashboard.InitWidgetTypeFiles("resources/widget-types/*.json"),
 	)
 }
 
@@ -103,12 +101,12 @@ func CollectData() {
 }
 
 func collectResources(config *appmodel.Configuration) error {
-	root, err := broker.GetDevices(*config)
+	assetTypes, err := broker.GetAssetTypes(*config)
 	if err != nil {
-		log.Error("broker", "getting all devices: %v", err)
+		log.Error("broker", "getting asset types: %v", err)
 		return err
 	}
-	fmt.Println(root)
+	fmt.Println(assetTypes)
 	return nil
 }
 

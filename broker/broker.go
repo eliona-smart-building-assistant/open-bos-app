@@ -18,17 +18,67 @@ package broker
 import (
 	"fmt"
 	appmodel "open-bos/app/model"
-	"open-bos/eliona"
+	"strings"
+
+	api "github.com/eliona-smart-building-assistant/go-eliona-api-client/v2"
 )
 
-func GetDevices(config appmodel.Configuration) (eliona.Root, error) {
+func GetAssetTypes(config appmodel.Configuration) ([]api.AssetType, error) {
 	client, err := NewOpenBOSClient(config.Gwid, config.ClientID, config.ClientSecret)
 	if err != nil {
-		return eliona.Root{}, fmt.Errorf("creating instance of client: %v", err)
+		return nil, fmt.Errorf("creating instance of client: %v", err)
 	}
-	_, err = client.getAssetTemplates()
+	assetTemplates, err := client.getAssetTemplates()
 	if err != nil {
-		return eliona.Root{}, fmt.Errorf("getting functional block template: %v", err)
+		return nil, fmt.Errorf("getting functional block template: %v", err)
 	}
-	return eliona.Root{}, nil
+	var assetTypes []api.AssetType
+	for _, assetTemplate := range assetTemplates {
+		assetType := convertAssetTemplateToAssetType(assetTemplate)
+		assetTypes = append(assetTypes, assetType)
+	}
+	return assetTypes, nil
+}
+
+func convertAssetTemplateToAssetType(template AssetTemplate) api.AssetType {
+	// Initialize AssetType
+	apiAsset := api.AssetType{
+		Name:       template.Id, // Set the AssetType name to the template's Id
+		Attributes: []api.AssetTypeAttribute{},
+	}
+
+	// Add DataPoints as Attributes with relevant Subtype
+	for _, dp := range template.Datapoints {
+		subtype := determineSubtype(dp.Direction)
+		attribute := api.AssetTypeAttribute{
+			Name:    dp.Name,
+			Subtype: subtype,
+			Unit:    *api.NewNullableString(dp.DisplayUnitId),
+		}
+		apiAsset.Attributes = append(apiAsset.Attributes, attribute)
+	}
+
+	// Add Properties as Attributes with Subtype Status
+	for _, prop := range template.Properties {
+		attribute := api.AssetTypeAttribute{
+			Name:    prop.Name,
+			Subtype: api.SUBTYPE_STATUS,
+			Unit:    *api.NewNullableString(prop.DisplayUnitId),
+		}
+		apiAsset.Attributes = append(apiAsset.Attributes, attribute)
+	}
+
+	return apiAsset
+}
+
+// Helper function to determine the subtype for DataPoints
+func determineSubtype(direction string) api.DataSubtype {
+	switch strings.ToLower(direction) {
+	case "feedback":
+		return api.SUBTYPE_INPUT
+	case "control", "feedbackandcontrol":
+		return api.SUBTYPE_OUTPUT
+	default:
+		return api.SUBTYPE_INFO
+	}
 }

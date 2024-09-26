@@ -94,7 +94,7 @@ type DataPoint struct {
 }
 
 type Property struct {
-	DefaultValue  *string  `json:"defaultValue"`
+	DefaultValue  any      `json:"defaultValue"`
 	Id            string   `json:"id"`
 	Name          string   `json:"name"`
 	Description   string   `json:"description"`
@@ -148,11 +148,9 @@ func (c *OpenBOSClient) getAssetTemplates() ([]AssetTemplate, error) {
 	}
 
 	var templates []AssetTemplate
-	err = json.Unmarshal(body, &templates)
-	if err != nil {
+	if err := json.Unmarshal(body, &templates); err != nil {
 		return nil, fmt.Errorf("unmarshalling: %v", err)
 	}
-	fmt.Printf("%+v", templates)
 
 	return templates, nil
 }
