@@ -41,13 +41,14 @@ func GetAssetTypes(config appmodel.Configuration) ([]api.AssetType, error) {
 }
 
 func convertAssetTemplateToAssetType(template AssetTemplate) api.AssetType {
-	// Initialize AssetType
 	apiAsset := api.AssetType{
-		Name:       template.Id, // Set the AssetType name to the template's Id
+		Name: "openBOS-" + template.Id,
+		Translation: *api.NewNullableTranslation(&api.Translation{
+			En: &template.Name,
+		}),
 		Attributes: []api.AssetTypeAttribute{},
 	}
 
-	// Add DataPoints as Attributes with relevant Subtype
 	for _, dp := range template.Datapoints {
 		subtype := determineSubtype(dp.Direction)
 		attribute := api.AssetTypeAttribute{
@@ -58,7 +59,7 @@ func convertAssetTemplateToAssetType(template AssetTemplate) api.AssetType {
 		apiAsset.Attributes = append(apiAsset.Attributes, attribute)
 	}
 
-	// Add Properties as Attributes with Subtype Status
+	// Properties are attributes that don't change often (our status subtype)
 	for _, prop := range template.Properties {
 		attribute := api.AssetTypeAttribute{
 			Name:    prop.Name,
@@ -71,12 +72,11 @@ func convertAssetTemplateToAssetType(template AssetTemplate) api.AssetType {
 	return apiAsset
 }
 
-// Helper function to determine the subtype for DataPoints
 func determineSubtype(direction string) api.DataSubtype {
 	switch strings.ToLower(direction) {
 	case "feedback":
 		return api.SUBTYPE_INPUT
-	case "control", "feedbackandcontrol":
+	case "command", "commandandfeedback":
 		return api.SUBTYPE_OUTPUT
 	default:
 		return api.SUBTYPE_INFO
