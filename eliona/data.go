@@ -25,7 +25,7 @@ import (
 
 const ClientReference string = "open-bos"
 
-func UpsertAssetData(config appmodel.Configuration, assets []ExampleDevice) error {
+func UpsertAssetData(config appmodel.Configuration, assets []Asset) error {
 	for _, projectId := range config.ProjectIDs {
 		for _, a := range assets {
 			log.Debug("Eliona", "upserting data for asset: config %d and asset '%v'", config.Id, a.GetGAI())

@@ -100,9 +100,9 @@ func CollectData() {
 }
 
 func collectResources(config *appmodel.Configuration) error {
-	assetTypes, err := broker.GetAssetTypes(*config)
+	assetTypes, root, err := broker.FetchAssets(*config)
 	if err != nil {
-		log.Error("broker", "getting asset types: %v", err)
+		log.Error("broker", "fetching assets: %v", err)
 		return err
 	}
 	for _, assetType := range assetTypes {
@@ -112,6 +112,12 @@ func collectResources(config *appmodel.Configuration) error {
 		}
 	}
 	fmt.Println(assetTypes)
+	fmt.Println(root)
+	if err := eliona.CreateAssets(*config, &root); err != nil {
+		log.Error("eliona", "creating assets: %v", err)
+		return err
+	}
+
 	return nil
 }
 

@@ -36,17 +36,17 @@ DELETE FROM heap
 WHERE asset_id IN (
 	SELECT asset_id
 	FROM asset
-	WHERE asset_type LIKE E'open\\_bos\\_%'
+	WHERE asset_type LIKE E'openBOS_%'
 );
 
 DELETE FROM attribute_schema
-WHERE asset_type LIKE E'open\\_bos\\_%';
+WHERE asset_type LIKE E'openBOS_%';
 
 DELETE FROM asset
-WHERE asset_type LIKE E'open\\_bos\\_%';
+WHERE asset_type LIKE E'openBOS_%';
 
 DELETE FROM asset_type
-WHERE asset_type LIKE E'open\\_bos\\_%';
+WHERE asset_type LIKE E'openBOS_%';
 
 DELETE FROM public.widget_data
 WHERE widget_id IN (

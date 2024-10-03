@@ -18,31 +18,15 @@ package broker
 import (
 	"fmt"
 	appmodel "open-bos/app/model"
+	"open-bos/eliona"
 	"strings"
 
 	api "github.com/eliona-smart-building-assistant/go-eliona-api-client/v2"
 )
 
-func GetAssetTypes(config appmodel.Configuration) ([]api.AssetType, error) {
-	client, err := NewOpenBOSClient(config.Gwid, config.ClientID, config.ClientSecret)
-	if err != nil {
-		return nil, fmt.Errorf("creating instance of client: %v", err)
-	}
-	assetTemplates, err := client.getAssetTemplates()
-	if err != nil {
-		return nil, fmt.Errorf("getting functional block template: %v", err)
-	}
-	var assetTypes []api.AssetType
-	for _, assetTemplate := range assetTemplates {
-		assetType := convertAssetTemplateToAssetType(assetTemplate)
-		assetTypes = append(assetTypes, assetType)
-	}
-	return assetTypes, nil
-}
-
 func convertAssetTemplateToAssetType(template AssetTemplate) api.AssetType {
 	apiAsset := api.AssetType{
-		Name: "openBOS-" + template.Id,
+		Name: "openBOS-" + template.ID,
 		Translation: *api.NewNullableTranslation(&api.Translation{
 			En: &template.Name,
 		}),
@@ -81,4 +65,41 @@ func determineSubtype(direction string) api.DataSubtype {
 	default:
 		return api.SUBTYPE_INFO
 	}
+}
+
+func FetchAssets(config appmodel.Configuration) ([]api.AssetType, eliona.Asset, error) {
+	client, err := NewOpenBOSClient(config.Gwid, config.ClientID, config.ClientSecret)
+	if err != nil {
+		return nil, eliona.Asset{}, fmt.Errorf("creating instance of client: %v", err)
+	}
+	ontology, err := client.getOntology()
+	if err != nil {
+		return nil, eliona.Asset{}, fmt.Errorf("getting ontology: %v", err)
+	}
+
+	ats := ontology.getAssetTemplates()
+	ats = append(ats, AssetTemplate{
+		ID:   "0",
+		Name: "OpenBOS root",
+	})
+	var assetTypes []api.AssetType
+	for _, assetTemplate := range ats {
+		assetType := convertAssetTemplateToAssetType(assetTemplate)
+		assetTypes = append(assetTypes, assetType)
+	}
+	root := eliona.Asset{
+		ID:         "0",
+		TemplateID: "0",
+		Name:       "Root",
+		Config:     &config,
+	}
+	for _, asset := range ontology.Assets {
+		root.DevicesSlice = append(root.DevicesSlice, eliona.Asset{
+			ID:         asset.ID,
+			Name:       asset.Name,
+			TemplateID: asset.TemplateID,
+			Config:     &config,
+		})
+	}
+	return assetTypes, root, nil
 }

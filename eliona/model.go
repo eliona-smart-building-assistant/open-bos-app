@@ -22,130 +22,60 @@ import (
 	conf "open-bos/db/helper"
 
 	"github.com/eliona-smart-building-assistant/go-eliona/asset"
-	"github.com/eliona-smart-building-assistant/go-eliona/utils"
-	"github.com/eliona-smart-building-assistant/go-utils/common"
 )
 
-// TODO: define the asset structure here
+type Asset struct {
+	ID   string
+	Name string
 
-type ExampleDevice struct {
-	ID   string `eliona:"id" subtype:"info"`
-	Name string `eliona:"name,filterable" subtype:"info"`
+	TemplateID string
+
+	LocationsMap map[string]Asset
+	DevicesSlice []Asset
 
 	Config *appmodel.Configuration
 }
 
-func (d *ExampleDevice) AdheresToFilter(filter [][]appmodel.FilterRule) (bool, error) {
-	f := apiFilterToCommonFilter(filter)
-	fp, err := utils.StructToMap(d)
-	if err != nil {
-		return false, fmt.Errorf("converting struct to map: %v", err)
-	}
-	adheres, err := common.Filter(f, fp)
-	if err != nil {
-		return false, err
-	}
-	return adheres, nil
-}
-
-func (d *ExampleDevice) GetName() string {
+func (d *Asset) GetName() string {
 	return d.Name
 }
 
-func (d *ExampleDevice) GetDescription() string {
+func (d *Asset) GetDescription() string {
 	return ""
 }
 
-func (d *ExampleDevice) GetAssetType() string {
-	return "app_name_device"
+func (d *Asset) GetAssetType() string {
+	return "openBOS-" + d.TemplateID
 }
 
-func (d *ExampleDevice) GetGAI() string {
-	return d.GetAssetType() + "_" + d.ID
+func (d *Asset) GetGAI() string {
+	return "openBOS-" + d.ID
 }
 
-func (d *ExampleDevice) GetAssetID(projectID string) (*int32, error) {
+func (d *Asset) GetAssetID(projectID string) (*int32, error) {
 	return conf.GetAssetId(context.Background(), *d.Config, projectID, d.GetGAI())
 }
 
-func (d *ExampleDevice) SetAssetID(assetID int32, projectID string) error {
+func (d *Asset) SetAssetID(assetID int32, projectID string) error {
 	if err := conf.InsertAsset(context.Background(), *d.Config, projectID, d.GetGAI(), assetID, d.ID); err != nil {
 		return fmt.Errorf("inserting asset to config db: %v", err)
 	}
 	return nil
 }
 
-func (d *ExampleDevice) GetLocationalChildren() []asset.LocationalNode {
-	return []asset.LocationalNode{}
-}
-
-func (d *ExampleDevice) GetFunctionalChildren() []asset.FunctionalNode {
-	return []asset.FunctionalNode{}
-}
-
-type Root struct {
-	locationsMap map[string]ExampleDevice
-	devicesSlice []ExampleDevice
-
-	Config *appmodel.Configuration
-}
-
-func (r *Root) GetName() string {
-	return "app_name"
-}
-
-func (r *Root) GetDescription() string {
-	return "Root asset for OpenBOS devices"
-}
-
-func (r *Root) GetAssetType() string {
-	return "app_name_root"
-}
-
-func (r *Root) GetGAI() string {
-	return r.GetAssetType()
-}
-
-func (r *Root) GetAssetID(projectID string) (*int32, error) {
-	return conf.GetAssetId(context.Background(), *r.Config, projectID, r.GetGAI())
-}
-
-func (r *Root) SetAssetID(assetID int32, projectID string) error {
-	if err := conf.InsertAsset(context.Background(), *r.Config, projectID, r.GetGAI(), assetID, ""); err != nil {
-		return fmt.Errorf("inserting asset to config db: %v", err)
-	}
-	return nil
-}
-
-func (r *Root) GetLocationalChildren() []asset.LocationalNode {
-	locationalChildren := make([]asset.LocationalNode, 0, len(r.locationsMap))
-	for _, room := range r.locationsMap {
+func (r *Asset) GetLocationalChildren() []asset.LocationalNode {
+	locationalChildren := make([]asset.LocationalNode, 0, len(r.LocationsMap))
+	for _, room := range r.LocationsMap {
 		roomCopy := room // Create a copy of room
 		locationalChildren = append(locationalChildren, &roomCopy)
 	}
 	return locationalChildren
 }
 
-func (r *Root) GetFunctionalChildren() []asset.FunctionalNode {
-	functionalChildren := make([]asset.FunctionalNode, 0, len(r.devicesSlice))
-	for i := range r.devicesSlice {
-		functionalChildren[i] = &r.devicesSlice[i]
+func (r *Asset) GetFunctionalChildren() []asset.FunctionalNode {
+	functionalChildren := make([]asset.FunctionalNode, 0, len(r.DevicesSlice))
+	for i := range r.DevicesSlice {
+		functionalChildren = append(functionalChildren, &r.DevicesSlice[i])
 	}
 	return functionalChildren
-}
-
-//
-
-func apiFilterToCommonFilter(input [][]appmodel.FilterRule) [][]common.FilterRule {
-	result := make([][]common.FilterRule, len(input))
-	for i := 0; i < len(input); i++ {
-		result[i] = make([]common.FilterRule, len(input[i]))
-		for j := 0; j < len(input[i]); j++ {
-			result[i][j] = common.FilterRule{
-				Parameter: input[i][j].Parameter,
-				Regex:     input[i][j].Regex,
-			}
-		}
-	}
-	return result
 }

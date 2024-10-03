@@ -12,6 +12,7 @@ import (
 )
 
 const baseURL = "https://api.buildings.ability.abb/buildings/openbos/apiproxy/v1"
+const mockURL = "http://localhost:5000"
 
 type OpenBOSClient struct {
 	GatewayID    string
@@ -126,35 +127,67 @@ func (c *OpenBOSClient) doRequest(method, endpoint string, queryParams url.Value
 	return nil
 }
 
+func (c *OpenBOSClient) doMockRequest(method, endpoint string, queryParams url.Values, body interface{}, result interface{}) error {
+	url := endpoint
+	if queryParams != nil && len(queryParams) > 0 {
+		url += "?" + queryParams.Encode()
+	}
+
+	var bodyReader io.Reader
+	if body != nil {
+		bodyBytes, err := json.Marshal(body)
+		if err != nil {
+			return fmt.Errorf("encoding request body: %v", err)
+		}
+		bodyReader = bytes.NewReader(bodyBytes)
+	}
+
+	req, err := http.NewRequest(method, url, bodyReader)
+	if err != nil {
+		return fmt.Errorf("creating request: %v", err)
+	}
+
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("requesting: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("unexpected status code: %d body: %s", resp.StatusCode, string(bodyBytes))
+	}
+
+	if result != nil {
+		if err := json.NewDecoder(resp.Body).Decode(result); err != nil {
+			return fmt.Errorf("decoding response: %v", err)
+		}
+	}
+
+	return nil
+}
+
 type OntologyDTO struct {
-	Settings           OntologySettingsDTO            `json:"settings"`
-	AssetTemplates     []OntologyAssetTemplateDTO     `json:"assetTemplates,omitempty"`
-	SpaceTemplates     []OntologySpaceTemplateDTO     `json:"spaceTemplates,omitempty"`
-	Units              []OntologyUnitDTO              `json:"units,omitempty"`
-	DataTypes          []OntologyDataTypeDTO          `json:"dataTypes,omitempty"`
-	DatapointTemplates []OntologyDatapointTemplateDTO `json:"datapointTemplates,omitempty"`
-	PropertyTemplates  []OntologyPropertyTemplateDTO  `json:"propertyTemplates,omitempty"`
-	Assets             []OntologyAssetDTO             `json:"assets,omitempty"`
-	Spaces             []OntologySpaceDTO             `json:"spaces,omitempty"`
-	Datapoints         []OntologyDatapointDTO         `json:"datapoints,omitempty"`
-	Properties         []OntologyPropertyDTO          `json:"properties,omitempty"`
-	Orgs               []OntologyOrganisationDTO      `json:"orgs,omitempty"`
-	Users              []OntologyUserDTO              `json:"users,omitempty"`
+	Settings           OntologySettingsDTO               `json:"settings"`
+	AssetTemplates     []OntologyAssetOrSpaceTemplateDTO `json:"assetTemplates,omitempty"`
+	SpaceTemplates     []OntologyAssetOrSpaceTemplateDTO `json:"spaceTemplates,omitempty"`
+	Units              []OntologyUnitDTO                 `json:"units,omitempty"`
+	DataTypes          []OntologyDataTypeDTO             `json:"dataTypes,omitempty"`
+	DatapointTemplates []OntologyDatapointTemplateDTO    `json:"datapointTemplates,omitempty"`
+	PropertyTemplates  []OntologyPropertyTemplateDTO     `json:"propertyTemplates,omitempty"`
+	Assets             []OntologyAssetDTO                `json:"assets,omitempty"`
+	Spaces             []OntologySpaceDTO                `json:"spaces,omitempty"`
+	Datapoints         []OntologyDatapointDTO            `json:"datapoints,omitempty"`
+	Properties         []OntologyPropertyDTO             `json:"properties,omitempty"`
+	Orgs               []OntologyOrganisationDTO         `json:"orgs,omitempty"`
+	Users              []OntologyUserDTO                 `json:"users,omitempty"`
 }
 
 type OntologySettingsDTO struct {
 	Version int64 `json:"version"`
 }
 
-type OntologyAssetTemplateDTO struct {
-	ID            string   `json:"id"`
-	Name          string   `json:"name"`
-	Tags          []string `json:"tags,omitempty"`
-	Icon          string   `json:"icon,omitempty"`
-	IconFillColor string   `json:"iconFillColor,omitempty"`
-}
-
-type OntologySpaceTemplateDTO struct {
+type OntologyAssetOrSpaceTemplateDTO struct {
 	ID            string   `json:"id"`
 	Name          string   `json:"name"`
 	Tags          []string `json:"tags,omitempty"`
@@ -254,17 +287,13 @@ type OntologyUserDTO struct {
 	OrgID    string   `json:"orgId,omitempty"`
 }
 
-// GetOntology retrieves the complete ontology of the edge.
-func (c *OpenBOSClient) GetOntology(types []string) (*OntologyDTO, error) {
-	endpoint := fmt.Sprintf("%s/gateway/%s/api/v1/ontology/full", baseURL, c.GatewayID)
-
-	params := url.Values{}
-	for _, t := range types {
-		params.Add("types", t)
-	}
+// getOntology retrieves the complete ontology of the edge.
+func (c *OpenBOSClient) getOntology() (*OntologyDTO, error) {
+	//endpoint := fmt.Sprintf("%s/gateway/%s/api/v1/ontology/full", baseURL, c.GatewayID)
+	endpoint := fmt.Sprintf("%s/api/v1/ontology/full", mockURL)
 
 	var ontology OntologyDTO
-	err := c.doRequest("GET", endpoint, params, nil, &ontology)
+	err := c.doMockRequest("GET", endpoint, nil, nil, &ontology)
 	if err != nil {
 		return nil, err
 	}
@@ -396,77 +425,102 @@ func (c *OpenBOSClient) AckAlarm(ack OntologyAlarmAckDTO) error {
 	return nil
 }
 
-// TODO: Deprecate or not?
-
 type DataPoint struct {
-	BusUnitId     *string  `json:"busUnitId"`
-	Id            string   `json:"id"`
-	Name          string   `json:"name"`
-	Description   string   `json:"description"`
-	Tags          []string `json:"tags"`
-	Direction     string   `json:"direction"`
-	TypeId        string   `json:"typeId"`
-	DisplayUnitId *string  `json:"displayUnitId"`
-	PublicId      string   `json:"publicId"`
+	ID            string
+	Name          string
+	Tags          []string
+	Direction     string
+	TypeId        string
+	DisplayUnitId *string
 }
 
 type Property struct {
-	DefaultValue  any      `json:"defaultValue"`
-	Id            string   `json:"id"`
-	Name          string   `json:"name"`
-	Description   string   `json:"description"`
-	Tags          []string `json:"tags"`
-	Direction     string   `json:"direction"`
-	TypeId        string   `json:"typeId"`
-	DisplayUnitId *string  `json:"displayUnitId"`
-	PublicId      string   `json:"publicId"`
+	ID            string
+	Name          string
+	Tags          []string
+	TypeId        string
+	DisplayUnitId *string
 }
 
 type AssetTemplate struct {
-	Datapoints         []DataPoint   `json:"datapoints"`
-	Properties         []Property    `json:"properties"`
-	Usages             []interface{} `json:"usages"`
-	Id                 string        `json:"id"`
-	Icon               string        `json:"icon"`
-	IconFillColor      *string       `json:"iconFillColor"`
-	Name               string        `json:"name"`
-	Tags               []string      `json:"tags"`
-	ParentId           *string       `json:"parentId"`
-	Version            string        `json:"version"`
-	InstancesCount     int           `json:"instancesCount"`
-	PublicId           string        `json:"publicId"`
-	IsExternal         bool          `json:"isExternal"`
-	SupportMasterSlave bool          `json:"supportMasterSlave"`
-	IsDefault          bool          `json:"isDefault"`
+	ID         string
+	Name       string
+	Tags       []string
+	Properties []Property
+	Datapoints []DataPoint
 }
 
-func (c *OpenBOSClient) getAssetTemplates() ([]AssetTemplate, error) {
-	url := fmt.Sprintf("%s/gateway/%s/api/v1/ontology/functionalblocktemplate/details", baseURL, c.GatewayID)
-
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, fmt.Errorf("creating request: %v", err)
+func (ontology OntologyDTO) getAssetTemplates() []AssetTemplate {
+	datapointTemplateMap := make(map[string][]OntologyDatapointTemplateDTO)
+	for _, dt := range ontology.DatapointTemplates {
+		if dt.AssetTemplateID != "" {
+			datapointTemplateMap[dt.AssetTemplateID] = append(datapointTemplateMap[dt.AssetTemplateID], dt)
+		}
 	}
 
-	req.Header.Set("Authorization", "Bearer "+c.AccessToken)
-
-	resp, err := c.HTTPClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("requesting: %v", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("reading body: %v", err)
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d body: %s", resp.StatusCode, string(body))
+	propertyTemplateMap := make(map[string][]OntologyPropertyTemplateDTO)
+	for _, pt := range ontology.PropertyTemplates {
+		if pt.AssetTemplateID != "" {
+			propertyTemplateMap[pt.AssetTemplateID] = append(propertyTemplateMap[pt.AssetTemplateID], pt)
+		}
 	}
 
-	var templates []AssetTemplate
-	if err := json.Unmarshal(body, &templates); err != nil {
-		return nil, fmt.Errorf("unmarshalling: %v", err)
+	dataTypeMap := make(map[string]OntologyDataTypeDTO)
+	for _, dt := range ontology.DataTypes {
+		dataTypeMap[dt.ID] = dt
 	}
-	return templates, nil
+
+	unitMap := make(map[string]string)
+	for _, unit := range ontology.Units {
+		unitMap[unit.ID] = unit.Symbol
+	}
+
+	var assetTemplates []AssetTemplate
+
+	for _, at := range ontology.AssetTemplates {
+		assetTemplate := AssetTemplate{
+			ID:         at.ID,
+			Name:       at.Name,
+			Tags:       at.Tags,
+			Datapoints: []DataPoint{},
+			Properties: []Property{},
+		}
+
+		for _, dt := range datapointTemplateMap[at.ID] {
+			dataPoint := DataPoint{
+				ID:     dt.ID,
+				Name:   dt.Name,
+				Tags:   dt.Tags,
+				TypeId: dt.TypeID,
+				// TODO: Direction is not available now
+				Direction:     "input",
+				DisplayUnitId: getDisplayUnitId(dt.TypeID, dataTypeMap, unitMap),
+			}
+			assetTemplate.Datapoints = append(assetTemplate.Datapoints, dataPoint)
+		}
+
+		for _, pt := range propertyTemplateMap[at.ID] {
+			property := Property{
+				ID:            pt.ID,
+				Name:          pt.Name,
+				Tags:          pt.Tags,
+				TypeId:        pt.TypeID,
+				DisplayUnitId: getDisplayUnitId(pt.TypeID, dataTypeMap, unitMap),
+			}
+			assetTemplate.Properties = append(assetTemplate.Properties, property)
+		}
+
+		assetTemplates = append(assetTemplates, assetTemplate)
+	}
+
+	return assetTemplates
+}
+
+func getDisplayUnitId(typeId string, dataTypeMap map[string]OntologyDataTypeDTO, unitMap map[string]string) *string {
+	if dataType, exists := dataTypeMap[typeId]; exists {
+		if unitSymbol, ok := unitMap[dataType.UnitID]; ok {
+			return &unitSymbol
+		}
+	}
+	return nil
 }
