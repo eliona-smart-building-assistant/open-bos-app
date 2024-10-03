@@ -45,11 +45,11 @@ func (d *Asset) GetDescription() string {
 }
 
 func (d *Asset) GetAssetType() string {
-	return "openBOS-" + d.TemplateID
+	return "open_bos_" + d.TemplateID
 }
 
 func (d *Asset) GetGAI() string {
-	return "openBOS-" + d.ID
+	return "open_bos_" + d.ID
 }
 
 func (d *Asset) GetAssetID(projectID string) (*int32, error) {

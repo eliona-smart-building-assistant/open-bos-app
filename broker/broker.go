@@ -26,7 +26,7 @@ import (
 
 func convertAssetTemplateToAssetType(template assetTemplate) api.AssetType {
 	apiAsset := api.AssetType{
-		Name: "openBOS-" + template.ID,
+		Name: "open_bos_" + template.ID,
 		Translation: *api.NewNullableTranslation(&api.Translation{
 			En: &template.Name,
 		}),
