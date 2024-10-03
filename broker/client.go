@@ -14,18 +14,18 @@ import (
 const baseURL = "https://api.buildings.ability.abb/buildings/openbos/apiproxy/v1"
 const mockURL = "http://localhost:5000"
 
-type OpenBOSClient struct {
-	GatewayID    string
-	HTTPClient   *http.Client
-	AccessToken  string
+type openBOSClient struct {
+	gatewayID    string
+	httpClient   *http.Client
+	accessToken  string
 	clientID     string
 	clientSecret string
 }
 
-func NewOpenBOSClient(gatewayID, clientID, clientSecret string) (*OpenBOSClient, error) {
-	client := &OpenBOSClient{
-		GatewayID:    gatewayID,
-		HTTPClient:   &http.Client{Timeout: 10 * time.Second},
+func newOpenBOSClient(gatewayID, clientID, clientSecret string) (*openBOSClient, error) {
+	client := &openBOSClient{
+		gatewayID:    gatewayID,
+		httpClient:   &http.Client{Timeout: 10 * time.Second},
 		clientID:     clientID,
 		clientSecret: clientSecret,
 	}
@@ -37,7 +37,7 @@ func NewOpenBOSClient(gatewayID, clientID, clientSecret string) (*OpenBOSClient,
 	return client, nil
 }
 
-func (c *OpenBOSClient) authenticateWithClientCredentials() error {
+func (c *openBOSClient) authenticateWithClientCredentials() error {
 	tokenURL := "https://login.microsoftonline.com/372ee9e0-9ce0-4033-a64a-c07073a91ecd/oauth2/v2.0/token"
 
 	data := url.Values{}
@@ -53,7 +53,7 @@ func (c *OpenBOSClient) authenticateWithClientCredentials() error {
 
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.HTTPClient.Do(req)
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("requesting: %v", err)
 	}
@@ -78,11 +78,11 @@ func (c *OpenBOSClient) authenticateWithClientCredentials() error {
 		return errors.New("invalid token response")
 	}
 
-	c.AccessToken = accessToken
+	c.accessToken = accessToken
 	return nil
 }
 
-func (c *OpenBOSClient) doRequest(method, endpoint string, queryParams url.Values, body interface{}, result interface{}) error {
+func (c *openBOSClient) doRequest(method, endpoint string, queryParams url.Values, body interface{}, result interface{}) error {
 	url := endpoint
 	if queryParams != nil && len(queryParams) > 0 {
 		url += "?" + queryParams.Encode()
@@ -102,12 +102,12 @@ func (c *OpenBOSClient) doRequest(method, endpoint string, queryParams url.Value
 		return fmt.Errorf("creating request: %v", err)
 	}
 
-	req.Header.Set("Authorization", "Bearer "+c.AccessToken)
+	req.Header.Set("Authorization", "Bearer "+c.accessToken)
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
 
-	resp, err := c.HTTPClient.Do(req)
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("requesting: %v", err)
 	}
@@ -127,7 +127,7 @@ func (c *OpenBOSClient) doRequest(method, endpoint string, queryParams url.Value
 	return nil
 }
 
-func (c *OpenBOSClient) doMockRequest(method, endpoint string, queryParams url.Values, body interface{}, result interface{}) error {
+func (c *openBOSClient) doMockRequest(method, endpoint string, queryParams url.Values, body interface{}, result interface{}) error {
 	url := endpoint
 	if queryParams != nil && len(queryParams) > 0 {
 		url += "?" + queryParams.Encode()
@@ -147,7 +147,7 @@ func (c *OpenBOSClient) doMockRequest(method, endpoint string, queryParams url.V
 		return fmt.Errorf("creating request: %v", err)
 	}
 
-	resp, err := c.HTTPClient.Do(req)
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("requesting: %v", err)
 	}
@@ -167,27 +167,27 @@ func (c *OpenBOSClient) doMockRequest(method, endpoint string, queryParams url.V
 	return nil
 }
 
-type OntologyDTO struct {
-	Settings           OntologySettingsDTO               `json:"settings"`
-	AssetTemplates     []OntologyAssetOrSpaceTemplateDTO `json:"assetTemplates,omitempty"`
-	SpaceTemplates     []OntologyAssetOrSpaceTemplateDTO `json:"spaceTemplates,omitempty"`
-	Units              []OntologyUnitDTO                 `json:"units,omitempty"`
-	DataTypes          []OntologyDataTypeDTO             `json:"dataTypes,omitempty"`
-	DatapointTemplates []OntologyDatapointTemplateDTO    `json:"datapointTemplates,omitempty"`
-	PropertyTemplates  []OntologyPropertyTemplateDTO     `json:"propertyTemplates,omitempty"`
-	Assets             []OntologyAssetDTO                `json:"assets,omitempty"`
-	Spaces             []OntologySpaceDTO                `json:"spaces,omitempty"`
-	Datapoints         []OntologyDatapointDTO            `json:"datapoints,omitempty"`
-	Properties         []OntologyPropertyDTO             `json:"properties,omitempty"`
-	Orgs               []OntologyOrganisationDTO         `json:"orgs,omitempty"`
-	Users              []OntologyUserDTO                 `json:"users,omitempty"`
+type ontologyDTO struct {
+	Settings           ontologySettingsDTO               `json:"settings"`
+	AssetTemplates     []ontologyAssetOrSpaceTemplateDTO `json:"assetTemplates,omitempty"`
+	SpaceTemplates     []ontologyAssetOrSpaceTemplateDTO `json:"spaceTemplates,omitempty"`
+	Units              []ontologyUnitDTO                 `json:"units,omitempty"`
+	DataTypes          []ontologyDataTypeDTO             `json:"dataTypes,omitempty"`
+	DatapointTemplates []ontologyDatapointTemplateDTO    `json:"datapointTemplates,omitempty"`
+	PropertyTemplates  []ontologyPropertyTemplateDTO     `json:"propertyTemplates,omitempty"`
+	Assets             []ontologyAssetDTO                `json:"assets,omitempty"`
+	Spaces             []ontologySpaceDTO                `json:"spaces,omitempty"`
+	Datapoints         []ontologyDatapointDTO            `json:"datapoints,omitempty"`
+	Properties         []ontologyPropertyDTO             `json:"properties,omitempty"`
+	Orgs               []ontologyOrganisationDTO         `json:"orgs,omitempty"`
+	Users              []ontologyUserDTO                 `json:"users,omitempty"`
 }
 
-type OntologySettingsDTO struct {
+type ontologySettingsDTO struct {
 	Version int64 `json:"version"`
 }
 
-type OntologyAssetOrSpaceTemplateDTO struct {
+type ontologyAssetOrSpaceTemplateDTO struct {
 	ID            string   `json:"id"`
 	Name          string   `json:"name"`
 	Tags          []string `json:"tags,omitempty"`
@@ -195,29 +195,29 @@ type OntologyAssetOrSpaceTemplateDTO struct {
 	IconFillColor string   `json:"iconFillColor,omitempty"`
 }
 
-type OntologyUnitDTO struct {
+type ontologyUnitDTO struct {
 	ID     string `json:"id"`
 	Symbol string `json:"symbol"`
 }
 
-type OntologyDataTypeDTO struct {
+type ontologyDataTypeDTO struct {
 	Format string                     `json:"format"`
 	ID     string                     `json:"id"`
 	Name   string                     `json:"name"`
 	Tags   []string                   `json:"tags,omitempty"`
 	UnitID string                     `json:"unitId,omitempty"`
-	Fields []OntologyDataTypeFieldDTO `json:"fields,omitempty"`
+	Fields []ontologyDataTypeFieldDTO `json:"fields,omitempty"`
 	Min    *float64                   `json:"min,omitempty"`
 	Max    *float64                   `json:"max,omitempty"`
 	Enums  map[string]string          `json:"enums,omitempty"`
 }
 
-type OntologyDataTypeFieldDTO struct {
+type ontologyDataTypeFieldDTO struct {
 	Name   string `json:"name"`
 	TypeID string `json:"typeId"`
 }
 
-type OntologyDatapointTemplateDTO struct {
+type ontologyDatapointTemplateDTO struct {
 	ID              string   `json:"id"`
 	Name            string   `json:"name"`
 	AssetTemplateID string   `json:"assetTemplateId,omitempty"`
@@ -227,7 +227,7 @@ type OntologyDatapointTemplateDTO struct {
 	Perpetual       bool     `json:"perpetual"`
 }
 
-type OntologyPropertyTemplateDTO struct {
+type ontologyPropertyTemplateDTO struct {
 	ID              string   `json:"id"`
 	Name            string   `json:"name"`
 	SpaceTemplateID string   `json:"spaceTemplateId,omitempty"`
@@ -236,35 +236,35 @@ type OntologyPropertyTemplateDTO struct {
 	TypeID          string   `json:"typeId,omitempty"`
 }
 
-type OntologyAssetDTO struct {
+type ontologyAssetDTO struct {
 	ID         string   `json:"id"`
 	Name       string   `json:"name"`
 	TemplateID string   `json:"templateId"`
 	Tags       []string `json:"tags,omitempty"`
 }
 
-type OntologySpaceDTO struct {
+type ontologySpaceDTO struct {
 	ID         string                  `json:"id"`
 	Name       string                  `json:"name"`
 	ParentID   string                  `json:"parentId,omitempty"`
 	TemplateID string                  `json:"templateId"`
 	Tags       []string                `json:"tags,omitempty"`
-	Assets     []OntologySpaceAssetDTO `json:"assets,omitempty"`
+	Assets     []ontologySpaceAssetDTO `json:"assets,omitempty"`
 }
 
-type OntologySpaceAssetDTO struct {
+type ontologySpaceAssetDTO struct {
 	ID     string `json:"id"`
 	Master bool   `json:"master"`
 }
 
-type OntologyDatapointDTO struct {
+type ontologyDatapointDTO struct {
 	ID         string `json:"id"`
 	TemplateID string `json:"templateId"`
 	AssetID    string `json:"assetId,omitempty"`
 	SpaceID    string `json:"spaceId,omitempty"`
 }
 
-type OntologyPropertyDTO struct {
+type ontologyPropertyDTO struct {
 	ID         string      `json:"id"`
 	TemplateID string      `json:"templateId"`
 	SpaceID    string      `json:"spaceId,omitempty"`
@@ -272,13 +272,13 @@ type OntologyPropertyDTO struct {
 	Value      interface{} `json:"value,omitempty"`
 }
 
-type OntologyOrganisationDTO struct {
+type ontologyOrganisationDTO struct {
 	ID   string   `json:"id"`
 	Name string   `json:"name"`
 	Tags []string `json:"tags,omitempty"`
 }
 
-type OntologyUserDTO struct {
+type ontologyUserDTO struct {
 	ID       string   `json:"id"`
 	Name     string   `json:"name"`
 	Initials string   `json:"initials,omitempty"`
@@ -288,11 +288,11 @@ type OntologyUserDTO struct {
 }
 
 // getOntology retrieves the complete ontology of the edge.
-func (c *OpenBOSClient) getOntology() (*OntologyDTO, error) {
-	//endpoint := fmt.Sprintf("%s/gateway/%s/api/v1/ontology/full", baseURL, c.GatewayID)
+func (c *openBOSClient) getOntology() (*ontologyDTO, error) {
+	//endpoint := fmt.Sprintf("%s/gateway/%s/api/v1/ontology/full", baseURL, c.gatewayID)
 	endpoint := fmt.Sprintf("%s/api/v1/ontology/full", mockURL)
 
-	var ontology OntologyDTO
+	var ontology ontologyDTO
 	err := c.doMockRequest("GET", endpoint, nil, nil, &ontology)
 	if err != nil {
 		return nil, err
@@ -301,9 +301,9 @@ func (c *OpenBOSClient) getOntology() (*OntologyDTO, error) {
 	return &ontology, nil
 }
 
-// GetOntologyVersion retrieves the current version of the edge data.
-func (c *OpenBOSClient) GetOntologyVersion() (int64, error) {
-	endpoint := fmt.Sprintf("%s/gateway/%s/api/v1/ontology/full/version", baseURL, c.GatewayID)
+// getOntologyVersion retrieves the current version of the edge data.
+func (c *openBOSClient) getOntologyVersion() (int64, error) {
+	endpoint := fmt.Sprintf("%s/gateway/%s/api/v1/ontology/full/version", baseURL, c.gatewayID)
 
 	var version int64
 	err := c.doRequest("GET", endpoint, nil, nil, &version)
@@ -314,7 +314,7 @@ func (c *OpenBOSClient) GetOntologyVersion() (int64, error) {
 	return version, nil
 }
 
-type PropertyDTO struct {
+type propertyDTO struct {
 	ID               string        `json:"id"`
 	Name             string        `json:"name"`
 	Icon             string        `json:"icon,omitempty"`
@@ -352,11 +352,11 @@ type PropertyDTO struct {
 	Devices          string        `json:"devices,omitempty"`
 }
 
-// GetProperty retrieves the Property (Site) description.
-func (c *OpenBOSClient) GetProperty() (*PropertyDTO, error) {
-	endpoint := fmt.Sprintf("%s/gateway/%s/api/v1/ontology/property", baseURL, c.GatewayID)
+// getProperty retrieves the Property (Site) description.
+func (c *openBOSClient) getProperty() (*propertyDTO, error) {
+	endpoint := fmt.Sprintf("%s/gateway/%s/api/v1/ontology/property", baseURL, c.gatewayID)
 
-	var property PropertyDTO
+	var property propertyDTO
 	err := c.doRequest("GET", endpoint, nil, nil, &property)
 	if err != nil {
 		return nil, err
@@ -365,7 +365,7 @@ func (c *OpenBOSClient) GetProperty() (*PropertyDTO, error) {
 	return &property, nil
 }
 
-type OntologyFullLiveAlarmDTO struct {
+type ontologyFullLiveAlarmDTO struct {
 	DataPointInstanceID string      `json:"dataPointInstanceId"`
 	SessionID           string      `json:"sessionId"`
 	Name                string      `json:"name"`
@@ -390,15 +390,15 @@ type OntologyFullLiveAlarmDTO struct {
 	Tags                []string    `json:"tags,omitempty"`
 }
 
-func (c *OpenBOSClient) GetLiveAlarms(timestamp string) ([]OntologyFullLiveAlarmDTO, error) {
-	endpoint := fmt.Sprintf("%s/gateway/%s/api/v1/ontology/full/livealarm", baseURL, c.GatewayID)
+func (c *openBOSClient) getLiveAlarms(timestamp string) ([]ontologyFullLiveAlarmDTO, error) {
+	endpoint := fmt.Sprintf("%s/gateway/%s/api/v1/ontology/full/livealarm", baseURL, c.gatewayID)
 
 	params := url.Values{}
 	if timestamp != "" {
 		params.Add("timestamp", timestamp)
 	}
 
-	var alarms []OntologyFullLiveAlarmDTO
+	var alarms []ontologyFullLiveAlarmDTO
 	err := c.doRequest("GET", endpoint, params, nil, &alarms)
 	if err != nil {
 		return nil, err
@@ -407,15 +407,15 @@ func (c *OpenBOSClient) GetLiveAlarms(timestamp string) ([]OntologyFullLiveAlarm
 	return alarms, nil
 }
 
-type OntologyAlarmAckDTO struct {
+type ontologyAlarmAckDTO struct {
 	SessionID string `json:"sessionId,omitempty"`
 	AckedBy   string `json:"ackedBy,omitempty"`
 	AckedByID string `json:"ackedById,omitempty"`
 	Comment   string `json:"comment,omitempty"`
 }
 
-func (c *OpenBOSClient) AckAlarm(ack OntologyAlarmAckDTO) error {
-	endpoint := fmt.Sprintf("%s/gateway/%s/api/v1/ontology/full/livealarm/ack", baseURL, c.GatewayID)
+func (c *openBOSClient) ackAlarm(ack ontologyAlarmAckDTO) error {
+	endpoint := fmt.Sprintf("%s/gateway/%s/api/v1/ontology/full/livealarm/ack", baseURL, c.gatewayID)
 
 	err := c.doRequest("POST", endpoint, nil, ack, nil)
 	if err != nil {
@@ -425,47 +425,47 @@ func (c *OpenBOSClient) AckAlarm(ack OntologyAlarmAckDTO) error {
 	return nil
 }
 
-type DataPoint struct {
-	ID            string
-	Name          string
-	Tags          []string
-	Direction     string
-	TypeId        string
-	DisplayUnitId *string
+type dataPoint struct {
+	ID            string   `json:"id"`
+	Name          string   `json:"name"`
+	Tags          []string `json:"tags"`
+	Direction     string   `json:"direction"`
+	TypeID        string   `json:"typeId"`
+	DisplayUnitID *string  `json:"displayUnitId"`
 }
 
-type Property struct {
-	ID            string
-	Name          string
-	Tags          []string
-	TypeId        string
-	DisplayUnitId *string
+type property struct {
+	ID            string   `json:"id"`
+	Name          string   `json:"name"`
+	Tags          []string `json:"tags"`
+	TypeID        string   `json:"typeId"`
+	DisplayUnitID *string  `json:"displayUnitId"`
 }
 
-type AssetTemplate struct {
-	ID         string
-	Name       string
-	Tags       []string
-	Properties []Property
-	Datapoints []DataPoint
+type assetTemplate struct {
+	ID         string      `json:"id"`
+	Name       string      `json:"name"`
+	Tags       []string    `json:"tags"`
+	Properties []property  `json:"properties"`
+	Datapoints []dataPoint `json:"datapoints"`
 }
 
-func (ontology OntologyDTO) getAssetTemplates() []AssetTemplate {
-	datapointTemplateMap := make(map[string][]OntologyDatapointTemplateDTO)
+func (ontology ontologyDTO) getAssetTemplates() []assetTemplate {
+	datapointTemplateMap := make(map[string][]ontologyDatapointTemplateDTO)
 	for _, dt := range ontology.DatapointTemplates {
 		if dt.AssetTemplateID != "" {
 			datapointTemplateMap[dt.AssetTemplateID] = append(datapointTemplateMap[dt.AssetTemplateID], dt)
 		}
 	}
 
-	propertyTemplateMap := make(map[string][]OntologyPropertyTemplateDTO)
+	propertyTemplateMap := make(map[string][]ontologyPropertyTemplateDTO)
 	for _, pt := range ontology.PropertyTemplates {
 		if pt.AssetTemplateID != "" {
 			propertyTemplateMap[pt.AssetTemplateID] = append(propertyTemplateMap[pt.AssetTemplateID], pt)
 		}
 	}
 
-	dataTypeMap := make(map[string]OntologyDataTypeDTO)
+	dataTypeMap := make(map[string]ontologyDataTypeDTO)
 	for _, dt := range ontology.DataTypes {
 		dataTypeMap[dt.ID] = dt
 	}
@@ -475,37 +475,36 @@ func (ontology OntologyDTO) getAssetTemplates() []AssetTemplate {
 		unitMap[unit.ID] = unit.Symbol
 	}
 
-	var assetTemplates []AssetTemplate
+	var assetTemplates []assetTemplate
 
 	for _, at := range ontology.AssetTemplates {
-		assetTemplate := AssetTemplate{
+		assetTemplate := assetTemplate{
 			ID:         at.ID,
 			Name:       at.Name,
 			Tags:       at.Tags,
-			Datapoints: []DataPoint{},
-			Properties: []Property{},
+			Datapoints: []dataPoint{},
+			Properties: []property{},
 		}
 
 		for _, dt := range datapointTemplateMap[at.ID] {
-			dataPoint := DataPoint{
-				ID:     dt.ID,
-				Name:   dt.Name,
-				Tags:   dt.Tags,
-				TypeId: dt.TypeID,
-				// TODO: Direction is not available now
-				Direction:     "input",
-				DisplayUnitId: getDisplayUnitId(dt.TypeID, dataTypeMap, unitMap),
+			dataPoint := dataPoint{
+				ID:            dt.ID,
+				Name:          dt.Name,
+				Tags:          dt.Tags,
+				TypeID:        dt.TypeID,
+				Direction:     "input", // Adjust as needed
+				DisplayUnitID: getDisplayUnitID(dt.TypeID, dataTypeMap, unitMap),
 			}
 			assetTemplate.Datapoints = append(assetTemplate.Datapoints, dataPoint)
 		}
 
 		for _, pt := range propertyTemplateMap[at.ID] {
-			property := Property{
+			property := property{
 				ID:            pt.ID,
 				Name:          pt.Name,
 				Tags:          pt.Tags,
-				TypeId:        pt.TypeID,
-				DisplayUnitId: getDisplayUnitId(pt.TypeID, dataTypeMap, unitMap),
+				TypeID:        pt.TypeID,
+				DisplayUnitID: getDisplayUnitID(pt.TypeID, dataTypeMap, unitMap),
 			}
 			assetTemplate.Properties = append(assetTemplate.Properties, property)
 		}
@@ -516,8 +515,8 @@ func (ontology OntologyDTO) getAssetTemplates() []AssetTemplate {
 	return assetTemplates
 }
 
-func getDisplayUnitId(typeId string, dataTypeMap map[string]OntologyDataTypeDTO, unitMap map[string]string) *string {
-	if dataType, exists := dataTypeMap[typeId]; exists {
+func getDisplayUnitID(typeID string, dataTypeMap map[string]ontologyDataTypeDTO, unitMap map[string]string) *string {
+	if dataType, exists := dataTypeMap[typeID]; exists {
 		if unitSymbol, ok := unitMap[dataType.UnitID]; ok {
 			return &unitSymbol
 		}

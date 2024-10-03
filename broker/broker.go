@@ -24,7 +24,7 @@ import (
 	api "github.com/eliona-smart-building-assistant/go-eliona-api-client/v2"
 )
 
-func convertAssetTemplateToAssetType(template AssetTemplate) api.AssetType {
+func convertAssetTemplateToAssetType(template assetTemplate) api.AssetType {
 	apiAsset := api.AssetType{
 		Name: "openBOS-" + template.ID,
 		Translation: *api.NewNullableTranslation(&api.Translation{
@@ -38,7 +38,7 @@ func convertAssetTemplateToAssetType(template AssetTemplate) api.AssetType {
 		attribute := api.AssetTypeAttribute{
 			Name:    dp.Name,
 			Subtype: subtype,
-			Unit:    *api.NewNullableString(dp.DisplayUnitId),
+			Unit:    *api.NewNullableString(dp.DisplayUnitID),
 		}
 		apiAsset.Attributes = append(apiAsset.Attributes, attribute)
 	}
@@ -48,7 +48,7 @@ func convertAssetTemplateToAssetType(template AssetTemplate) api.AssetType {
 		attribute := api.AssetTypeAttribute{
 			Name:    prop.Name,
 			Subtype: api.SUBTYPE_STATUS,
-			Unit:    *api.NewNullableString(prop.DisplayUnitId),
+			Unit:    *api.NewNullableString(prop.DisplayUnitID),
 		}
 		apiAsset.Attributes = append(apiAsset.Attributes, attribute)
 	}
@@ -68,7 +68,7 @@ func determineSubtype(direction string) api.DataSubtype {
 }
 
 func FetchAssets(config appmodel.Configuration) ([]api.AssetType, eliona.Asset, error) {
-	client, err := NewOpenBOSClient(config.Gwid, config.ClientID, config.ClientSecret)
+	client, err := newOpenBOSClient(config.Gwid, config.ClientID, config.ClientSecret)
 	if err != nil {
 		return nil, eliona.Asset{}, fmt.Errorf("creating instance of client: %v", err)
 	}
@@ -78,7 +78,7 @@ func FetchAssets(config appmodel.Configuration) ([]api.AssetType, eliona.Asset, 
 	}
 
 	ats := ontology.getAssetTemplates()
-	ats = append(ats, AssetTemplate{
+	ats = append(ats, assetTemplate{
 		ID:   "0",
 		Name: "OpenBOS root",
 	})
