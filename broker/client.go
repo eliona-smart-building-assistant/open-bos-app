@@ -226,6 +226,7 @@ type ontologyDatapointTemplateDTO struct {
 	SpaceTemplateID string   `json:"spaceTemplateId,omitempty"`
 	Tags            []string `json:"tags,omitempty"`
 	TypeID          string   `json:"typeId,omitempty"`
+	Direction       string   `json:"direction"`
 	Perpetual       bool     `json:"perpetual"`
 }
 
@@ -504,7 +505,7 @@ func (ontology ontologyDTO) getAssetTemplates() []assetTemplate {
 				TypeID:        dt.TypeID,
 				Min:           min,
 				Max:           max,
-				Direction:     "input", // TODO
+				Direction:     dt.Direction,
 				DisplayUnitID: displayUnit,
 			}
 			assetTemplate.Datapoints = append(assetTemplate.Datapoints, dataPoint)
