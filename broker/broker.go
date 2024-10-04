@@ -22,13 +22,15 @@ import (
 	"strings"
 
 	api "github.com/eliona-smart-building-assistant/go-eliona-api-client/v2"
+	"github.com/eliona-smart-building-assistant/go-utils/log"
 )
 
 func convertAssetTemplateToAssetType(template assetTemplate) api.AssetType {
+	translatedName := "OpenBOS " + template.Name
 	apiAsset := api.AssetType{
 		Name: "open_bos_" + template.ID,
 		Translation: *api.NewNullableTranslation(&api.Translation{
-			En: &template.Name,
+			En: &translatedName,
 		}),
 		Attributes: []api.AssetTypeAttribute{},
 	}
@@ -96,8 +98,11 @@ func FetchAssets(config appmodel.Configuration) ([]api.AssetType, eliona.Asset, 
 		LocationsMap: make(map[string]eliona.Asset),
 	}
 
+	// Initialize spaces map with root space
 	spaces := make(map[string]*ontologySpaceDTO)
 	spaces[""] = &ontologySpaceDTO{}
+
+	// Build spaces map
 	for _, space := range ontology.Spaces {
 		spaceCopy := space
 		spaces[space.ID] = &spaceCopy
@@ -107,30 +112,47 @@ func FetchAssets(config appmodel.Configuration) ([]api.AssetType, eliona.Asset, 
 	for _, space := range ontology.Spaces {
 		if parentSpace, exists := spaces[space.ParentID]; exists {
 			parentSpace.children = append(parentSpace.children, *spaces[space.ID])
-			spaces[space.ParentID] = parentSpace
+			// No need to reassign parentSpace back to the map since it's a pointer
 		}
 	}
 
-	// Build the asset hierarchy based on spaces
-	buildAssetHierarchy(&root, spaces, config)
+	// Build a map of assets for quick lookup
+	assetsMap := make(map[string]ontologyAssetDTO)
+	for _, asset := range ontology.Assets {
+		assetsMap[asset.ID] = asset
+	}
 
-	// TODO: Place the assets accordingly within spaces
-	// for _, asset := range ontology.Assets {
-	// 	root.DevicesSlice = append(root.DevicesSlice, eliona.Asset{
-	// 		ID:         asset.ID,
-	// 		Name:       asset.Name,
-	// 		TemplateID: asset.TemplateID,
-	// 		Config:     &config,
-	// 	})
-	// }
+	// Build the asset hierarchy based on spaces
+	buildAssetHierarchy(&root, spaces, assetsMap, config)
+
+	// Handle assets not associated with any space
+	associatedAssetIDs := make(map[string]struct{})
+	for _, space := range ontology.Spaces {
+		for _, spaceAsset := range space.Assets {
+			associatedAssetIDs[spaceAsset.ID] = struct{}{}
+		}
+	}
+	for _, asset := range ontology.Assets {
+		if _, associated := associatedAssetIDs[asset.ID]; !associated {
+			// Asset not associated with any space; add to root
+			root.DevicesSlice = append(root.DevicesSlice, eliona.Asset{
+				ID:         asset.ID,
+				Name:       asset.Name,
+				TemplateID: asset.TemplateID,
+				Config:     &config,
+			})
+		}
+	}
 	return assetTypes, root, nil
 }
 
-func buildAssetHierarchy(asset *eliona.Asset, spaces map[string]*ontologySpaceDTO, config appmodel.Configuration) {
+func buildAssetHierarchy(asset *eliona.Asset, spaces map[string]*ontologySpaceDTO, assetsMap map[string]ontologyAssetDTO, config appmodel.Configuration) {
 	space, exists := spaces[asset.ID]
 	if !exists {
+		log.Error("broker", "Should not happen: space %s not found.", asset.ID)
 		return
 	}
+	// Process child spaces
 	for _, childSpace := range space.children {
 		childAsset := eliona.Asset{
 			ID:           childSpace.ID,
@@ -139,7 +161,22 @@ func buildAssetHierarchy(asset *eliona.Asset, spaces map[string]*ontologySpaceDT
 			Config:       &config,
 			LocationsMap: make(map[string]eliona.Asset),
 		}
-		buildAssetHierarchy(&childAsset, spaces, config)
+		buildAssetHierarchy(&childAsset, spaces, assetsMap, config)
 		asset.LocationsMap[childSpace.ID] = childAsset
+	}
+	// Process assets associated with this space
+	for _, spaceAsset := range space.Assets {
+		assetDetails, exists := assetsMap[spaceAsset.ID]
+		if !exists {
+			log.Warn("broker", "asset %s in space %s not found. Skipping.", spaceAsset.ID, space.ID)
+			continue // Asset not found; skip
+		}
+		assetInstance := eliona.Asset{
+			ID:         assetDetails.ID,
+			Name:       assetDetails.Name,
+			TemplateID: assetDetails.TemplateID,
+			Config:     &config,
+		}
+		asset.LocationsMap[spaceAsset.ID] = assetInstance
 	}
 }

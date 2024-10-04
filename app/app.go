@@ -17,7 +17,6 @@ package app
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	apiserver "open-bos/api/generated"
 	apiservices "open-bos/api/services"
@@ -94,7 +93,8 @@ func CollectData() {
 			}
 			log.Info("main", "Collecting %d finished.", config.Id)
 
-			time.Sleep(time.Second * time.Duration(config.RefreshInterval))
+			// TODO: improve timing
+			time.Sleep(time.Hour * time.Duration(config.RefreshInterval))
 		}, config, config.Id)
 	}
 }
@@ -111,8 +111,6 @@ func collectResources(config *appmodel.Configuration) error {
 			return err
 		}
 	}
-	fmt.Println(assetTypes)
-	fmt.Println(root)
 	if err := eliona.CreateAssets(*config, &root); err != nil {
 		log.Error("eliona", "creating assets: %v", err)
 		return err
