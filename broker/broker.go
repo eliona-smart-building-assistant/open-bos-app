@@ -79,7 +79,7 @@ func FetchAssets(config appmodel.Configuration) ([]api.AssetType, eliona.Asset, 
 
 	ats := ontology.getAssetTemplates()
 	ats = append(ats, assetTemplate{
-		ID:   "0",
+		ID:   "root",
 		Name: "OpenBOS root",
 	})
 	var assetTypes []api.AssetType
@@ -87,19 +87,59 @@ func FetchAssets(config appmodel.Configuration) ([]api.AssetType, eliona.Asset, 
 		assetType := convertAssetTemplateToAssetType(assetTemplate)
 		assetTypes = append(assetTypes, assetType)
 	}
+
 	root := eliona.Asset{
-		ID:         "0",
-		TemplateID: "0",
-		Name:       "Root",
-		Config:     &config,
+		ID:           "",
+		TemplateID:   "root",
+		Name:         "OpenBOS",
+		Config:       &config,
+		LocationsMap: make(map[string]eliona.Asset),
 	}
-	for _, asset := range ontology.Assets {
-		root.DevicesSlice = append(root.DevicesSlice, eliona.Asset{
-			ID:         asset.ID,
-			Name:       asset.Name,
-			TemplateID: asset.TemplateID,
-			Config:     &config,
-		})
+
+	spaces := make(map[string]*ontologySpaceDTO)
+	spaces[""] = &ontologySpaceDTO{}
+	for _, space := range ontology.Spaces {
+		spaceCopy := space
+		spaces[space.ID] = &spaceCopy
 	}
+
+	// Build parent-child relationships
+	for _, space := range ontology.Spaces {
+		if parentSpace, exists := spaces[space.ParentID]; exists {
+			parentSpace.children = append(parentSpace.children, *spaces[space.ID])
+			spaces[space.ParentID] = parentSpace
+		}
+	}
+
+	// Build the asset hierarchy based on spaces
+	buildAssetHierarchy(&root, spaces, config)
+
+	// TODO: Place the assets accordingly within spaces
+	// for _, asset := range ontology.Assets {
+	// 	root.DevicesSlice = append(root.DevicesSlice, eliona.Asset{
+	// 		ID:         asset.ID,
+	// 		Name:       asset.Name,
+	// 		TemplateID: asset.TemplateID,
+	// 		Config:     &config,
+	// 	})
+	// }
 	return assetTypes, root, nil
+}
+
+func buildAssetHierarchy(asset *eliona.Asset, spaces map[string]*ontologySpaceDTO, config appmodel.Configuration) {
+	space, exists := spaces[asset.ID]
+	if !exists {
+		return
+	}
+	for _, childSpace := range space.children {
+		childAsset := eliona.Asset{
+			ID:           childSpace.ID,
+			Name:         childSpace.Name,
+			TemplateID:   childSpace.TemplateID,
+			Config:       &config,
+			LocationsMap: make(map[string]eliona.Asset),
+		}
+		buildAssetHierarchy(&childAsset, spaces, config)
+		asset.LocationsMap[childSpace.ID] = childAsset
+	}
 }

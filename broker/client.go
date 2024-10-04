@@ -250,6 +250,8 @@ type ontologySpaceDTO struct {
 	TemplateID string                  `json:"templateId"`
 	Tags       []string                `json:"tags,omitempty"`
 	Assets     []ontologySpaceAssetDTO `json:"assets,omitempty"`
+
+	children []ontologySpaceDTO
 }
 
 type ontologySpaceAssetDTO struct {
@@ -293,8 +295,7 @@ func (c *openBOSClient) getOntology() (*ontologyDTO, error) {
 	endpoint := fmt.Sprintf("%s/api/v1/ontology/full", mockURL)
 
 	var ontology ontologyDTO
-	err := c.doMockRequest("GET", endpoint, nil, nil, &ontology)
-	if err != nil {
+	if err := c.doMockRequest("GET", endpoint, nil, nil, &ontology); err != nil {
 		return nil, err
 	}
 
@@ -306,8 +307,7 @@ func (c *openBOSClient) getOntologyVersion() (int64, error) {
 	endpoint := fmt.Sprintf("%s/gateway/%s/api/v1/ontology/full/version", baseURL, c.gatewayID)
 
 	var version int64
-	err := c.doRequest("GET", endpoint, nil, nil, &version)
-	if err != nil {
+	if err := c.doRequest("GET", endpoint, nil, nil, &version); err != nil {
 		return 0, err
 	}
 
@@ -357,8 +357,7 @@ func (c *openBOSClient) getProperty() (*propertyDTO, error) {
 	endpoint := fmt.Sprintf("%s/gateway/%s/api/v1/ontology/property", baseURL, c.gatewayID)
 
 	var property propertyDTO
-	err := c.doRequest("GET", endpoint, nil, nil, &property)
-	if err != nil {
+	if err := c.doRequest("GET", endpoint, nil, nil, &property); err != nil {
 		return nil, err
 	}
 
@@ -399,8 +398,7 @@ func (c *openBOSClient) getLiveAlarms(timestamp string) ([]ontologyFullLiveAlarm
 	}
 
 	var alarms []ontologyFullLiveAlarmDTO
-	err := c.doRequest("GET", endpoint, params, nil, &alarms)
-	if err != nil {
+	if err := c.doRequest("GET", endpoint, params, nil, &alarms); err != nil {
 		return nil, err
 	}
 
@@ -417,8 +415,7 @@ type ontologyAlarmAckDTO struct {
 func (c *openBOSClient) ackAlarm(ack ontologyAlarmAckDTO) error {
 	endpoint := fmt.Sprintf("%s/gateway/%s/api/v1/ontology/full/livealarm/ack", baseURL, c.gatewayID)
 
-	err := c.doRequest("POST", endpoint, nil, ack, nil)
-	if err != nil {
+	if err := c.doRequest("POST", endpoint, nil, ack, nil); err != nil {
 		return err
 	}
 
@@ -476,8 +473,7 @@ func (ontology ontologyDTO) getAssetTemplates() []assetTemplate {
 	}
 
 	var assetTemplates []assetTemplate
-
-	for _, at := range ontology.AssetTemplates {
+	for _, at := range append(ontology.AssetTemplates, ontology.SpaceTemplates...) {
 		assetTemplate := assetTemplate{
 			ID:         at.ID,
 			Name:       at.Name,
@@ -492,7 +488,7 @@ func (ontology ontologyDTO) getAssetTemplates() []assetTemplate {
 				Name:          dt.Name,
 				Tags:          dt.Tags,
 				TypeID:        dt.TypeID,
-				Direction:     "input", // Adjust as needed
+				Direction:     "input", // TODO
 				DisplayUnitID: getDisplayUnitID(dt.TypeID, dataTypeMap, unitMap),
 			}
 			assetTemplate.Datapoints = append(assetTemplate.Datapoints, dataPoint)

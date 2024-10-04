@@ -88,5 +88,3 @@ WHERE asset_type LIKE E'open\\_bos\\_%';
 
 DELETE FROM public.asset_type
 WHERE asset_type LIKE E'open\\_bos\\_%';
-
-
