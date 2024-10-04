@@ -40,6 +40,8 @@ func convertAssetTemplateToAssetType(template assetTemplate) api.AssetType {
 		attribute := api.AssetTypeAttribute{
 			Name:    dp.Name,
 			Subtype: subtype,
+			Min:     *api.NewNullableFloat64(dp.Min),
+			Max:     *api.NewNullableFloat64(dp.Max),
 			Unit:    *api.NewNullableString(dp.DisplayUnitID),
 		}
 		apiAsset.Attributes = append(apiAsset.Attributes, attribute)
@@ -50,6 +52,8 @@ func convertAssetTemplateToAssetType(template assetTemplate) api.AssetType {
 		attribute := api.AssetTypeAttribute{
 			Name:    prop.Name,
 			Subtype: api.SUBTYPE_STATUS,
+			Min:     *api.NewNullableFloat64(prop.Min),
+			Max:     *api.NewNullableFloat64(prop.Max),
 			Unit:    *api.NewNullableString(prop.DisplayUnitID),
 		}
 		apiAsset.Attributes = append(apiAsset.Attributes, attribute)

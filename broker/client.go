@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/eliona-smart-building-assistant/go-utils/log"
 )
 
 const baseURL = "https://api.buildings.ability.abb/buildings/openbos/apiproxy/v1"
@@ -423,28 +425,32 @@ func (c *openBOSClient) ackAlarm(ack ontologyAlarmAckDTO) error {
 }
 
 type dataPoint struct {
-	ID            string   `json:"id"`
-	Name          string   `json:"name"`
-	Tags          []string `json:"tags"`
-	Direction     string   `json:"direction"`
-	TypeID        string   `json:"typeId"`
-	DisplayUnitID *string  `json:"displayUnitId"`
+	ID            string
+	Name          string
+	Tags          []string
+	Direction     string
+	TypeID        string
+	DisplayUnitID *string
+	Min           *float64
+	Max           *float64
 }
 
 type property struct {
-	ID            string   `json:"id"`
-	Name          string   `json:"name"`
-	Tags          []string `json:"tags"`
-	TypeID        string   `json:"typeId"`
-	DisplayUnitID *string  `json:"displayUnitId"`
+	ID            string
+	Name          string
+	Tags          []string
+	TypeID        string
+	DisplayUnitID *string
+	Min           *float64
+	Max           *float64
 }
 
 type assetTemplate struct {
-	ID         string      `json:"id"`
-	Name       string      `json:"name"`
-	Tags       []string    `json:"tags"`
-	Properties []property  `json:"properties"`
-	Datapoints []dataPoint `json:"datapoints"`
+	ID         string
+	Name       string
+	Tags       []string
+	Properties []property
+	Datapoints []dataPoint
 }
 
 func (ontology ontologyDTO) getAssetTemplates() []assetTemplate {
@@ -483,24 +489,44 @@ func (ontology ontologyDTO) getAssetTemplates() []assetTemplate {
 		}
 
 		for _, dt := range datapointTemplateMap[at.ID] {
+			dataType := getDataType(dt.TypeID, dataTypeMap)
+			var min, max *float64
+			var displayUnit *string
+			if dataType != nil {
+				min = dataType.Min
+				max = dataType.Max
+				displayUnit = getDisplayUnitID(*dataType, unitMap)
+			}
 			dataPoint := dataPoint{
 				ID:            dt.ID,
 				Name:          dt.Name,
 				Tags:          dt.Tags,
 				TypeID:        dt.TypeID,
+				Min:           min,
+				Max:           max,
 				Direction:     "input", // TODO
-				DisplayUnitID: getDisplayUnitID(dt.TypeID, dataTypeMap, unitMap),
+				DisplayUnitID: displayUnit,
 			}
 			assetTemplate.Datapoints = append(assetTemplate.Datapoints, dataPoint)
 		}
 
 		for _, pt := range propertyTemplateMap[at.ID] {
+			dataType := getDataType(pt.TypeID, dataTypeMap)
+			var min, max *float64
+			var displayUnit *string
+			if dataType != nil {
+				min = dataType.Min
+				max = dataType.Max
+				displayUnit = getDisplayUnitID(*dataType, unitMap)
+			}
 			property := property{
 				ID:            pt.ID,
 				Name:          pt.Name,
 				Tags:          pt.Tags,
 				TypeID:        pt.TypeID,
-				DisplayUnitID: getDisplayUnitID(pt.TypeID, dataTypeMap, unitMap),
+				Min:           min,
+				Max:           max,
+				DisplayUnitID: displayUnit,
 			}
 			assetTemplate.Properties = append(assetTemplate.Properties, property)
 		}
@@ -511,11 +537,20 @@ func (ontology ontologyDTO) getAssetTemplates() []assetTemplate {
 	return assetTemplates
 }
 
-func getDisplayUnitID(typeID string, dataTypeMap map[string]ontologyDataTypeDTO, unitMap map[string]string) *string {
-	if dataType, exists := dataTypeMap[typeID]; exists {
-		if unitSymbol, ok := unitMap[dataType.UnitID]; ok {
-			return &unitSymbol
-		}
+func getDataType(typeID string, dataTypeMap map[string]ontologyDataTypeDTO) *ontologyDataTypeDTO {
+	dataType, exists := dataTypeMap[typeID]
+	if !exists {
+		log.Warn("client", "type %s not found", typeID)
+		return nil
 	}
-	return nil
+	return &dataType
+}
+
+func getDisplayUnitID(dataType ontologyDataTypeDTO, unitMap map[string]string) *string {
+	unitSymbol, ok := unitMap[dataType.UnitID]
+	if !ok {
+		log.Warn("client", "unit %s not found", dataType.UnitID)
+		return nil
+	}
+	return &unitSymbol
 }
