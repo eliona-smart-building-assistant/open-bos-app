@@ -563,6 +563,10 @@ func getDataType(typeID string, dataTypeMap map[string]ontologyDataTypeDTO) *ont
 }
 
 func getDisplayUnitID(dataType ontologyDataTypeDTO, unitMap map[string]string) *string {
+	var unitSymbol string
+	if dataType.UnitID == "" {
+		return &unitSymbol
+	}
 	unitSymbol, ok := unitMap[dataType.UnitID]
 	if !ok {
 		log.Warn("client", "unit %s not found", dataType.UnitID)
