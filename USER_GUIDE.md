@@ -2,7 +2,7 @@
 
 ### Introduction
 
-> The OpenBOS app provides integration and synchronization between Eliona and OpenBOS services.
+> The OpenBOS app provides integration and synchronization between Eliona and ABB OpenBOS.
 
 ## Overview
 
@@ -56,7 +56,21 @@ Example configuration JSON:
 
 Once configured, the app starts Continuous Asset Creation (CAC). Discovered resources are automatically created as assets in Eliona, and users are notified via Eliona’s notification system.
 
-<mark>TODO: Describe what resources are created, the hierarchy and the data points.</mark>
+### Asset types
+
+Asset types are automatically created and synchronized from OpenBOS asset templates. 
+
+| Eliona             | OpenBOS  |
+|--------------------|----------|
+| Asset type         | Asset template  |
+| Attribute - Input  | Datapoint with direction "Feedback"  |
+| Attribute - Output | Datapoint with direction "Command" or "CommandAndFeedback" |
+| Attribute - Info   | Property  |
+| Limits             | Min/Max  |
+| Unit               | Unit  |
+| Value mapping      | Enums  |
+
+Complex data types from OpenBOS are split into separate attributes in Eliona.
 
 ## Additional Features
 
