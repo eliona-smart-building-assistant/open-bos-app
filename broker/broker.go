@@ -37,12 +37,14 @@ func convertAssetTemplateToAssetType(template assetTemplate) api.AssetType {
 
 	for _, dp := range template.Datapoints {
 		subtype := determineSubtype(dp.Direction)
+		mapping := convertMapping(dp.Enums)
 		attribute := api.AssetTypeAttribute{
 			Name:    dp.Name,
 			Subtype: subtype,
 			Min:     *api.NewNullableFloat64(dp.Min),
 			Max:     *api.NewNullableFloat64(dp.Max),
 			Unit:    *api.NewNullableString(dp.DisplayUnitID),
+			Map:     mapping,
 		}
 		apiAsset.Attributes = append(apiAsset.Attributes, attribute)
 	}
@@ -71,6 +73,17 @@ func determineSubtype(direction string) api.DataSubtype {
 	default:
 		return api.SUBTYPE_INFO
 	}
+}
+
+func convertMapping(enum map[string]string) []map[string]any {
+	var mapping []map[string]any
+	for key, value := range enum {
+		mapping = append(mapping, map[string]any{
+			"value": key,
+			"map":   value,
+		})
+	}
+	return mapping
 }
 
 func FetchAssets(config appmodel.Configuration) ([]api.AssetType, eliona.Asset, error) {

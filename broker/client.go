@@ -434,6 +434,7 @@ type dataPoint struct {
 	DisplayUnitID *string
 	Min           *float64
 	Max           *float64
+	Enums         map[string]string
 }
 
 type property struct {
@@ -493,9 +494,11 @@ func (ontology ontologyDTO) getAssetTemplates() []assetTemplate {
 			dataType := getDataType(dt.TypeID, dataTypeMap)
 			var min, max *float64
 			var displayUnit *string
+			var enums map[string]string
 			if dataType != nil {
 				min = dataType.Min
 				max = dataType.Max
+				enums = dataType.Enums
 				displayUnit = getDisplayUnitID(*dataType, unitMap)
 			}
 			dataPoint := dataPoint{
@@ -505,6 +508,7 @@ func (ontology ontologyDTO) getAssetTemplates() []assetTemplate {
 				TypeID:        dt.TypeID,
 				Min:           min,
 				Max:           max,
+				Enums:         enums,
 				Direction:     dt.Direction,
 				DisplayUnitID: displayUnit,
 			}
