@@ -214,6 +214,24 @@ type ontologyDataTypeDTO struct {
 	Enums  map[string]string          `json:"enums,omitempty"`
 }
 
+// unwrapComplexType recursively flattens complex datatypes into a slice of simple ones.
+func (dt ontologyDataTypeDTO) unwrapComplexType(datatypeComplexMap map[string]ontologyDataTypeDTO) []ontologyDataTypeDTO {
+	if len(dt.Fields) == 0 {
+		return []ontologyDataTypeDTO{dt}
+	}
+	var result []ontologyDataTypeDTO
+	for _, childReference := range dt.Fields {
+		child := datatypeComplexMap[childReference.TypeID]
+		if childReference.Name != "" {
+			// TODO: Is this the right priority?
+			child.Name = childReference.Name
+		}
+		result = append(result, child.unwrapComplexType(datatypeComplexMap)...)
+	}
+
+	return result
+}
+
 type ontologyDataTypeFieldDTO struct {
 	Name   string `json:"name"`
 	TypeID string `json:"typeId"`
@@ -445,6 +463,7 @@ type property struct {
 	DisplayUnitID *string
 	Min           *float64
 	Max           *float64
+	Enums         map[string]string
 }
 
 type assetTemplate struct {
@@ -481,9 +500,19 @@ func (ontology ontologyDTO) getAssetTemplates() []assetTemplate {
 		}
 	}
 
-	dataTypeMap := make(map[string]ontologyDataTypeDTO)
-	for _, dt := range ontology.DataTypes {
-		dataTypeMap[dt.ID] = dt
+	// dataTypeMap organizes datatypes in a map for simple lookup. Inside is a
+	// slice to support complex data types.
+	dataTypeMap := make(map[string][]ontologyDataTypeDTO)
+	{
+		// dataTypeComplexMap is an intermediate step to map dataTypes for lookup,
+		// yet without unwrapping complex types.
+		dataTypeComplexMap := make(map[string]ontologyDataTypeDTO)
+		for _, dt := range ontology.DataTypes {
+			dataTypeComplexMap[dt.ID] = dt
+		}
+		for _, dt := range ontology.DataTypes {
+			dataTypeMap[dt.ID] = dt.unwrapComplexType(dataTypeComplexMap)
+		}
 	}
 
 	unitMap := make(map[string]string)
@@ -501,50 +530,41 @@ func (ontology ontologyDTO) getAssetTemplates() []assetTemplate {
 			Properties: []property{},
 		}
 
-		for _, dt := range datapointTemplateMap[at.ID] {
-			dataType := getDataType(dt.TypeID, dataTypeMap)
-			var min, max *float64
-			var displayUnit *string
-			var enums map[string]string
-			if dataType != nil {
-				min = dataType.Min
-				max = dataType.Max
-				enums = dataType.Enums
-				displayUnit = getDisplayUnitID(*dataType, unitMap)
+		for _, datapointTemplate := range datapointTemplateMap[at.ID] {
+			for _, dataType := range getDataTypes(datapointTemplate.TypeID, dataTypeMap) {
+				// In case there is a complex datatype, it will be split into
+				// multiple attributes.
+				dataPoint := dataPoint{
+					ID:            datapointTemplate.ID,
+					Name:          datapointTemplate.Name,
+					Tags:          datapointTemplate.Tags,
+					TypeID:        datapointTemplate.TypeID,
+					Min:           dataType.Min,
+					Max:           dataType.Max,
+					Enums:         dataType.Enums,
+					Direction:     datapointTemplate.Direction,
+					DisplayUnitID: getDisplayUnitID(dataType, unitMap),
+				}
+				assetTemplate.Datapoints = append(assetTemplate.Datapoints, dataPoint)
 			}
-			dataPoint := dataPoint{
-				ID:            dt.ID,
-				Name:          dt.Name,
-				Tags:          dt.Tags,
-				TypeID:        dt.TypeID,
-				Min:           min,
-				Max:           max,
-				Enums:         enums,
-				Direction:     dt.Direction,
-				DisplayUnitID: displayUnit,
-			}
-			assetTemplate.Datapoints = append(assetTemplate.Datapoints, dataPoint)
 		}
 
-		for _, pt := range propertyTemplateMap[at.ID] {
-			dataType := getDataType(pt.TypeID, dataTypeMap)
-			var min, max *float64
-			var displayUnit *string
-			if dataType != nil {
-				min = dataType.Min
-				max = dataType.Max
-				displayUnit = getDisplayUnitID(*dataType, unitMap)
+		for _, propertyTemplate := range propertyTemplateMap[at.ID] {
+			for _, dataType := range getDataTypes(propertyTemplate.TypeID, dataTypeMap) {
+				// In case there is a complex datatype, it will be split into
+				// multiple attributes.
+				property := property{
+					ID:            propertyTemplate.ID,
+					Name:          propertyTemplate.Name,
+					Tags:          propertyTemplate.Tags,
+					TypeID:        propertyTemplate.TypeID,
+					Min:           dataType.Min,
+					Max:           dataType.Max,
+					Enums:         dataType.Enums,
+					DisplayUnitID: getDisplayUnitID(dataType, unitMap),
+				}
+				assetTemplate.Properties = append(assetTemplate.Properties, property)
 			}
-			property := property{
-				ID:            pt.ID,
-				Name:          pt.Name,
-				Tags:          pt.Tags,
-				TypeID:        pt.TypeID,
-				Min:           min,
-				Max:           max,
-				DisplayUnitID: displayUnit,
-			}
-			assetTemplate.Properties = append(assetTemplate.Properties, property)
 		}
 
 		assetTemplates = append(assetTemplates, assetTemplate)
@@ -553,13 +573,13 @@ func (ontology ontologyDTO) getAssetTemplates() []assetTemplate {
 	return assetTemplates
 }
 
-func getDataType(typeID string, dataTypeMap map[string]ontologyDataTypeDTO) *ontologyDataTypeDTO {
-	dataType, exists := dataTypeMap[typeID]
+func getDataTypes(typeID string, dataTypeMap map[string][]ontologyDataTypeDTO) []ontologyDataTypeDTO {
+	dataTypes, exists := dataTypeMap[typeID]
 	if !exists {
 		log.Warn("client", "type %s not found", typeID)
 		return nil
 	}
-	return &dataType
+	return dataTypes
 }
 
 func getDisplayUnitID(dataType ontologyDataTypeDTO, unitMap map[string]string) *string {

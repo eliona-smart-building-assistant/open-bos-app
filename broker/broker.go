@@ -51,12 +51,14 @@ func convertAssetTemplateToAssetType(template assetTemplate) api.AssetType {
 
 	// Properties are attributes that don't change often (our status subtype)
 	for _, prop := range template.Properties {
+		mapping := convertMapping(prop.Enums)
 		attribute := api.AssetTypeAttribute{
 			Name:    prop.Name,
 			Subtype: api.SUBTYPE_STATUS,
 			Min:     *api.NewNullableFloat64(prop.Min),
 			Max:     *api.NewNullableFloat64(prop.Max),
 			Unit:    *api.NewNullableString(prop.DisplayUnitID),
+			Map:     mapping,
 		}
 		apiAsset.Attributes = append(apiAsset.Attributes, attribute)
 	}
