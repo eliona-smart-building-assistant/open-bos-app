@@ -324,10 +324,11 @@ func (c *openBOSClient) getOntology() (*ontologyDTO, error) {
 }
 
 // getOntologyVersion retrieves the current version of the edge data.
-func (c *openBOSClient) getOntologyVersion() (int64, error) {
-	endpoint := fmt.Sprintf("%s/gateway/%s/api/v1/ontology/full/version", baseURL, c.gatewayID)
+func (c *openBOSClient) getOntologyVersion() (int32, error) {
+	//endpoint := fmt.Sprintf("%s/gateway/%s/api/v1/ontology/full/version", baseURL, c.gatewayID)
+	endpoint := fmt.Sprintf("%s/api/v1/ontology/full/version", mockURL)
 
-	var version int64
+	var version int32
 	if err := c.doRequest("GET", endpoint, nil, nil, &version); err != nil {
 		return 0, err
 	}

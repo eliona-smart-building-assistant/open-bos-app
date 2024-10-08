@@ -17,6 +17,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	apiserver "open-bos/api/generated"
 	apiservices "open-bos/api/services"
@@ -101,6 +102,10 @@ func CollectData() {
 
 func collectResources(config *appmodel.Configuration) error {
 	version, assetTypes, root, err := broker.FetchOntology(*config)
+	if errors.Is(err, broker.ErrNoUpdate) {
+		log.Debug("broker", "ontology is up-to-date")
+		return nil
+	}
 	if err != nil {
 		log.Error("broker", "fetching assets: %v", err)
 		return err

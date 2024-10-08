@@ -16,6 +16,7 @@
 package broker
 
 import (
+	"errors"
 	"fmt"
 	appmodel "open-bos/app/model"
 	"open-bos/eliona"
@@ -24,6 +25,8 @@ import (
 	api "github.com/eliona-smart-building-assistant/go-eliona-api-client/v2"
 	"github.com/eliona-smart-building-assistant/go-utils/log"
 )
+
+var ErrNoUpdate = errors.New("no new version available")
 
 func convertAssetTemplateToAssetType(template assetTemplate) api.AssetType {
 	translatedName := "OpenBOS " + template.Name
@@ -93,6 +96,13 @@ func FetchOntology(config appmodel.Configuration) (ontologyVersion int32, assetT
 	if err != nil {
 		return 0, nil, eliona.Asset{}, fmt.Errorf("creating instance of client: %v", err)
 	}
+
+	if version, err := client.getOntologyVersion(); err != nil {
+		return 0, nil, eliona.Asset{}, fmt.Errorf("getting ontology: %v", err)
+	} else if version == config.OntologyVersion {
+		return 0, nil, eliona.Asset{}, ErrNoUpdate
+	}
+
 	ontology, err := client.getOntology()
 	if err != nil {
 		return 0, nil, eliona.Asset{}, fmt.Errorf("getting ontology: %v", err)
