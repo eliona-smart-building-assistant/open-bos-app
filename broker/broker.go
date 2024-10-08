@@ -88,14 +88,14 @@ func convertMapping(enum map[string]string) []map[string]any {
 	return mapping
 }
 
-func FetchAssets(config appmodel.Configuration) ([]api.AssetType, eliona.Asset, error) {
+func FetchOntology(config appmodel.Configuration) (ontologyVersion int32, assetTypes []api.AssetType, root eliona.Asset, err error) {
 	client, err := newOpenBOSClient(config.Gwid, config.ClientID, config.ClientSecret)
 	if err != nil {
-		return nil, eliona.Asset{}, fmt.Errorf("creating instance of client: %v", err)
+		return 0, nil, eliona.Asset{}, fmt.Errorf("creating instance of client: %v", err)
 	}
 	ontology, err := client.getOntology()
 	if err != nil {
-		return nil, eliona.Asset{}, fmt.Errorf("getting ontology: %v", err)
+		return 0, nil, eliona.Asset{}, fmt.Errorf("getting ontology: %v", err)
 	}
 
 	ats := ontology.getAssetTemplates()
@@ -103,13 +103,12 @@ func FetchAssets(config appmodel.Configuration) ([]api.AssetType, eliona.Asset, 
 		ID:   "root",
 		Name: "OpenBOS root",
 	})
-	var assetTypes []api.AssetType
 	for _, assetTemplate := range ats {
 		assetType := convertAssetTemplateToAssetType(assetTemplate)
 		assetTypes = append(assetTypes, assetType)
 	}
 
-	root := eliona.Asset{
+	root = eliona.Asset{
 		ID:           "",
 		TemplateID:   "root",
 		Name:         "OpenBOS",
@@ -162,7 +161,7 @@ func FetchAssets(config appmodel.Configuration) ([]api.AssetType, eliona.Asset, 
 			})
 		}
 	}
-	return assetTypes, root, nil
+	return ontology.Settings.Version, assetTypes, root, nil
 }
 
 func buildAssetHierarchy(asset *eliona.Asset, spaces map[string]*ontologySpaceDTO, assetsMap map[string]ontologyAssetDTO, config appmodel.Configuration) {

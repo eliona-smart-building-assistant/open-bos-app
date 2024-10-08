@@ -28,6 +28,7 @@ type Configuration struct {
 	Gwid            string            `boil:"gwid" json:"gwid" toml:"gwid" yaml:"gwid"`
 	ClientID        string            `boil:"client_id" json:"client_id" toml:"client_id" yaml:"client_id"`
 	ClientSecret    string            `boil:"client_secret" json:"client_secret" toml:"client_secret" yaml:"client_secret"`
+	OntologyVersion int32             `boil:"ontology_version" json:"ontology_version" toml:"ontology_version" yaml:"ontology_version"`
 	RefreshInterval int32             `boil:"refresh_interval" json:"refresh_interval" toml:"refresh_interval" yaml:"refresh_interval"`
 	RequestTimeout  int32             `boil:"request_timeout" json:"request_timeout" toml:"request_timeout" yaml:"request_timeout"`
 	Active          bool              `boil:"active" json:"active" toml:"active" yaml:"active"`
@@ -44,6 +45,7 @@ var ConfigurationColumns = struct {
 	Gwid            string
 	ClientID        string
 	ClientSecret    string
+	OntologyVersion string
 	RefreshInterval string
 	RequestTimeout  string
 	Active          string
@@ -55,6 +57,7 @@ var ConfigurationColumns = struct {
 	Gwid:            "gwid",
 	ClientID:        "client_id",
 	ClientSecret:    "client_secret",
+	OntologyVersion: "ontology_version",
 	RefreshInterval: "refresh_interval",
 	RequestTimeout:  "request_timeout",
 	Active:          "active",
@@ -68,6 +71,7 @@ var ConfigurationTableColumns = struct {
 	Gwid            string
 	ClientID        string
 	ClientSecret    string
+	OntologyVersion string
 	RefreshInterval string
 	RequestTimeout  string
 	Active          string
@@ -79,6 +83,7 @@ var ConfigurationTableColumns = struct {
 	Gwid:            "configuration.gwid",
 	ClientID:        "configuration.client_id",
 	ClientSecret:    "configuration.client_secret",
+	OntologyVersion: "configuration.ontology_version",
 	RefreshInterval: "configuration.refresh_interval",
 	RequestTimeout:  "configuration.request_timeout",
 	Active:          "configuration.active",
@@ -147,6 +152,7 @@ var ConfigurationWhere = struct {
 	Gwid            whereHelperstring
 	ClientID        whereHelperstring
 	ClientSecret    whereHelperstring
+	OntologyVersion whereHelperint32
 	RefreshInterval whereHelperint32
 	RequestTimeout  whereHelperint32
 	Active          whereHelperbool
@@ -158,6 +164,7 @@ var ConfigurationWhere = struct {
 	Gwid:            whereHelperstring{field: "\"open_bos\".\"configuration\".\"gwid\""},
 	ClientID:        whereHelperstring{field: "\"open_bos\".\"configuration\".\"client_id\""},
 	ClientSecret:    whereHelperstring{field: "\"open_bos\".\"configuration\".\"client_secret\""},
+	OntologyVersion: whereHelperint32{field: "\"open_bos\".\"configuration\".\"ontology_version\""},
 	RefreshInterval: whereHelperint32{field: "\"open_bos\".\"configuration\".\"refresh_interval\""},
 	RequestTimeout:  whereHelperint32{field: "\"open_bos\".\"configuration\".\"request_timeout\""},
 	Active:          whereHelperbool{field: "\"open_bos\".\"configuration\".\"active\""},
@@ -194,8 +201,8 @@ func (r *configurationR) GetAssets() AssetSlice {
 type configurationL struct{}
 
 var (
-	configurationAllColumns            = []string{"id", "gwid", "client_id", "client_secret", "refresh_interval", "request_timeout", "active", "enable", "project_ids", "user_id"}
-	configurationColumnsWithoutDefault = []string{"gwid", "client_id", "client_secret", "project_ids", "user_id"}
+	configurationAllColumns            = []string{"id", "gwid", "client_id", "client_secret", "ontology_version", "refresh_interval", "request_timeout", "active", "enable", "project_ids", "user_id"}
+	configurationColumnsWithoutDefault = []string{"gwid", "client_id", "client_secret", "ontology_version", "project_ids", "user_id"}
 	configurationColumnsWithDefault    = []string{"id", "refresh_interval", "request_timeout", "active", "enable"}
 	configurationPrimaryKeyColumns     = []string{"id"}
 	configurationGeneratedColumns      = []string{}

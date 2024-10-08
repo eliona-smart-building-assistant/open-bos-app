@@ -20,6 +20,7 @@ type Configuration struct {
 	Gwid            string
 	ClientID        string
 	ClientSecret    string
+	OntologyVersion int32
 	RefreshInterval int32
 	RequestTimeout  int32
 	Enable          bool

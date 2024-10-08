@@ -186,7 +186,7 @@ type ontologyDTO struct {
 }
 
 type ontologySettingsDTO struct {
-	Version int64 `json:"version"`
+	Version int32 `json:"version"`
 }
 
 type ontologyAssetOrSpaceTemplateDTO struct {

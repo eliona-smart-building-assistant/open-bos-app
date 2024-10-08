@@ -100,7 +100,7 @@ func CollectData() {
 }
 
 func collectResources(config *appmodel.Configuration) error {
-	assetTypes, root, err := broker.FetchAssets(*config)
+	version, assetTypes, root, err := broker.FetchOntology(*config)
 	if err != nil {
 		log.Error("broker", "fetching assets: %v", err)
 		return err
@@ -115,6 +115,9 @@ func collectResources(config *appmodel.Configuration) error {
 		log.Error("eliona", "creating assets: %v", err)
 		return err
 	}
+
+	config.OntologyVersion = version
+	dbhelper.UpdateConfigOntologyVersion(context.Background(), *config)
 
 	return nil
 }

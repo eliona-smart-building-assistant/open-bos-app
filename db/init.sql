@@ -20,8 +20,9 @@ create table if not exists open_bos.configuration
 (
 	id                   bigserial primary key,
 	gwid                 text not null,
-	client_id             text not null,
-	client_secret         text not null,
+	client_id            text not null,
+	client_secret        text not null,
+	ontology_version     integer not null,
 	refresh_interval     integer not null default 60,
 	request_timeout      integer not null default 120,
 	active               boolean not null default false,

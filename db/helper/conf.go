@@ -54,6 +54,17 @@ func UpsertConfig(ctx context.Context, config appmodel.Configuration) (appmodel.
 	return config, nil
 }
 
+func UpdateConfigOntologyVersion(ctx context.Context, config appmodel.Configuration) error {
+	dbConfig, err := toDbConfig(ctx, config)
+	if err != nil {
+		return fmt.Errorf("creating DB config from App config: %v", err)
+	}
+	if _, err := dbConfig.UpdateG(ctx, boil.Whitelist(dbgen.ConfigurationColumns.OntologyVersion)); err != nil {
+		return fmt.Errorf("updating DB config ontology version: %v", err)
+	}
+	return nil
+}
+
 func GetConfig(ctx context.Context, configID int64) (appmodel.Configuration, error) {
 	dbConfig, err := dbgen.Configurations(
 		dbgen.ConfigurationWhere.ID.EQ(configID),
@@ -96,6 +107,7 @@ func toDbConfig(ctx context.Context, appConfig appmodel.Configuration) (dbConfig
 	dbConfig.Gwid = appConfig.Gwid
 	dbConfig.ClientID = appConfig.ClientID
 	dbConfig.ClientSecret = appConfig.ClientSecret
+	dbConfig.OntologyVersion = appConfig.OntologyVersion
 
 	dbConfig.ID = appConfig.Id
 	dbConfig.RefreshInterval = appConfig.RefreshInterval
@@ -116,6 +128,7 @@ func toAppConfig(dbConfig *dbgen.Configuration) (appConfig appmodel.Configuratio
 	appConfig.Gwid = dbConfig.Gwid
 	appConfig.ClientID = dbConfig.ClientID
 	appConfig.ClientSecret = dbConfig.ClientSecret
+	appConfig.OntologyVersion = dbConfig.OntologyVersion
 
 	appConfig.Id = dbConfig.ID
 	appConfig.Enable = dbConfig.Enable
