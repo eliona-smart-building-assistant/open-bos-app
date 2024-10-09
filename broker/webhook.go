@@ -8,14 +8,12 @@ import (
 )
 
 type webhookServer struct {
-	secret string
-	mux    *http.ServeMux
+	mux *http.ServeMux
 }
 
-func newWebhookServer(secret string) *webhookServer {
+func newWebhookServer() *webhookServer {
 	return &webhookServer{
-		secret: secret,
-		mux:    http.NewServeMux(),
+		mux: http.NewServeMux(),
 	}
 }
 
@@ -41,8 +39,8 @@ func (s *webhookServer) handleOntologyVersion(w http.ResponseWriter, r *http.Req
 	// TODO: Actually implement version parsing once we know the fromat of the data.
 }
 
-func StartWebhookListener(secret string) {
-	server := newWebhookServer(secret)
+func StartWebhookListener() {
+	server := newWebhookServer()
 
 	server.mux.HandleFunc("/ontology-version", server.handleOntologyVersion)
 
