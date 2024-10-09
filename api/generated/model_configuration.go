@@ -25,6 +25,9 @@ type Configuration struct {
 	// The client secret used for OAuth 2.0 authentication.
 	ClientSecret string `json:"clientSecret,omitempty"`
 
+	// URL of this app's public API. Inferred automatically from request.
+	AppPublicAPIURL string `json:"appPublicAPIURL,omitempty"`
+
 	// Flag to enable or disable fetching from this API
 	Enable *bool `json:"enable,omitempty"`
 

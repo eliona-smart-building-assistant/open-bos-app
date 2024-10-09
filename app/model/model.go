@@ -21,6 +21,7 @@ type Configuration struct {
 	ClientID        string
 	ClientSecret    string
 	OntologyVersion int32
+	AppPublicAPIURL string
 	RefreshInterval int32
 	RequestTimeout  int32
 	Enable          bool

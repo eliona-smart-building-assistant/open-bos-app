@@ -108,6 +108,7 @@ func toDbConfig(ctx context.Context, appConfig appmodel.Configuration) (dbConfig
 	dbConfig.ClientID = appConfig.ClientID
 	dbConfig.ClientSecret = appConfig.ClientSecret
 	dbConfig.OntologyVersion = appConfig.OntologyVersion
+	dbConfig.AppPublicAPIURL = appConfig.AppPublicAPIURL
 
 	dbConfig.ID = appConfig.Id
 	dbConfig.RefreshInterval = appConfig.RefreshInterval
@@ -116,9 +117,12 @@ func toDbConfig(ctx context.Context, appConfig appmodel.Configuration) (dbConfig
 	dbConfig.Enable = appConfig.Enable
 	dbConfig.ProjectIds = appConfig.ProjectIDs
 
-	env := frontend.GetEnvironment(ctx)
-	if env != nil {
+	if env := frontend.GetEnvironment(ctx); env != nil {
 		dbConfig.UserID = env.UserId
+
+		if appConfig.AppPublicAPIURL == "" {
+			dbConfig.AppPublicAPIURL = fmt.Sprintf("%s/apps-public/open-bos", env.Iss)
+		}
 	}
 
 	return dbConfig, nil
@@ -129,6 +133,7 @@ func toAppConfig(dbConfig *dbgen.Configuration) (appConfig appmodel.Configuratio
 	appConfig.ClientID = dbConfig.ClientID
 	appConfig.ClientSecret = dbConfig.ClientSecret
 	appConfig.OntologyVersion = dbConfig.OntologyVersion
+	appConfig.AppPublicAPIURL = dbConfig.AppPublicAPIURL
 
 	appConfig.Id = dbConfig.ID
 	appConfig.Enable = dbConfig.Enable

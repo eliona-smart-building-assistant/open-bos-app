@@ -92,7 +92,7 @@ func convertMapping(enum map[string]string) []map[string]any {
 }
 
 func FetchOntology(config appmodel.Configuration) (ontologyVersion int32, assetTypes []api.AssetType, root eliona.Asset, err error) {
-	client, err := newOpenBOSClient(config.Gwid, config.ClientID, config.ClientSecret)
+	client, err := newOpenBOSClient(config.Gwid, config.ClientID, config.ClientSecret, config.AppPublicAPIURL)
 	if err != nil {
 		return 0, nil, eliona.Asset{}, fmt.Errorf("creating instance of client: %v", err)
 	}
@@ -207,4 +207,15 @@ func buildAssetHierarchy(asset *eliona.Asset, spaces map[string]*ontologySpaceDT
 		}
 		asset.LocationsMap[spaceAsset.ID] = assetInstance
 	}
+}
+
+func SubscribeToOntologyChanges(config appmodel.Configuration) error {
+	client, err := newOpenBOSClient(config.Gwid, config.ClientID, config.ClientSecret, config.AppPublicAPIURL)
+	if err != nil {
+		return fmt.Errorf("creating instance of client: %v", err)
+	}
+	if _, err := client.subscribeToOntologyChanges(config.Id); err != nil {
+		return fmt.Errorf("subscribing: %v", err)
+	}
+	return nil
 }

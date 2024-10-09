@@ -238,6 +238,11 @@ components:
           format: password
           description: The client secret used for OAuth 2.0 authentication.
           example: "your-client-secret"
+        appPublicAPIURL:
+          type: string
+          format: url
+          description: URL of this app's public API. Inferred automatically from request.
+          example: "home.eliona.io/apps-public/open-bos"
         enable:
           type: boolean
           description: Flag to enable or disable fetching from this API

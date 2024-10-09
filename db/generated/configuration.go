@@ -29,6 +29,7 @@ type Configuration struct {
 	ClientID        string            `boil:"client_id" json:"client_id" toml:"client_id" yaml:"client_id"`
 	ClientSecret    string            `boil:"client_secret" json:"client_secret" toml:"client_secret" yaml:"client_secret"`
 	OntologyVersion int32             `boil:"ontology_version" json:"ontology_version" toml:"ontology_version" yaml:"ontology_version"`
+	AppPublicAPIURL string            `boil:"app_public_api_url" json:"app_public_api_url" toml:"app_public_api_url" yaml:"app_public_api_url"`
 	RefreshInterval int32             `boil:"refresh_interval" json:"refresh_interval" toml:"refresh_interval" yaml:"refresh_interval"`
 	RequestTimeout  int32             `boil:"request_timeout" json:"request_timeout" toml:"request_timeout" yaml:"request_timeout"`
 	Active          bool              `boil:"active" json:"active" toml:"active" yaml:"active"`
@@ -46,6 +47,7 @@ var ConfigurationColumns = struct {
 	ClientID        string
 	ClientSecret    string
 	OntologyVersion string
+	AppPublicAPIURL string
 	RefreshInterval string
 	RequestTimeout  string
 	Active          string
@@ -58,6 +60,7 @@ var ConfigurationColumns = struct {
 	ClientID:        "client_id",
 	ClientSecret:    "client_secret",
 	OntologyVersion: "ontology_version",
+	AppPublicAPIURL: "app_public_api_url",
 	RefreshInterval: "refresh_interval",
 	RequestTimeout:  "request_timeout",
 	Active:          "active",
@@ -72,6 +75,7 @@ var ConfigurationTableColumns = struct {
 	ClientID        string
 	ClientSecret    string
 	OntologyVersion string
+	AppPublicAPIURL string
 	RefreshInterval string
 	RequestTimeout  string
 	Active          string
@@ -84,6 +88,7 @@ var ConfigurationTableColumns = struct {
 	ClientID:        "configuration.client_id",
 	ClientSecret:    "configuration.client_secret",
 	OntologyVersion: "configuration.ontology_version",
+	AppPublicAPIURL: "configuration.app_public_api_url",
 	RefreshInterval: "configuration.refresh_interval",
 	RequestTimeout:  "configuration.request_timeout",
 	Active:          "configuration.active",
@@ -153,6 +158,7 @@ var ConfigurationWhere = struct {
 	ClientID        whereHelperstring
 	ClientSecret    whereHelperstring
 	OntologyVersion whereHelperint32
+	AppPublicAPIURL whereHelperstring
 	RefreshInterval whereHelperint32
 	RequestTimeout  whereHelperint32
 	Active          whereHelperbool
@@ -165,6 +171,7 @@ var ConfigurationWhere = struct {
 	ClientID:        whereHelperstring{field: "\"open_bos\".\"configuration\".\"client_id\""},
 	ClientSecret:    whereHelperstring{field: "\"open_bos\".\"configuration\".\"client_secret\""},
 	OntologyVersion: whereHelperint32{field: "\"open_bos\".\"configuration\".\"ontology_version\""},
+	AppPublicAPIURL: whereHelperstring{field: "\"open_bos\".\"configuration\".\"app_public_api_url\""},
 	RefreshInterval: whereHelperint32{field: "\"open_bos\".\"configuration\".\"refresh_interval\""},
 	RequestTimeout:  whereHelperint32{field: "\"open_bos\".\"configuration\".\"request_timeout\""},
 	Active:          whereHelperbool{field: "\"open_bos\".\"configuration\".\"active\""},
@@ -201,8 +208,8 @@ func (r *configurationR) GetAssets() AssetSlice {
 type configurationL struct{}
 
 var (
-	configurationAllColumns            = []string{"id", "gwid", "client_id", "client_secret", "ontology_version", "refresh_interval", "request_timeout", "active", "enable", "project_ids", "user_id"}
-	configurationColumnsWithoutDefault = []string{"gwid", "client_id", "client_secret", "ontology_version", "project_ids", "user_id"}
+	configurationAllColumns            = []string{"id", "gwid", "client_id", "client_secret", "ontology_version", "app_public_api_url", "refresh_interval", "request_timeout", "active", "enable", "project_ids", "user_id"}
+	configurationColumnsWithoutDefault = []string{"gwid", "client_id", "client_secret", "ontology_version", "app_public_api_url", "project_ids", "user_id"}
 	configurationColumnsWithDefault    = []string{"id", "refresh_interval", "request_timeout", "active", "enable"}
 	configurationPrimaryKeyColumns     = []string{"id"}
 	configurationGeneratedColumns      = []string{}

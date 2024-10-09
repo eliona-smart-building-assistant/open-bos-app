@@ -30,6 +30,7 @@ Configurations can be created in Eliona under `Apps > OpenBOS > Settings` which 
 |-------------------|---------------------------------------------------------------------------------|
 | `baseURL`         | URL of the OpenBOS services.                                                   |
 | `clientSecrets`   | Client secrets obtained from the OpenBOS service.                              |
+| `appPublicAPIURL`   | URL of app's public interface for websocket connection. Skip or leave empty for standard installations.|
 | `assetFilter`     | Filtering asset during [Continuous Asset Creation](#continuous-asset-creation). |
 | `enable`          | Flag to enable or disable this configuration.                                   |
 | `refreshInterval` | Interval in seconds for data synchronization.                                   |
