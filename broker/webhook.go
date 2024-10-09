@@ -1,6 +1,7 @@
 package broker
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 
@@ -39,12 +40,12 @@ func (s *webhookServer) handleOntologyVersion(w http.ResponseWriter, r *http.Req
 	// TODO: Actually implement version parsing once we know the fromat of the data.
 }
 
-func StartWebhookListener() {
+func StartWebhookListener(configID int) {
 	server := newWebhookServer()
 
 	server.mux.HandleFunc("/ontology-version", server.handleOntologyVersion)
 
-	http.Handle("/", server)
+	http.Handle(fmt.Sprintf("/%d/", configID), server)
 	if err := http.ListenAndServe(":8081", nil); err != nil {
 		log.Fatal("webhook", "Error starting server on port 8081: %v\n", err)
 	}

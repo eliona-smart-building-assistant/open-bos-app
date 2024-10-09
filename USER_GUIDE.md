@@ -14,7 +14,7 @@ Install the OpenBOS app via the Eliona App Store.
 
 ## Configuration
 
-The OpenBOS app requires configuration through Eliona’s settings interface. Below are the general steps and details needed to configure the app effectively.
+The OpenBOS app requires configuration through Eliona’s settings interface. Below are the steps needed to configure the app.
 
 ### Registering the app in OpenBOS Service
 
@@ -51,6 +51,8 @@ Example configuration JSON:
   ]
 }
 ```
+
+
 
 ## Continuous Asset Creation
 
