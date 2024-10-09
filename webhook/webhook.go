@@ -1,10 +1,11 @@
-package broker
+package webhook
 
 import (
 	"context"
 	"fmt"
 	"io"
 	"net/http"
+	"open-bos/app"
 	"regexp"
 	"strconv"
 
@@ -50,10 +51,14 @@ func (s *webhookServer) handleOntologyVersion(w http.ResponseWriter, r *http.Req
 	}
 	defer r.Body.Close()
 
-	log.Debug("webhook", "Config ID: %d, Received ontology request headers: %+v", configID, r.Header)
-	log.Debug("webhook", "Config ID: %d, Received ontology request body: %s", configID, body)
+	log.Debug("webhook", "Received ontology request headers: %+v", r.Header)
+	log.Debug("webhook", "Request body: %s", body)
+	log.Debug("webhook", "Method", r.Method)
+	log.Debug("webhook", "Config ID: %d", configID)
 
 	// TODO: Implement version parsing once we know the format of the data.
+
+	app.CollectConfigData(configID)
 }
 
 func parseConfigIDFromPath(path string) (int64, error) {

@@ -50,7 +50,7 @@ func Initialize() {
 	)
 }
 
-var once sync.Once
+var notifyNoConfigsOnce sync.Once
 
 func CollectData() {
 	configs, err := dbhelper.GetConfigs(context.Background())
@@ -59,7 +59,7 @@ func CollectData() {
 		return
 	}
 	if len(configs) == 0 {
-		once.Do(func() {
+		notifyNoConfigsOnce.Do(func() {
 			log.Info("dbhelper", "No configs in DB. Please configure the app in Eliona.")
 		})
 		return
@@ -94,10 +94,33 @@ func CollectData() {
 			}
 			log.Info("main", "Collecting %d finished.", config.Id)
 
-			// TODO: improve timing
 			time.Sleep(time.Hour * time.Duration(config.RefreshInterval))
 		}, config, config.Id)
 	}
+}
+
+func CollectConfigData(configID int64) {
+	config, err := dbhelper.GetConfig(context.Background(), configID)
+	if err != nil {
+		log.Error("dbhelper", "Couldn't read config %d from DB: %v", configID, err)
+		return
+	}
+
+	if !config.Enable {
+		if config.Active {
+			dbhelper.SetConfigActiveState(context.Background(), config, false)
+		}
+		return
+	}
+	if !config.Active {
+		dbhelper.SetConfigActiveState(context.Background(), config, true)
+	}
+
+	log.Info("main", "Collecting %d triggered by update.", config.Id)
+	if err := collectResources(&config); err != nil {
+		return // Error is handled in the method itself.
+	}
+	log.Info("main", "Collecting %d finished.", config.Id)
 }
 
 func collectResources(config *appmodel.Configuration) error {
