@@ -1,6 +1,7 @@
 package broker
 
 import (
+	"io"
 	"net/http"
 
 	"github.com/eliona-smart-building-assistant/go-utils/log"
@@ -27,7 +28,17 @@ func (s *webhookServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *webhookServer) handleOntologyVersion(w http.ResponseWriter, r *http.Request) {
-	//log.Debug("webhook", "Handled ontology version event: %+v", event)
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Failed to read request body", http.StatusInternalServerError)
+		return
+	}
+	defer r.Body.Close()
+
+	log.Debug("webhook", "Received ontology request headers: %+v", r.Header)
+	log.Debug("webhook", "Received ontology request body: %s", body)
+
+	// TODO: Actually implement version parsing once we know the fromat of the data.
 }
 
 func StartWebhookListener(secret string) {
