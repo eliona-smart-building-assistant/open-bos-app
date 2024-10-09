@@ -17,6 +17,7 @@ package main
 
 import (
 	"open-bos/app"
+	"open-bos/broker"
 	"time"
 
 	elionaapp "github.com/eliona-smart-building-assistant/go-eliona/app"
@@ -53,6 +54,7 @@ func main() {
 		common.Loop(app.CollectData, time.Second),
 		app.ListenApi,
 		app.ListenForOutputChanges,
+		broker.StartWebhookListener,
 	)
 
 	log.Info("main", "Terminate the app.")

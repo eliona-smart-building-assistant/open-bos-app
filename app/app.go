@@ -88,8 +88,6 @@ func CollectData() {
 		}
 
 		common.RunOnceWithParam(func(config appmodel.Configuration) {
-
-			
 			log.Info("main", "Collecting %d started.", config.Id)
 			if err := collectResources(&config); err != nil {
 				return // Error is handled in the method itself.
