@@ -30,6 +30,8 @@ type Asset struct {
 
 	TemplateID string
 
+	IsMaster int8 `eliona:"is_master" subtype:"property"`
+
 	LocationsMap map[string]Asset
 	DevicesSlice []Asset
 

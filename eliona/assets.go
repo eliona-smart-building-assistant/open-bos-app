@@ -18,16 +18,18 @@ package eliona
 import (
 	"fmt"
 	appmodel "open-bos/app/model"
+	"time"
 
 	api "github.com/eliona-smart-building-assistant/go-eliona-api-client/v2"
 	"github.com/eliona-smart-building-assistant/go-eliona/asset"
 	"github.com/eliona-smart-building-assistant/go-eliona/client"
+	"github.com/eliona-smart-building-assistant/go-utils/common"
 	"github.com/eliona-smart-building-assistant/go-utils/log"
 )
 
 func CreateAssets(config appmodel.Configuration, root asset.Root) error {
 	for _, projectId := range config.ProjectIDs {
-		assetsCreated, err := asset.CreateAssets(root, projectId)
+		assetsCreated, err := asset.CreateAssetsAndUpsertData(root, projectId, common.Ptr(time.Now()), common.Ptr(ClientReference))
 		if err != nil {
 			return err
 		}

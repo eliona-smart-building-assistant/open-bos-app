@@ -26,6 +26,8 @@ import (
 	"github.com/eliona-smart-building-assistant/go-utils/log"
 )
 
+const masterPropertyAttribute = "is_master"
+
 var ErrNoUpdate = errors.New("no new version available")
 
 func convertAssetTemplateToAssetType(template assetTemplate) api.AssetType {
@@ -66,6 +68,26 @@ func convertAssetTemplateToAssetType(template assetTemplate) api.AssetType {
 		apiAsset.Attributes = append(apiAsset.Attributes, attribute)
 	}
 
+	// TODO: Once APIv2 supports it, this should be a "Category"
+	apiAsset.Attributes = append(apiAsset.Attributes, api.AssetTypeAttribute{
+		Name:      masterPropertyAttribute,
+		Subtype:   api.SUBTYPE_PROPERTY,
+		IsDigital: *api.NewNullableBool(api.PtrBool(true)),
+		Map: []map[string]any{
+			{
+				"value": -1,
+				"map":   "Not available",
+			},
+			{
+				"value": 0,
+				"map":   "Slave",
+			},
+			{
+				"value": 1,
+				"map":   "Master",
+			},
+		},
+	})
 	return apiAsset
 }
 
@@ -171,6 +193,7 @@ func FetchOntology(config appmodel.Configuration) (ontologyVersion int32, assetT
 			})
 		}
 	}
+
 	return ontology.Settings.Version, assetTypes, root, nil
 }
 
@@ -199,11 +222,17 @@ func buildAssetHierarchy(asset *eliona.Asset, spaces map[string]*ontologySpaceDT
 			log.Warn("broker", "asset %s in space %s not found. Skipping.", spaceAsset.ID, space.ID)
 			continue // Asset not found; skip
 		}
+		isMaster := int8(0)
+		if spaceAsset.Master {
+			isMaster = 1
+		}
 		assetInstance := eliona.Asset{
 			ID:         assetDetails.ID,
 			Name:       assetDetails.Name,
 			TemplateID: assetDetails.TemplateID,
 			Config:     &config,
+
+			IsMaster: isMaster,
 		}
 		asset.LocationsMap[spaceAsset.ID] = assetInstance
 	}
