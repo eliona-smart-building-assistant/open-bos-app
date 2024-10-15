@@ -32,8 +32,8 @@ type Asset struct {
 
 	IsMaster int8 `eliona:"is_master" subtype:"property"`
 
-	LocationsMap map[string]Asset
-	DevicesSlice []Asset
+	LocationalChildrenMap   map[string]Asset
+	FunctionalChildrenSlice []Asset
 
 	Config *appmodel.Configuration
 }
@@ -66,8 +66,8 @@ func (d *Asset) SetAssetID(assetID int32, projectID string) error {
 }
 
 func (r *Asset) GetLocationalChildren() []asset.LocationalNode {
-	locationalChildren := make([]asset.LocationalNode, 0, len(r.LocationsMap))
-	for _, room := range r.LocationsMap {
+	locationalChildren := make([]asset.LocationalNode, 0, len(r.LocationalChildrenMap))
+	for _, room := range r.LocationalChildrenMap {
 		roomCopy := room // Create a copy of room
 		locationalChildren = append(locationalChildren, &roomCopy)
 	}
@@ -75,9 +75,9 @@ func (r *Asset) GetLocationalChildren() []asset.LocationalNode {
 }
 
 func (r *Asset) GetFunctionalChildren() []asset.FunctionalNode {
-	functionalChildren := make([]asset.FunctionalNode, 0, len(r.DevicesSlice))
-	for i := range r.DevicesSlice {
-		functionalChildren = append(functionalChildren, &r.DevicesSlice[i])
+	functionalChildren := make([]asset.FunctionalNode, 0, len(r.FunctionalChildrenSlice))
+	for i := range r.FunctionalChildrenSlice {
+		functionalChildren = append(functionalChildren, &r.FunctionalChildrenSlice[i])
 	}
 	return functionalChildren
 }

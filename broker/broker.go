@@ -141,11 +141,11 @@ func FetchOntology(config appmodel.Configuration) (ontologyVersion int32, assetT
 	}
 
 	root = eliona.Asset{
-		ID:           "",
-		TemplateID:   "root",
-		Name:         "OpenBOS",
-		Config:       &config,
-		LocationsMap: make(map[string]eliona.Asset),
+		ID:                    "",
+		TemplateID:            "root",
+		Name:                  "OpenBOS",
+		Config:                &config,
+		LocationalChildrenMap: make(map[string]eliona.Asset),
 	}
 
 	// Initialize spaces map with root space
@@ -185,7 +185,7 @@ func FetchOntology(config appmodel.Configuration) (ontologyVersion int32, assetT
 	for _, asset := range ontology.Assets {
 		if _, associated := associatedAssetIDs[asset.ID]; !associated {
 			// Asset not associated with any space; add to root
-			root.DevicesSlice = append(root.DevicesSlice, eliona.Asset{
+			root.FunctionalChildrenSlice = append(root.FunctionalChildrenSlice, eliona.Asset{
 				ID:         asset.ID,
 				Name:       asset.Name,
 				TemplateID: asset.TemplateID,
@@ -206,14 +206,14 @@ func buildAssetHierarchy(asset *eliona.Asset, spaces map[string]*ontologySpaceDT
 	// Process child spaces
 	for _, childSpace := range space.children {
 		childAsset := eliona.Asset{
-			ID:           childSpace.ID,
-			Name:         childSpace.Name,
-			TemplateID:   childSpace.TemplateID,
-			Config:       &config,
-			LocationsMap: make(map[string]eliona.Asset),
+			ID:                    childSpace.ID,
+			Name:                  childSpace.Name,
+			TemplateID:            childSpace.TemplateID,
+			Config:                &config,
+			LocationalChildrenMap: make(map[string]eliona.Asset),
 		}
 		buildAssetHierarchy(&childAsset, spaces, assetsMap, config)
-		asset.LocationsMap[childSpace.ID] = childAsset
+		asset.LocationalChildrenMap[childSpace.ID] = childAsset
 	}
 	// Process assets associated with this space
 	for _, spaceAsset := range space.Assets {
@@ -234,7 +234,7 @@ func buildAssetHierarchy(asset *eliona.Asset, spaces map[string]*ontologySpaceDT
 
 			IsMaster: isMaster,
 		}
-		asset.LocationsMap[spaceAsset.ID] = assetInstance
+		asset.LocationalChildrenMap[spaceAsset.ID] = assetInstance
 	}
 }
 
