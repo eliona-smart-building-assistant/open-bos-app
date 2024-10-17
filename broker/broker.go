@@ -248,3 +248,15 @@ func SubscribeToOntologyChanges(config appmodel.Configuration) error {
 	}
 	return nil
 }
+
+func SubscribeToDataChanges(config appmodel.Configuration) error {
+	client, err := newOpenBOSClient(config.Gwid, config.ClientID, config.ClientSecret, config.AppPublicAPIURL)
+	if err != nil {
+		return fmt.Errorf("creating instance of client: %v", err)
+	}
+	if _, err := client.subscribeToDataChanges(config.Id); err != nil {
+		return fmt.Errorf("subscribing: %v", err)
+	}
+	return nil
+}
+

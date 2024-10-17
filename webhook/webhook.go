@@ -53,7 +53,27 @@ func (s *webhookServer) handleOntologyVersion(w http.ResponseWriter, r *http.Req
 
 	log.Debug("webhook", "Received ontology request headers: %+v", r.Header)
 	log.Debug("webhook", "Request body: %s", body)
-	log.Debug("webhook", "Method", r.Method)
+	log.Debug("webhook", "Method: %s", r.Method)
+	log.Debug("webhook", "Config ID: %d", configID)
+
+	// TODO: Implement version parsing once we know the format of the data.
+
+	app.CollectConfigData(configID)
+}
+
+func (s *webhookServer) handleLivedataUpdate(w http.ResponseWriter, r *http.Request) {
+	configID := r.Context().Value("configID").(int64)
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Failed to read request body", http.StatusInternalServerError)
+		return
+	}
+	defer r.Body.Close()
+
+	log.Debug("webhook", "Received data request headers: %+v", r.Header)
+	log.Debug("webhook", "Request body: %s", body)
+	log.Debug("webhook", "Method: %s", r.Method)
 	log.Debug("webhook", "Config ID: %d", configID)
 
 	// TODO: Implement version parsing once we know the format of the data.
@@ -80,6 +100,7 @@ func StartWebhookListener() {
 	server := newWebhookServer()
 
 	server.mux.HandleFunc("/ontology-version", server.handleOntologyVersion)
+	server.mux.HandleFunc("/ontology-livedata", server.handleLivedataUpdate)
 
 	http.Handle("/", server)
 	if err := http.ListenAndServe(":8081", nil); err != nil {

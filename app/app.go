@@ -101,6 +101,12 @@ func CollectData() {
 			// }
 			// log.Info("main", "Subscribed to ontology updates of config %d", config.Id)
 
+			if err := broker.SubscribeToDataChanges(config); err != nil {
+				log.Error("broker", "subscribing to data changes: %v", err)
+				return
+			}
+			log.Info("main", "Subscribed to data updates of config %d", config.Id)
+
 			time.Sleep(time.Hour * time.Duration(config.RefreshInterval))
 		}, config, config.Id)
 	}
