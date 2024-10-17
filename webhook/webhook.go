@@ -2,12 +2,14 @@ package webhook
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"open-bos/app"
 	"regexp"
 	"strconv"
+	"time"
 
 	"github.com/eliona-smart-building-assistant/go-utils/log"
 )
@@ -76,9 +78,37 @@ func (s *webhookServer) handleLivedataUpdate(w http.ResponseWriter, r *http.Requ
 	log.Debug("webhook", "Method: %s", r.Method)
 	log.Debug("webhook", "Config ID: %d", configID)
 
-	// TODO: Implement version parsing once we know the format of the data.
+	type LiveData struct {
+		ID         string      `json:"Id"`
+		IsProperty bool        `json:"IsProperty"`
+		TimeStamp  string      `json:"TimeStamp"`
+		Quality    string      `json:"Quality"`
+		Value      interface{} `json:"Value"`
+	}
 
-	app.CollectConfigData(configID)
+	var liveData []LiveData
+	if err := json.Unmarshal(body, &liveData); err != nil {
+		log.Error("webhook", "Failed to parse request body: %v", err)
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	for _, data := range liveData {
+		// Timestamps are always in UTC - see docs
+		layout := "02/01/2006 15:04:05"
+		timestamp, err := time.ParseInLocation(layout, data.TimeStamp, time.UTC)
+		if err != nil {
+			log.Warn("webhook", "Invalid timestamp format for ID %s: %v", data.ID, err)
+			continue
+		}
+
+		log.Debug("webhook", "Received data for ID %s: IsProperty=%v, TimeStamp=%v, Quality=%s, Value=%v",
+			data.ID, data.IsProperty, timestamp, data.Quality, data.Value)
+
+		// TODO: Use the update
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func parseConfigIDFromPath(path string) (int64, error) {
