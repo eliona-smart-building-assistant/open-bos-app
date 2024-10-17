@@ -151,6 +151,26 @@ func (c *openBOSClient) doMockRequest(method, endpoint string, queryParams url.V
 	if err != nil {
 		return fmt.Errorf("creating request: %v", err)
 	}
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+
+	// TODO: This part may be removed later
+	// {
+	dump, err := httputil.DumpRequest(req, true)
+	if err != nil {
+		return fmt.Errorf("dumping request: %v", err)
+	}
+	log.Debug("client", "HTTP Request:\n%s\n", string(dump))
+
+	// DumpRequest may consume the body, so we need to reset it afterward
+	if bodyReader != nil {
+		if seeker, ok := bodyReader.(io.Seeker); ok {
+			seeker.Seek(0, io.SeekStart)
+		}
+		req.Body = io.NopCloser(bodyReader)
+	}
+	// }
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
