@@ -30,6 +30,13 @@ const masterPropertyAttribute = "is_master"
 
 var ErrNoUpdate = errors.New("no new version available")
 
+// [datapoint-attribution]
+var datapointTemplatesMap = make(map[string]datapointTemplateInfo) // map[datapointTemplateID]datapointTemplate
+type datapointTemplateInfo struct {
+	name    string
+	subtype string
+}
+
 func convertAssetTemplateToAssetType(template assetTemplate) api.AssetType {
 	translatedName := "OpenBOS " + template.Name
 	apiAsset := api.AssetType{
@@ -52,20 +59,31 @@ func convertAssetTemplateToAssetType(template assetTemplate) api.AssetType {
 			Map:     mapping,
 		}
 		apiAsset.Attributes = append(apiAsset.Attributes, attribute)
+		// [datapoint-attribution]
+		datapointTemplatesMap[dp.ID] = datapointTemplateInfo{
+			name:    dp.Name,
+			subtype: string(subtype),
+		}
 	}
 
 	// Properties are attributes that don't change often (our status subtype)
 	for _, prop := range template.Properties {
+		subtype := api.SUBTYPE_STATUS
 		mapping := convertMapping(prop.Enums)
 		attribute := api.AssetTypeAttribute{
 			Name:    prop.Name,
-			Subtype: api.SUBTYPE_STATUS,
+			Subtype: subtype,
 			Min:     *api.NewNullableFloat64(prop.Min),
 			Max:     *api.NewNullableFloat64(prop.Max),
 			Unit:    *api.NewNullableString(prop.DisplayUnitID),
 			Map:     mapping,
 		}
 		apiAsset.Attributes = append(apiAsset.Attributes, attribute)
+		// [datapoint-attribution]
+		datapointTemplatesMap[prop.ID] = datapointTemplateInfo{
+			name:    prop.Name,
+			subtype: string(subtype),
+		}
 	}
 
 	// TODO: Once APIv2 supports it, this should be a "Category"
@@ -148,10 +166,40 @@ func FetchOntology(config appmodel.Configuration) (ontologyVersion int32, assetT
 		LocationalChildrenMap: make(map[string]eliona.Asset),
 	}
 
+	// [datapoint-attribution] Assign datapoints and properties to assets and spaces
+	{
+		datapointsMap := make(map[string][]ontologyDatapointDTO)
+		for _, datapointDTO := range ontology.Datapoints {
+			if datapointDTO.AssetID != "" {
+				datapointsMap[datapointDTO.AssetID] = append(datapointsMap[datapointDTO.AssetID], datapointDTO)
+			}
+			if datapointDTO.SpaceID != "" {
+				datapointsMap[datapointDTO.SpaceID] = append(datapointsMap[datapointDTO.SpaceID], datapointDTO)
+			}
+		}
+		propertiesMap := make(map[string][]ontologyPropertyDTO)
+		for _, propertyDTO := range ontology.Properties {
+			if propertyDTO.AssetID != "" {
+				propertiesMap[propertyDTO.AssetID] = append(propertiesMap[propertyDTO.AssetID], propertyDTO)
+			}
+			if propertyDTO.SpaceID != "" {
+				propertiesMap[propertyDTO.SpaceID] = append(propertiesMap[propertyDTO.SpaceID], propertyDTO)
+			}
+		}
+		for i, asset := range ontology.Assets {
+			ontology.Assets[i].datapoints = datapointsMap[asset.ID]
+			ontology.Assets[i].properties = propertiesMap[asset.ID]
+		}
+
+		for i, space := range ontology.Spaces {
+			ontology.Spaces[i].datapoints = datapointsMap[space.ID]
+			ontology.Spaces[i].properties = propertiesMap[space.ID]
+		}
+	}
+
 	// Initialize spaces map with root space
 	spaces := make(map[string]*ontologySpaceDTO)
 	spaces[""] = &ontologySpaceDTO{}
-
 	// Build spaces map
 	for _, space := range ontology.Spaces {
 		spaceCopy := space
@@ -205,12 +253,42 @@ func buildAssetHierarchy(asset *eliona.Asset, spaces map[string]*ontologySpaceDT
 	}
 	// Process child spaces
 	for _, childSpace := range space.children {
+
+		// [datapoint-attribution]
+		// We need to merge attribute template information (name, subtype) with attribute instance information (instanceID, asset ID)
+		var attrs []appmodel.Attribute
+		for _, dp := range childSpace.datapoints {
+			datapointTemplateInfo, ok := datapointTemplatesMap[dp.TemplateID]
+			if !ok {
+				log.Warn("broker", "datapoint template not found for datapoint template %s", dp.TemplateID)
+				continue
+			}
+			attrs = append(attrs, appmodel.Attribute{
+				Name:       datapointTemplateInfo.name,
+				Subtype:    datapointTemplateInfo.subtype,
+				ProviderID: dp.ID,
+			})
+		}
+		for _, prop := range childSpace.properties {
+			datapointTemplateInfo, ok := datapointTemplatesMap[prop.TemplateID]
+			if !ok {
+				log.Warn("broker", "datapoint template not found for property template %s", prop.TemplateID)
+				continue
+			}
+			attrs = append(attrs, appmodel.Attribute{
+				Name:       datapointTemplateInfo.name,
+				Subtype:    datapointTemplateInfo.subtype,
+				ProviderID: prop.ID,
+			})
+		}
+
 		childAsset := eliona.Asset{
 			ID:                    childSpace.ID,
 			Name:                  childSpace.Name,
 			TemplateID:            childSpace.TemplateID,
 			Config:                &config,
 			LocationalChildrenMap: make(map[string]eliona.Asset),
+			Attributes:            attrs,
 		}
 		buildAssetHierarchy(&childAsset, spaces, assetsMap, config)
 		asset.LocationalChildrenMap[childSpace.ID] = childAsset
@@ -222,6 +300,35 @@ func buildAssetHierarchy(asset *eliona.Asset, spaces map[string]*ontologySpaceDT
 			log.Warn("broker", "asset %s in space %s not found. Skipping.", spaceAsset.ID, space.ID)
 			continue // Asset not found; skip
 		}
+
+		// [datapoint-attribution]
+		// We need to merge attribute template information (name, subtype) with attribute instance information (instanceID, asset ID)
+		var attrs []appmodel.Attribute
+		for _, dp := range assetDetails.datapoints {
+			datapointTemplateInfo, ok := datapointTemplatesMap[dp.TemplateID]
+			if !ok {
+				log.Warn("broker", "datapoint template not found for datapoint template %s", dp.TemplateID)
+				continue
+			}
+			attrs = append(attrs, appmodel.Attribute{
+				Name:       datapointTemplateInfo.name,
+				Subtype:    datapointTemplateInfo.subtype,
+				ProviderID: dp.ID,
+			})
+		}
+		for _, prop := range assetDetails.properties {
+			datapointTemplateInfo, ok := datapointTemplatesMap[prop.TemplateID]
+			if !ok {
+				log.Warn("broker", "datapoint template not found for property template %s", prop.TemplateID)
+				continue
+			}
+			attrs = append(attrs, appmodel.Attribute{
+				Name:       datapointTemplateInfo.name,
+				Subtype:    datapointTemplateInfo.subtype,
+				ProviderID: prop.ID,
+			})
+		}
+
 		isMaster := int8(0)
 		if spaceAsset.Master {
 			isMaster = 1
@@ -259,4 +366,3 @@ func SubscribeToDataChanges(config appmodel.Configuration) error {
 	}
 	return nil
 }
-

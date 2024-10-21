@@ -5,8 +5,10 @@ package dbgen
 
 var TableNames = struct {
 	Asset         string
+	Attribute     string
 	Configuration string
 }{
 	Asset:         "asset",
+	Attribute:     "attribute",
 	Configuration: "configuration",
 }

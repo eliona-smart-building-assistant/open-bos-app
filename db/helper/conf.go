@@ -20,7 +20,11 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+
+	"github.com/volatiletech/sqlboiler/v4/queries/qm"
+
 	appmodel "open-bos/app/model"
+
 	dbgen "open-bos/db/generated"
 
 	"github.com/eliona-smart-building-assistant/go-eliona/frontend"
@@ -175,14 +179,22 @@ func SetAllConfigsInactive(ctx context.Context) (int64, error) {
 	})
 }
 
-func InsertAsset(ctx context.Context, config appmodel.Configuration, projId string, globalAssetID string, assetId int32, providerId string) error {
+func InsertAsset(ctx context.Context, config appmodel.Configuration, projId string, globalAssetID string, assetId int32, providerId string) (assetID int64, err error) {
 	var dbAsset dbgen.Asset
 	dbAsset.ConfigurationID = config.Id
 	dbAsset.ProjectID = projId
 	dbAsset.GlobalAssetID = globalAssetID
 	dbAsset.AssetID = null.Int32From(assetId)
 	dbAsset.ProviderID = providerId
-	return dbAsset.InsertG(ctx, boil.Infer())
+	if err := dbAsset.InsertG(ctx, boil.Infer()); err != nil {
+		return 0, fmt.Errorf("inserting asset: %v", err)
+	}
+
+	// TODO: Is this needed?
+	// if err := dbAsset.ReloadG(ctx); err != nil {
+	// 	return 0, fmt.Errorf("reloading asset: %v", err)
+	// }
+	return dbAsset.ID, nil
 }
 
 func GetAssetId(ctx context.Context, config appmodel.Configuration, projId string, globalAssetID string) (*int32, error) {
@@ -197,7 +209,37 @@ func GetAssetId(ctx context.Context, config appmodel.Configuration, projId strin
 	return common.Ptr(dbAsset[0].AssetID.Int32), nil
 }
 
-func toAppAsset(dbAsset dbgen.Asset, config appmodel.Configuration) appmodel.Asset {
+func InsertAssetAttributes(ctx context.Context, assetId int64, attributes []appmodel.Attribute) error {
+	for _, attribute := range attributes {
+		dbAttribute := dbgen.Attribute{
+			Subtype:    attribute.Subtype,
+			Name:       attribute.Name,
+			ProviderID: attribute.ProviderID,
+		}
+		if err := dbAttribute.InsertG(ctx, boil.Infer()); err != nil {
+			return fmt.Errorf("inserting attribute %+v: %v", attribute, err)
+		}
+	}
+	return nil
+}
+
+func toAppAsset(ctx context.Context, dbAsset dbgen.Asset, config appmodel.Configuration) (appmodel.Asset, error) {
+	// dbSubtypes, err := dbAsset.AssetSubtypes().AllG(ctx)
+	// if err != nil {
+	// 	return appmodel.Asset{}, fmt.Errorf("fetching asset subtypes: %v", err)
+	// }
+	// var subtypes []appmodel.AssetSubtype
+	// for _, dbs := range dbSubtypes {
+	// 	var data map[string]any
+	// 	if err := dbs.Data.Unmarshal(&data); err != nil {
+	// 		return appmodel.Asset{}, fmt.Errorf("unmarshalling: %v \nData: %s", err, dbs.Data)
+	// 	}
+	// 	subtypes = append(subtypes, appmodel.AssetSubtype{
+	// 		ID:      dbs.ID,
+	// 		Subtype: dbs.Subtype,
+	// 		Data:    data,
+	// 	})
+	// }
 	return appmodel.Asset{
 		ID:            dbAsset.ID,
 		Config:        config,
@@ -205,20 +247,22 @@ func toAppAsset(dbAsset dbgen.Asset, config appmodel.Configuration) appmodel.Ass
 		GlobalAssetID: dbAsset.GlobalAssetID,
 		ProviderID:    dbAsset.ProviderID,
 		AssetID:       dbAsset.AssetID.Int32,
-	}
+		//Subtypes:      subtypes,
+	}, nil
 }
 
 func GetAssetById(assetId int32) (appmodel.Asset, error) {
+	ctx := context.Background()
 	asset, err := dbgen.Assets(
 		dbgen.AssetWhere.AssetID.EQ(null.Int32From(assetId)),
-	).OneG(context.Background())
+	).OneG(ctx)
 	if err != nil {
 		return appmodel.Asset{}, fmt.Errorf("fetching asset: %v", err)
 	}
 	if !asset.AssetID.Valid {
 		return appmodel.Asset{}, fmt.Errorf("shouldn't happen: assetID is nil")
 	}
-	c, err := asset.Configuration().OneG(context.Background())
+	c, err := asset.Configuration().OneG(ctx)
 	if errors.Is(err, sql.ErrNoRows) {
 		return appmodel.Asset{}, ErrNotFound
 	}
@@ -229,5 +273,54 @@ func GetAssetById(assetId int32) (appmodel.Asset, error) {
 	if err != nil {
 		return appmodel.Asset{}, fmt.Errorf("translating configuration: %v", err)
 	}
-	return toAppAsset(*asset, config), nil
+	appAsset, err := toAppAsset(ctx, *asset, config)
+	if err != nil {
+		return appmodel.Asset{}, fmt.Errorf("converting to app asset: %v", err)
+	}
+	return appAsset, nil
+}
+
+func GetAttributeById(providerID string, configID int64) (appmodel.Attribute, error) {
+	ctx := context.Background()
+	attribute, err := dbgen.Attributes(
+		qm.InnerJoin(dbgen.TableNames.Asset+" a on "+dbgen.TableNames.Attribute+"."+dbgen.AttributeColumns.AssetID+"=a.id"),
+		qm.InnerJoin(dbgen.TableNames.Configuration+" c on "+"a."+dbgen.AssetColumns.ConfigurationID+"=c.id"),
+		dbgen.ConfigurationWhere.ID.EQ(configID),
+		dbgen.AttributeWhere.ProviderID.EQ(providerID),
+	).OneG(ctx)
+	if err != nil {
+		return appmodel.Attribute{}, fmt.Errorf("fetching attribute: %v", err)
+	}
+
+	a, err := attribute.Asset().OneG(ctx)
+	if errors.Is(err, sql.ErrNoRows) {
+		return appmodel.Attribute{}, ErrNotFound
+	}
+	if err != nil {
+		return appmodel.Attribute{}, fmt.Errorf("fetching asset: %v", err)
+	}
+
+	c, err := a.Configuration().OneG(ctx)
+	if errors.Is(err, sql.ErrNoRows) {
+		return appmodel.Attribute{}, ErrNotFound
+	}
+	if err != nil {
+		return appmodel.Attribute{}, fmt.Errorf("fetching configuration: %v", err)
+	}
+	config, err := toAppConfig(c)
+	if err != nil {
+		return appmodel.Attribute{}, fmt.Errorf("translating configuration: %v", err)
+	}
+	asset, err := toAppAsset(ctx, *a, config)
+	if err != nil {
+		return appmodel.Attribute{}, fmt.Errorf("converting to app asset: %v", err)
+	}
+
+	appAttribute := appmodel.Attribute{
+		Name:       attribute.Name,
+		Subtype:    attribute.Subtype,
+		ProviderID: attribute.ProviderID,
+		Asset:      &asset,
+	}
+	return appAttribute, nil
 }

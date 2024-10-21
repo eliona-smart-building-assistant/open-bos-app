@@ -1,12 +1,13 @@
 package webhook
 
 import (
+	"open-bos/app"
+
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
-	"open-bos/app"
 	"regexp"
 	"strconv"
 	"time"
@@ -79,11 +80,11 @@ func (s *webhookServer) handleLivedataUpdate(w http.ResponseWriter, r *http.Requ
 	log.Debug("webhook", "Config ID: %d", configID)
 
 	type LiveData struct {
-		ID         string      `json:"Id"`
-		IsProperty bool        `json:"IsProperty"`
-		TimeStamp  string      `json:"TimeStamp"`
-		Quality    string      `json:"Quality"`
-		Value      interface{} `json:"Value"`
+		DatapointID string `json:"Id"`
+		IsProperty  bool   `json:"IsProperty"`
+		TimeStamp   string `json:"TimeStamp"`
+		Quality     string `json:"Quality"`
+		Value       any    `json:"Value"`
 	}
 
 	var liveData []LiveData
@@ -98,14 +99,21 @@ func (s *webhookServer) handleLivedataUpdate(w http.ResponseWriter, r *http.Requ
 		layout := "02/01/2006 15:04:05"
 		timestamp, err := time.ParseInLocation(layout, data.TimeStamp, time.UTC)
 		if err != nil {
-			log.Warn("webhook", "Invalid timestamp format for ID %s: %v", data.ID, err)
+			log.Warn("webhook", "Invalid timestamp format for ID %s: %v", data.DatapointID, err)
 			continue
 		}
 
-		log.Debug("webhook", "Received data for ID %s: IsProperty=%v, TimeStamp=%v, Quality=%s, Value=%v",
-			data.ID, data.IsProperty, timestamp, data.Quality, data.Value)
-
-		// TODO: Use the update
+		if data.Quality == "good" {
+			app.UpdateDataPoint(app.AttributeDataUpdate{
+				ConfigID:            configID,
+				DatapointProviderID: data.DatapointID,
+				Timestamp:           timestamp,
+				Value:               data.Value,
+			})
+		} else {
+			log.Debug("webhook", "Received bad quality data for ID %s: IsProperty=%v, TimeStamp=%v, Quality=%s, Value=%v",
+				data.DatapointID, data.IsProperty, timestamp, data.Quality, data.Value)
+		}
 	}
 
 	w.WriteHeader(http.StatusOK)

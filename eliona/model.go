@@ -35,6 +35,8 @@ type Asset struct {
 	LocationalChildrenMap   map[string]Asset
 	FunctionalChildrenSlice []Asset
 
+	Attributes []appmodel.Attribute
+
 	Config *appmodel.Configuration
 }
 
@@ -58,17 +60,24 @@ func (d *Asset) GetAssetID(projectID string) (*int32, error) {
 	return conf.GetAssetId(context.Background(), *d.Config, projectID, d.GetGAI())
 }
 
-func (d *Asset) SetAssetID(assetID int32, projectID string) error {
-	if err := conf.InsertAsset(context.Background(), *d.Config, projectID, d.GetGAI(), assetID, d.ID); err != nil {
+func (d *Asset) SetAssetID(elionaAssetID int32, projectID string) error {
+	ctx := context.Background()
+	assetID, err := conf.InsertAsset(ctx, *d.Config, projectID, d.GetGAI(), elionaAssetID, d.ID)
+	if err != nil {
 		return fmt.Errorf("inserting asset to config db: %v", err)
 	}
+
+	if err := conf.InsertAssetAttributes(ctx, assetID, d.Attributes); err != nil {
+		return fmt.Errorf("inserting asset subtypes to config db: %v", err)
+	}
+
 	return nil
 }
 
 func (r *Asset) GetLocationalChildren() []asset.LocationalNode {
 	locationalChildren := make([]asset.LocationalNode, 0, len(r.LocationalChildrenMap))
 	for _, room := range r.LocationalChildrenMap {
-		roomCopy := room // Create a copy of room
+		roomCopy := room
 		locationalChildren = append(locationalChildren, &roomCopy)
 	}
 	return locationalChildren

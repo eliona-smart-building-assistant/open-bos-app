@@ -286,6 +286,9 @@ type ontologyAssetDTO struct {
 	Name       string   `json:"name"`
 	TemplateID string   `json:"templateId"`
 	Tags       []string `json:"tags,omitempty"`
+
+	datapoints []ontologyDatapointDTO
+	properties []ontologyPropertyDTO
 }
 
 type ontologySpaceDTO struct {
@@ -297,6 +300,9 @@ type ontologySpaceDTO struct {
 	Assets     []ontologySpaceAssetDTO `json:"assets,omitempty"`
 
 	children []ontologySpaceDTO
+
+	datapoints []ontologyDatapointDTO
+	properties []ontologyPropertyDTO
 }
 
 type ontologySpaceAssetDTO struct {

@@ -43,3 +43,10 @@ type Asset struct {
 	ProviderID    string
 	AssetID       int32
 }
+
+type Attribute struct {
+	Name       string
+	ProviderID string
+	Subtype    string
+	Asset      *Asset // todo: is this needed?
+}

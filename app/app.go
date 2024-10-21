@@ -28,6 +28,7 @@ import (
 	"sync"
 	"time"
 
+	api "github.com/eliona-smart-building-assistant/go-eliona-api-client/v2"
 	"github.com/eliona-smart-building-assistant/go-eliona/app"
 	"github.com/eliona-smart-building-assistant/go-eliona/asset"
 	"github.com/eliona-smart-building-assistant/go-eliona/frontend"
@@ -161,6 +162,45 @@ func collectResources(config *appmodel.Configuration) error {
 	dbhelper.UpdateConfigOntologyVersion(context.Background(), *config)
 
 	return nil
+}
+
+type AttributeDataUpdate struct {
+	ConfigID            int64
+	DatapointProviderID string
+	Timestamp           time.Time
+	Value               any
+}
+
+// TODO: change to bulk upsert
+func UpdateDataPoint(update AttributeDataUpdate) {
+	config, err := dbhelper.GetConfig(context.Background(), update.ConfigID)
+	if err != nil {
+		log.Error("dbhelper", "Couldn't read config %d from DB: %v", update.ConfigID, err)
+		return
+	}
+	if !config.Enable {
+		if config.Active {
+			dbhelper.SetConfigActiveState(context.Background(), config, false)
+		}
+		return
+	}
+	if !config.Active {
+		dbhelper.SetConfigActiveState(context.Background(), config, true)
+	}
+
+	attribute, err := dbhelper.GetAttributeById(update.DatapointProviderID, config.Id)
+	if err != nil {
+		log.Error("dbhelper", "getting attribute by ID %v for config %v: %v", update.DatapointProviderID, config.Id, err)
+		return
+	}
+	assetData := map[string]any{
+		attribute.Name: update.Value,
+	}
+
+	if err := eliona.UpsertAssetData(attribute.Asset.AssetID, assetData, update.Timestamp, api.DataSubtype(attribute.Subtype)); err != nil {
+		log.Error("eliona", "upserting asset data: %v", err)
+		return
+	}
 }
 
 // ListenForOutputChanges listens to output attribute changes from Eliona. Delete if not needed.

@@ -17,37 +17,29 @@ package eliona
 
 import (
 	"fmt"
-	appmodel "open-bos/app/model"
+	"time"
 
+	api "github.com/eliona-smart-building-assistant/go-eliona-api-client/v2"
 	"github.com/eliona-smart-building-assistant/go-eliona/asset"
 	"github.com/eliona-smart-building-assistant/go-utils/log"
 )
 
 const ClientReference string = "open-bos"
 
-func UpsertAssetData(config appmodel.Configuration, assets []Asset) error {
-	for _, projectId := range config.ProjectIDs {
-		for _, a := range assets {
-			log.Debug("Eliona", "upserting data for asset: config %d and asset '%v'", config.Id, a.GetGAI())
-			assetId, err := a.GetAssetID(projectId)
-			if err != nil {
-				return err
-			}
-			if assetId == nil {
-				// This might happen in case of filtered or newly added devices.
-				log.Debug("conf", "unable to find asset ID for %v", a.GetGAI())
-				continue
-			}
+func UpsertAssetData(assetID int32, assetData map[string]any, timestamp time.Time, subtype api.DataSubtype) error {
+	cr := ClientReference
+	log.Debug("Eliona", "upserting data for asset '%v'", assetID)
 
-			data := asset.Data{
-				AssetId:         *assetId,
-				Data:            a,
-				ClientReference: ClientReference,
-			}
-			if err := asset.UpsertAssetDataIfAssetExists(data); err != nil {
-				return fmt.Errorf("upserting data: %v", err)
-			}
-		}
+	data := api.Data{
+		AssetId:         assetID,
+		Subtype:         subtype,
+		Timestamp:       *api.NewNullableTime(&timestamp),
+		Data:            assetData,
+		ClientReference: *api.NewNullableString(&cr),
+		// AssetTypeName: api.NullableString{}, No need to fill, it's only for seleciton
+	}
+	if err := asset.UpsertDataIfAssetExists(data); err != nil {
+		return fmt.Errorf("upserting data: %v", err)
 	}
 	return nil
 }
