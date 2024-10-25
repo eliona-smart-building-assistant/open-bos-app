@@ -212,6 +212,7 @@ func GetAssetId(ctx context.Context, config appmodel.Configuration, projId strin
 func InsertAssetAttributes(ctx context.Context, assetId int64, attributes []appmodel.Attribute) error {
 	for _, attribute := range attributes {
 		dbAttribute := dbgen.Attribute{
+			AssetID:    assetId,
 			Subtype:    attribute.Subtype,
 			Name:       attribute.Name,
 			ProviderID: attribute.ProviderID,
