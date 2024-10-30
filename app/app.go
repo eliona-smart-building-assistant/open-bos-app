@@ -95,12 +95,11 @@ func CollectData() {
 			}
 			log.Info("main", "Collecting %d finished.", config.Id)
 
-			// TODO: Does not work with mock server (415). Uncomment when real server is ready.
-			// if err := broker.SubscribeToOntologyChanges(config); err != nil {
-			// 	log.Error("broker", "subscribing to ontology changes: %v", err)
-			// 	return
-			// }
-			// log.Info("main", "Subscribed to ontology updates of config %d", config.Id)
+			if err := broker.SubscribeToOntologyChanges(config); err != nil {
+				log.Error("broker", "subscribing to ontology changes: %v", err)
+				return
+			}
+			log.Info("main", "Subscribed to ontology updates of config %d", config.Id)
 
 			if err := broker.SubscribeToDataChanges(config); err != nil {
 				log.Error("broker", "subscribing to data changes: %v", err)
