@@ -283,9 +283,13 @@ func GetAssetById(assetId int32) (appmodel.Asset, error) {
 
 func GetAttributeById(providerID string, configID int64) (appmodel.Attribute, error) {
 	ctx := context.Background()
+	
+	assetTable := "open_bos." + dbgen.TableNames.Asset
+	attributeTable := "open_bos." + dbgen.TableNames.Attribute
+	configTable := "open_bos." + dbgen.TableNames.Configuration
 	attribute, err := dbgen.Attributes(
-		qm.InnerJoin(dbgen.TableNames.Asset+" a on "+dbgen.TableNames.Attribute+"."+dbgen.AttributeColumns.AssetID+"=a.id"),
-		qm.InnerJoin(dbgen.TableNames.Configuration+" c on "+"a."+dbgen.AssetColumns.ConfigurationID+"=c.id"),
+		qm.InnerJoin(fmt.Sprintf("%s on %s.%s = %s.%s", assetTable, attributeTable, dbgen.AttributeColumns.AssetID, assetTable, dbgen.AssetColumns.ID)),
+		qm.InnerJoin(fmt.Sprintf("%s on %s.%s = %s.%s", configTable, assetTable, dbgen.AssetColumns.ConfigurationID, configTable, dbgen.ConfigurationColumns.ID)),
 		dbgen.ConfigurationWhere.ID.EQ(configID),
 		dbgen.AttributeWhere.ProviderID.EQ(providerID),
 	).OneG(ctx)
