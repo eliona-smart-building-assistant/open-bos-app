@@ -190,10 +190,6 @@ func InsertAsset(ctx context.Context, config appmodel.Configuration, projId stri
 		return 0, fmt.Errorf("inserting asset: %v", err)
 	}
 
-	// TODO: Is this needed?
-	// if err := dbAsset.ReloadG(ctx); err != nil {
-	// 	return 0, fmt.Errorf("reloading asset: %v", err)
-	// }
 	return dbAsset.ID, nil
 }
 
@@ -224,23 +220,7 @@ func InsertAssetAttributes(ctx context.Context, assetId int64, attributes []appm
 	return nil
 }
 
-func toAppAsset(ctx context.Context, dbAsset dbgen.Asset, config appmodel.Configuration) (appmodel.Asset, error) {
-	// dbSubtypes, err := dbAsset.AssetSubtypes().AllG(ctx)
-	// if err != nil {
-	// 	return appmodel.Asset{}, fmt.Errorf("fetching asset subtypes: %v", err)
-	// }
-	// var subtypes []appmodel.AssetSubtype
-	// for _, dbs := range dbSubtypes {
-	// 	var data map[string]any
-	// 	if err := dbs.Data.Unmarshal(&data); err != nil {
-	// 		return appmodel.Asset{}, fmt.Errorf("unmarshalling: %v \nData: %s", err, dbs.Data)
-	// 	}
-	// 	subtypes = append(subtypes, appmodel.AssetSubtype{
-	// 		ID:      dbs.ID,
-	// 		Subtype: dbs.Subtype,
-	// 		Data:    data,
-	// 	})
-	// }
+func toAppAsset(dbAsset dbgen.Asset, config appmodel.Configuration) (appmodel.Asset, error) {
 	return appmodel.Asset{
 		ID:            dbAsset.ID,
 		Config:        config,
@@ -248,7 +228,6 @@ func toAppAsset(ctx context.Context, dbAsset dbgen.Asset, config appmodel.Config
 		GlobalAssetID: dbAsset.GlobalAssetID,
 		ProviderID:    dbAsset.ProviderID,
 		AssetID:       dbAsset.AssetID.Int32,
-		//Subtypes:      subtypes,
 	}, nil
 }
 
@@ -274,7 +253,7 @@ func GetAssetById(assetId int32) (appmodel.Asset, error) {
 	if err != nil {
 		return appmodel.Asset{}, fmt.Errorf("translating configuration: %v", err)
 	}
-	appAsset, err := toAppAsset(ctx, *asset, config)
+	appAsset, err := toAppAsset(*asset, config)
 	if err != nil {
 		return appmodel.Asset{}, fmt.Errorf("converting to app asset: %v", err)
 	}
@@ -283,7 +262,7 @@ func GetAssetById(assetId int32) (appmodel.Asset, error) {
 
 func GetAttributeById(providerID string, configID int64) (appmodel.Attribute, error) {
 	ctx := context.Background()
-	
+
 	assetTable := "open_bos." + dbgen.TableNames.Asset
 	attributeTable := "open_bos." + dbgen.TableNames.Attribute
 	configTable := "open_bos." + dbgen.TableNames.Configuration
@@ -316,7 +295,7 @@ func GetAttributeById(providerID string, configID int64) (appmodel.Attribute, er
 	if err != nil {
 		return appmodel.Attribute{}, fmt.Errorf("translating configuration: %v", err)
 	}
-	asset, err := toAppAsset(ctx, *a, config)
+	asset, err := toAppAsset(*a, config)
 	if err != nil {
 		return appmodel.Attribute{}, fmt.Errorf("converting to app asset: %v", err)
 	}
