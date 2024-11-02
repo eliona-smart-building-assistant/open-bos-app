@@ -12,7 +12,7 @@ require (
 	github.com/gorilla/websocket v1.5.3
 	github.com/volatiletech/null/v8 v8.1.2
 	github.com/volatiletech/sqlboiler/v4 v4.16.2
-	github.com/volatiletech/strmangle v0.0.7
+	github.com/volatiletech/strmangle v0.0.8
 	gopkg.in/yaml.v3 v3.0.1
 )
 
