@@ -1223,7 +1223,7 @@ func (o ConfigurationSlice) DeleteAll(ctx context.Context, exec boil.ContextExec
 	}
 
 	sql := "DELETE FROM \"open_bos\".\"configuration\" WHERE " +
-		strmangle.WhereClauseRepeated(string(dialect.LQ), string(dialect.RQ), 1, configurationPrimaryKeyColumns, len(o))
+		strmangle.WhereInClause(string(dialect.LQ), string(dialect.RQ), 1, configurationPrimaryKeyColumns, len(o))
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)

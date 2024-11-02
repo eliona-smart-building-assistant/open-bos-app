@@ -205,22 +205,36 @@ func GetAssetId(ctx context.Context, config appmodel.Configuration, projId strin
 	return common.Ptr(dbAsset[0].AssetID.Int32), nil
 }
 
-func InsertAssetAttributes(ctx context.Context, assetId int64, attributes []appmodel.Attribute) error {
-	for _, attribute := range attributes {
-		dbAttribute := dbgen.Attribute{
+func InsertAssetAttributes(ctx context.Context, assetId int64, datapoints []appmodel.Datapoint) error {
+	for _, datapoint := range datapoints {
+		// Insert OpenBOS Datapoint
+		dbDatapoint := dbgen.OpenbosDatapoint{
 			AssetID:    assetId,
-			Subtype:    attribute.Subtype,
-			Name:       attribute.Name,
-			ProviderID: attribute.ProviderID,
+			Subtype:    datapoint.Subtype,
+			ProviderID: datapoint.ProviderID,
 		}
-		if err := dbAttribute.InsertG(ctx, boil.Infer()); err != nil {
-			return fmt.Errorf("inserting attribute %+v: %v", attribute, err)
+
+		if err := dbDatapoint.InsertG(ctx, boil.Infer()); err != nil {
+			return fmt.Errorf("inserting datapoint %+v: %v", datapoint, err)
+		}
+
+		// Insert associated Eliona Attributes for the Datapoint
+		for _, attribute := range datapoint.Attributes {
+			dbAttribute := dbgen.ElionaAttribute{
+				OpenbosDatapointID:  dbDatapoint.ID,
+				ElionaAttributeName: attribute.Name,
+			}
+
+			if err := dbAttribute.InsertG(ctx, boil.Infer()); err != nil {
+				return fmt.Errorf("inserting attribute %+v for datapoint %v: %v", attribute, datapoint.ProviderID, err)
+			}
 		}
 	}
+
 	return nil
 }
 
-func toAppAsset(dbAsset dbgen.Asset, config appmodel.Configuration) (appmodel.Asset, error) {
+func toAppAsset(dbAsset dbgen.Asset, config appmodel.Configuration) appmodel.Asset {
 	return appmodel.Asset{
 		ID:            dbAsset.ID,
 		Config:        config,
@@ -228,7 +242,7 @@ func toAppAsset(dbAsset dbgen.Asset, config appmodel.Configuration) (appmodel.As
 		GlobalAssetID: dbAsset.GlobalAssetID,
 		ProviderID:    dbAsset.ProviderID,
 		AssetID:       dbAsset.AssetID.Int32,
-	}, nil
+	}
 }
 
 func GetAssetById(assetId int32) (appmodel.Asset, error) {
@@ -253,58 +267,146 @@ func GetAssetById(assetId int32) (appmodel.Asset, error) {
 	if err != nil {
 		return appmodel.Asset{}, fmt.Errorf("translating configuration: %v", err)
 	}
-	appAsset, err := toAppAsset(*asset, config)
-	if err != nil {
-		return appmodel.Asset{}, fmt.Errorf("converting to app asset: %v", err)
-	}
-	return appAsset, nil
+	return toAppAsset(*asset, config), nil
 }
 
-func GetAttributeById(providerID string, configID int64) (appmodel.Attribute, error) {
+func GetDatapointById(providerDatapointID string, configID int64) (appmodel.Datapoint, error) {
 	ctx := context.Background()
 
-	assetTable := "open_bos." + dbgen.TableNames.Asset
-	attributeTable := "open_bos." + dbgen.TableNames.Attribute
-	configTable := "open_bos." + dbgen.TableNames.Configuration
-	attribute, err := dbgen.Attributes(
-		qm.InnerJoin(fmt.Sprintf("%s on %s.%s = %s.%s", assetTable, attributeTable, dbgen.AttributeColumns.AssetID, assetTable, dbgen.AssetColumns.ID)),
-		qm.InnerJoin(fmt.Sprintf("%s on %s.%s = %s.%s", configTable, assetTable, dbgen.AssetColumns.ConfigurationID, configTable, dbgen.ConfigurationColumns.ID)),
+	datapointTable := "open_bos.openbos_datapoint"
+	assetTable := "open_bos.asset"
+	configTable := "open_bos.configuration"
+
+	// Query to fetch the OpenBOS datapoint and its associated asset
+	datapoint, err := dbgen.OpenbosDatapoints(
+		qm.InnerJoin(fmt.Sprintf("%s ON %s.asset_id = %s.id", assetTable, datapointTable, assetTable)),
+		qm.InnerJoin(fmt.Sprintf("%s ON %s.id = %s.configuration_id", configTable, assetTable, configTable)),
 		dbgen.ConfigurationWhere.ID.EQ(configID),
-		dbgen.AttributeWhere.ProviderID.EQ(providerID),
+		dbgen.OpenbosDatapointWhere.ProviderID.EQ(providerDatapointID),
 	).OneG(ctx)
 	if err != nil {
-		return appmodel.Attribute{}, fmt.Errorf("fetching attribute: %v", err)
+		if errors.Is(err, sql.ErrNoRows) {
+			return appmodel.Datapoint{}, fmt.Errorf("no datapoint found for provider ID %v in config %v", providerDatapointID, configID)
+		}
+		return appmodel.Datapoint{}, fmt.Errorf("fetching datapoint for provider ID %v: %v", providerDatapointID, err)
 	}
 
-	a, err := attribute.Asset().OneG(ctx)
-	if errors.Is(err, sql.ErrNoRows) {
-		return appmodel.Attribute{}, ErrNotFound
-	}
+	// Fetch associated attributes for the datapoint
+	attributes, err := dbgen.ElionaAttributes(
+		dbgen.ElionaAttributeWhere.OpenbosDatapointID.EQ(datapoint.ID),
+	).AllG(ctx)
 	if err != nil {
-		return appmodel.Attribute{}, fmt.Errorf("fetching asset: %v", err)
+		return appmodel.Datapoint{}, fmt.Errorf("fetching attributes for datapoint ID %v: %v", datapoint.ID, err)
 	}
 
-	c, err := a.Configuration().OneG(ctx)
+	// Map attributes to the appmodel structure
+	var appAttributes []appmodel.Attribute
+	for _, attr := range attributes {
+		appAttributes = append(appAttributes, appmodel.Attribute{
+			Name: attr.ElionaAttributeName,
+		})
+	}
+
+	// Fetch the associated asset
+	asset, err := datapoint.Asset().OneG(ctx)
+	if err != nil {
+		return appmodel.Datapoint{}, fmt.Errorf("fetching asset for datapoint ID %v: %v", datapoint.ID, err)
+	}
+
+	c, err := asset.Configuration().OneG(ctx)
 	if errors.Is(err, sql.ErrNoRows) {
-		return appmodel.Attribute{}, ErrNotFound
+		return appmodel.Datapoint{}, ErrNotFound
 	}
 	if err != nil {
-		return appmodel.Attribute{}, fmt.Errorf("fetching configuration: %v", err)
+		return appmodel.Datapoint{}, fmt.Errorf("fetching configuration: %v", err)
 	}
 	config, err := toAppConfig(c)
 	if err != nil {
-		return appmodel.Attribute{}, fmt.Errorf("translating configuration: %v", err)
+		return appmodel.Datapoint{}, fmt.Errorf("translating configuration: %v", err)
 	}
-	asset, err := toAppAsset(*a, config)
+	appAsset := toAppAsset(*asset, config)
+
+	return appmodel.Datapoint{
+		ProviderID:          datapoint.ProviderID,
+		Subtype:             datapoint.Subtype,
+		Asset:               &appAsset,
+		AttributeNamePrefix: datapoint.Name,
+		Attributes:          appAttributes,
+	}, nil
+}
+
+func GetDatapointByAttributeName(assetID int32, attributeName string) (appmodel.Datapoint, error) {
+	ctx := context.Background()
+
+	// Define table names for readability
+	attributeTable := "open_bos.eliona_attribute"
+	datapointTable := "open_bos.openbos_datapoint"
+	assetTable := "open_bos.asset"
+	configTable := "open_bos.configuration"
+
+	// Query to find the attribute and join with the datapoint to which it belongs
+	attribute, err := dbgen.ElionaAttributes(
+		qm.InnerJoin(fmt.Sprintf("%s ON %s.id = %s.openbos_datapoint_id", datapointTable, datapointTable, attributeTable)),
+		qm.InnerJoin(fmt.Sprintf("%s ON %s.asset_id = %s.id", assetTable, datapointTable, assetTable)),
+		qm.InnerJoin(fmt.Sprintf("%s ON %s.id = %s.configuration_id", configTable, assetTable, configTable)),
+		dbgen.AssetWhere.AssetID.EQ(null.Int32From(assetID)),
+		dbgen.ElionaAttributeWhere.ElionaAttributeName.EQ(attributeName),
+	).OneG(ctx)
 	if err != nil {
-		return appmodel.Attribute{}, fmt.Errorf("converting to app asset: %v", err)
+		if errors.Is(err, sql.ErrNoRows) {
+			return appmodel.Datapoint{}, fmt.Errorf("no attribute found for asset ID %v and attribute name %v", assetID, attributeName)
+		}
+		return appmodel.Datapoint{}, fmt.Errorf("fetching attribute: %v", err)
 	}
 
-	appAttribute := appmodel.Attribute{
-		Name:       attribute.Name,
-		Subtype:    attribute.Subtype,
-		ProviderID: attribute.ProviderID,
-		Asset:      &asset,
+	// Retrieve the associated datapoint
+	datapoint, err := attribute.OpenbosDatapoint().OneG(ctx)
+	if err != nil {
+		return appmodel.Datapoint{}, fmt.Errorf("fetching datapoint for attribute ID %v: %v", attribute.ID, err)
 	}
-	return appAttribute, nil
+
+	// Retrieve all attributes related to the datapoint
+	relatedAttributes, err := dbgen.ElionaAttributes(
+		dbgen.ElionaAttributeWhere.OpenbosDatapointID.EQ(datapoint.ID),
+	).AllG(ctx)
+	if err != nil {
+		return appmodel.Datapoint{}, fmt.Errorf("fetching related attributes for datapoint ID %v: %v", datapoint.ID, err)
+	}
+
+	// Map attributes to appmodel.Attribute
+	var appAttributes []appmodel.Attribute
+	for _, attr := range relatedAttributes {
+		appAttributes = append(appAttributes, appmodel.Attribute{
+			Name: attr.ElionaAttributeName,
+		})
+	}
+
+	// Retrieve the associated asset
+	asset, err := datapoint.Asset().OneG(ctx)
+	if err != nil {
+		return appmodel.Datapoint{}, fmt.Errorf("fetching asset for datapoint ID %v: %v", datapoint.ID, err)
+	}
+
+	// Retrieve the configuration associated with the asset
+	config, err := asset.Configuration().OneG(ctx)
+	if errors.Is(err, sql.ErrNoRows) {
+		return appmodel.Datapoint{}, ErrNotFound
+	}
+	if err != nil {
+		return appmodel.Datapoint{}, fmt.Errorf("fetching configuration for asset ID %v: %v", asset.ID, err)
+	}
+	appConfig, err := toAppConfig(config)
+	if err != nil {
+		return appmodel.Datapoint{}, fmt.Errorf("translating configuration: %v", err)
+	}
+	appAsset := toAppAsset(*asset, appConfig)
+
+	// Construct and return the Datapoint object
+	return appmodel.Datapoint{
+		ProviderID:          datapoint.ProviderID,
+		Subtype:             datapoint.Subtype,
+		Asset:               &appAsset,
+		AttributeNamePrefix: datapoint.Name,
+		Attributes:          appAttributes,
+	}, nil
 }

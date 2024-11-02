@@ -35,7 +35,7 @@ type Asset struct {
 	LocationalChildrenMap   map[string]Asset
 	FunctionalChildrenSlice []Asset
 
-	Attributes []appmodel.Attribute
+	Datapoints []appmodel.Datapoint
 
 	Config *appmodel.Configuration
 }
@@ -67,7 +67,7 @@ func (d *Asset) SetAssetID(elionaAssetID int32, projectID string) error {
 		return fmt.Errorf("inserting asset to config db: %v", err)
 	}
 
-	if err := conf.InsertAssetAttributes(ctx, assetID, d.Attributes); err != nil {
+	if err := conf.InsertAssetAttributes(ctx, assetID, d.Datapoints); err != nil {
 		return fmt.Errorf("inserting asset subtypes to config db: %v", err)
 	}
 

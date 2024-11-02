@@ -42,13 +42,20 @@ create table if not exists open_bos.asset
 	asset_id         integer
 );
 
-create table if not exists open_bos.attribute
+create table if not exists open_bos.openbos_datapoint
 (
 	id          bigserial primary key,
 	asset_id    bigserial not null references open_bos.asset(id) ON DELETE CASCADE,
 	subtype     text      not null,
-	name        text      not null,
-	provider_id text      not null
+	provider_id text      not null unique,
+	name        text      not null
+);
+
+create table if not exists open_bos.eliona_attribute
+(
+	id                    bigserial primary key,
+	openbos_datapoint_id  bigserial not null references open_bos.openbos_datapoint(id) ON DELETE CASCADE,
+	eliona_attribute_name text      not null
 );
 
 -- There is a transaction started in app.Init(). We need to commit to make the

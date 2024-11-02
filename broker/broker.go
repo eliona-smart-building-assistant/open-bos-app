@@ -31,10 +31,14 @@ const masterPropertyAttribute = "is_master"
 var ErrNoUpdate = errors.New("no new version available")
 
 // [datapoint-attribution]
-var datapointTemplatesMap = make(map[string]datapointTemplateInfo) // map[datapointTemplateID]datapointTemplate
-type datapointTemplateInfo struct {
-	name    string
-	subtype string
+var datapointBelongingToAssetTemplate = make(map[string]datapointTemplatePreprocessedInfo) // map[datapointTemplateID]datapoints
+type datapointTemplatePreprocessedInfo struct {
+	name       string // datapoint name always
+	subtype    string
+	attributes []attributeTemplateInfo
+}
+type attributeTemplateInfo struct {
+	name string // datatype (name or id) . uncomplexified path
 }
 
 func convertAssetTemplateToAssetType(template assetTemplate) api.AssetType {
@@ -49,40 +53,54 @@ func convertAssetTemplateToAssetType(template assetTemplate) api.AssetType {
 
 	for _, dp := range template.Datapoints {
 		subtype := determineSubtype(dp.Direction)
-		mapping := convertMapping(dp.Enums)
-		attribute := api.AssetTypeAttribute{
-			Name:    dp.Name,
-			Subtype: subtype,
-			Min:     *api.NewNullableFloat64(dp.Min),
-			Max:     *api.NewNullableFloat64(dp.Max),
-			Unit:    *api.NewNullableString(dp.DisplayUnitID),
-			Map:     mapping,
+		var attributes []attributeTemplateInfo
+		for _, attrib := range dp.Attributes {
+			mapping := convertMapping(attrib.Enums)
+			attribute := api.AssetTypeAttribute{
+				Name:    attrib.Name,
+				Subtype: subtype,
+				Min:     *api.NewNullableFloat64(attrib.Min),
+				Max:     *api.NewNullableFloat64(attrib.Max),
+				Unit:    *api.NewNullableString(attrib.DisplayUnitID),
+				Map:     mapping,
+			}
+			apiAsset.Attributes = append(apiAsset.Attributes, attribute)
+			attributes = append(attributes, attributeTemplateInfo{
+				name: attrib.Name,
+			})
 		}
-		apiAsset.Attributes = append(apiAsset.Attributes, attribute)
 		// [datapoint-attribution]
-		datapointTemplatesMap[dp.ID] = datapointTemplateInfo{
-			name:    dp.Name,
-			subtype: string(subtype),
+		datapointBelongingToAssetTemplate[dp.ID] = datapointTemplatePreprocessedInfo{
+			name:       dp.Name,
+			subtype:    string(subtype),
+			attributes: attributes,
 		}
 	}
 
 	// Properties are attributes that don't change often (our status subtype)
 	for _, prop := range template.Properties {
 		subtype := api.SUBTYPE_STATUS
-		mapping := convertMapping(prop.Enums)
-		attribute := api.AssetTypeAttribute{
-			Name:    prop.Name,
-			Subtype: subtype,
-			Min:     *api.NewNullableFloat64(prop.Min),
-			Max:     *api.NewNullableFloat64(prop.Max),
-			Unit:    *api.NewNullableString(prop.DisplayUnitID),
-			Map:     mapping,
+		var attributes []attributeTemplateInfo
+		for _, attrib := range prop.Attributes {
+			mapping := convertMapping(attrib.Enums)
+			attribute := api.AssetTypeAttribute{
+				Name:    attrib.Name,
+				Subtype: subtype,
+				Min:     *api.NewNullableFloat64(attrib.Min),
+				Max:     *api.NewNullableFloat64(attrib.Max),
+				Unit:    *api.NewNullableString(attrib.DisplayUnitID),
+				Map:     mapping,
+			}
+			apiAsset.Attributes = append(apiAsset.Attributes, attribute)
+			attributes = append(attributes, attributeTemplateInfo{
+				name: attrib.Name,
+			})
 		}
-		apiAsset.Attributes = append(apiAsset.Attributes, attribute)
 		// [datapoint-attribution]
-		datapointTemplatesMap[prop.ID] = datapointTemplateInfo{
-			name:    prop.Name,
-			subtype: string(subtype),
+		datapointBelongingToAssetTemplate[prop.ID] = datapointTemplatePreprocessedInfo{
+			name:       prop.Name,
+			subtype:    string(subtype),
+			attributes: attributes,
 		}
 	}
 
@@ -256,29 +274,43 @@ func buildAssetHierarchy(asset *eliona.Asset, spaces map[string]*ontologySpaceDT
 
 		// [datapoint-attribution]
 		// We need to merge attribute template information (name, subtype) with attribute instance information (instanceID, asset ID)
-		var attrs []appmodel.Attribute
+		var dps []appmodel.Datapoint
 		for _, dp := range childSpace.datapoints {
-			datapointTemplateInfo, ok := datapointTemplatesMap[dp.TemplateID]
+			datapoint, ok := datapointBelongingToAssetTemplate[dp.TemplateID]
 			if !ok {
-				log.Warn("broker", "datapoint template not found for datapoint template %s", dp.TemplateID)
+				log.Warn("broker", "datapoint not found for datapoint template %s", dp.TemplateID)
 				continue
 			}
-			attrs = append(attrs, appmodel.Attribute{
-				Name:       datapointTemplateInfo.name,
-				Subtype:    datapointTemplateInfo.subtype,
-				ProviderID: dp.ID,
+			var attributes []appmodel.Attribute
+			for _, attributeInfo := range datapoint.attributes {
+				attributes = append(attributes, appmodel.Attribute{
+					Name: attributeInfo.name,
+				})
+			}
+			dps = append(dps, appmodel.Datapoint{
+				Subtype:             datapoint.subtype,
+				ProviderID:          dp.ID,
+				AttributeNamePrefix: datapoint.name,
+				Attributes:          attributes,
 			})
 		}
 		for _, prop := range childSpace.properties {
-			datapointTemplateInfo, ok := datapointTemplatesMap[prop.TemplateID]
+			datapoint, ok := datapointBelongingToAssetTemplate[prop.TemplateID]
 			if !ok {
-				log.Warn("broker", "datapoint template not found for property template %s", prop.TemplateID)
+				log.Warn("broker", "datapoint not found for property template %s", prop.TemplateID)
 				continue
 			}
-			attrs = append(attrs, appmodel.Attribute{
-				Name:       datapointTemplateInfo.name,
-				Subtype:    datapointTemplateInfo.subtype,
-				ProviderID: prop.ID,
+			var attributes []appmodel.Attribute
+			for _, attributeInfo := range datapoint.attributes {
+				attributes = append(attributes, appmodel.Attribute{
+					Name: attributeInfo.name,
+				})
+			}
+			dps = append(dps, appmodel.Datapoint{
+				Subtype:             datapoint.subtype,
+				ProviderID:          prop.ID,
+				AttributeNamePrefix: datapoint.name,
+				Attributes:          attributes,
 			})
 		}
 
@@ -288,7 +320,7 @@ func buildAssetHierarchy(asset *eliona.Asset, spaces map[string]*ontologySpaceDT
 			TemplateID:            childSpace.TemplateID,
 			Config:                &config,
 			LocationalChildrenMap: make(map[string]eliona.Asset),
-			Attributes:            attrs,
+			Datapoints:            dps,
 		}
 		buildAssetHierarchy(&childAsset, spaces, assetsMap, config)
 		asset.LocationalChildrenMap[childSpace.ID] = childAsset
@@ -303,29 +335,43 @@ func buildAssetHierarchy(asset *eliona.Asset, spaces map[string]*ontologySpaceDT
 
 		// [datapoint-attribution]
 		// We need to merge attribute template information (name, subtype) with attribute instance information (instanceID, asset ID)
-		var attrs []appmodel.Attribute
+		var dps []appmodel.Datapoint
 		for _, dp := range assetDetails.datapoints {
-			datapointTemplateInfo, ok := datapointTemplatesMap[dp.TemplateID]
+			datapoint, ok := datapointBelongingToAssetTemplate[dp.TemplateID]
 			if !ok {
 				log.Warn("broker", "datapoint template not found for datapoint template %s", dp.TemplateID)
 				continue
 			}
-			attrs = append(attrs, appmodel.Attribute{
-				Name:       datapointTemplateInfo.name,
-				Subtype:    datapointTemplateInfo.subtype,
-				ProviderID: dp.ID,
+			var attributes []appmodel.Attribute
+			for _, attributeInfo := range datapoint.attributes {
+				attributes = append(attributes, appmodel.Attribute{
+					Name: attributeInfo.name,
+				})
+			}
+			dps = append(dps, appmodel.Datapoint{
+				Subtype:             datapoint.subtype,
+				ProviderID:          dp.ID,
+				AttributeNamePrefix: datapoint.name,
+				Attributes:          attributes,
 			})
 		}
 		for _, prop := range assetDetails.properties {
-			datapointTemplateInfo, ok := datapointTemplatesMap[prop.TemplateID]
+			datapoint, ok := datapointBelongingToAssetTemplate[prop.TemplateID]
 			if !ok {
 				log.Warn("broker", "datapoint template not found for property template %s", prop.TemplateID)
 				continue
 			}
-			attrs = append(attrs, appmodel.Attribute{
-				Name:       datapointTemplateInfo.name,
-				Subtype:    datapointTemplateInfo.subtype,
-				ProviderID: prop.ID,
+			var attributes []appmodel.Attribute
+			for _, attributeInfo := range datapoint.attributes {
+				attributes = append(attributes, appmodel.Attribute{
+					Name: attributeInfo.name,
+				})
+			}
+			dps = append(dps, appmodel.Datapoint{
+				Subtype:             datapoint.subtype,
+				ProviderID:          prop.ID,
+				AttributeNamePrefix: datapoint.name,
+				Attributes:          attributes,
 			})
 		}
 
@@ -365,4 +411,17 @@ func SubscribeToDataChanges(config appmodel.Configuration) error {
 		return fmt.Errorf("subscribing: %v", err)
 	}
 	return nil
+}
+
+type AttributeData struct {
+	Datapoint appmodel.Datapoint
+	Value     any
+}
+
+func PutData(config appmodel.Configuration, attributesData []AttributeData) error {
+	client, err := newOpenBOSClient(config.Gwid, config.ClientID, config.ClientSecret, config.AppPublicAPIURL)
+	if err != nil {
+		return fmt.Errorf("creating instance of client: %v", err)
+	}
+	return client.putData() //todo
 }

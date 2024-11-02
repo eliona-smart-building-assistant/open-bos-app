@@ -104,7 +104,7 @@ func (s *webhookServer) handleLivedataUpdate(w http.ResponseWriter, r *http.Requ
 		}
 
 		if data.Quality == "good" {
-			app.UpdateDataPoint(app.AttributeDataUpdate{
+			app.UpdateDataPointInEliona(app.AttributeDataUpdate{
 				ConfigID:            configID,
 				DatapointProviderID: data.DatapointID,
 				Timestamp:           timestamp,

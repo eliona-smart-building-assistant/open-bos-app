@@ -94,16 +94,20 @@ func (w whereHelperint64) NIN(slice []int64) qm.QueryMod {
 
 type whereHelperstring struct{ field string }
 
-func (w whereHelperstring) EQ(x string) qm.QueryMod     { return qmhelper.Where(w.field, qmhelper.EQ, x) }
-func (w whereHelperstring) NEQ(x string) qm.QueryMod    { return qmhelper.Where(w.field, qmhelper.NEQ, x) }
-func (w whereHelperstring) LT(x string) qm.QueryMod     { return qmhelper.Where(w.field, qmhelper.LT, x) }
-func (w whereHelperstring) LTE(x string) qm.QueryMod    { return qmhelper.Where(w.field, qmhelper.LTE, x) }
-func (w whereHelperstring) GT(x string) qm.QueryMod     { return qmhelper.Where(w.field, qmhelper.GT, x) }
-func (w whereHelperstring) GTE(x string) qm.QueryMod    { return qmhelper.Where(w.field, qmhelper.GTE, x) }
-func (w whereHelperstring) LIKE(x string) qm.QueryMod   { return qm.Where(w.field+" LIKE ?", x) }
-func (w whereHelperstring) NLIKE(x string) qm.QueryMod  { return qm.Where(w.field+" NOT LIKE ?", x) }
-func (w whereHelperstring) ILIKE(x string) qm.QueryMod  { return qm.Where(w.field+" ILIKE ?", x) }
-func (w whereHelperstring) NILIKE(x string) qm.QueryMod { return qm.Where(w.field+" NOT ILIKE ?", x) }
+func (w whereHelperstring) EQ(x string) qm.QueryMod      { return qmhelper.Where(w.field, qmhelper.EQ, x) }
+func (w whereHelperstring) NEQ(x string) qm.QueryMod     { return qmhelper.Where(w.field, qmhelper.NEQ, x) }
+func (w whereHelperstring) LT(x string) qm.QueryMod      { return qmhelper.Where(w.field, qmhelper.LT, x) }
+func (w whereHelperstring) LTE(x string) qm.QueryMod     { return qmhelper.Where(w.field, qmhelper.LTE, x) }
+func (w whereHelperstring) GT(x string) qm.QueryMod      { return qmhelper.Where(w.field, qmhelper.GT, x) }
+func (w whereHelperstring) GTE(x string) qm.QueryMod     { return qmhelper.Where(w.field, qmhelper.GTE, x) }
+func (w whereHelperstring) LIKE(x string) qm.QueryMod    { return qm.Where(w.field+" LIKE ?", x) }
+func (w whereHelperstring) NLIKE(x string) qm.QueryMod   { return qm.Where(w.field+" NOT LIKE ?", x) }
+func (w whereHelperstring) ILIKE(x string) qm.QueryMod   { return qm.Where(w.field+" ILIKE ?", x) }
+func (w whereHelperstring) NILIKE(x string) qm.QueryMod  { return qm.Where(w.field+" NOT ILIKE ?", x) }
+func (w whereHelperstring) SIMILAR(x string) qm.QueryMod { return qm.Where(w.field+" SIMILAR TO ?", x) }
+func (w whereHelperstring) NSIMILAR(x string) qm.QueryMod {
+	return qm.Where(w.field+" NOT SIMILAR TO ?", x)
+}
 func (w whereHelperstring) IN(slice []string) qm.QueryMod {
 	values := make([]interface{}, 0, len(slice))
 	for _, value := range slice {
@@ -175,17 +179,17 @@ var AssetWhere = struct {
 
 // AssetRels is where relationship names are stored.
 var AssetRels = struct {
-	Configuration string
-	Attributes    string
+	Configuration     string
+	OpenbosDatapoints string
 }{
-	Configuration: "Configuration",
-	Attributes:    "Attributes",
+	Configuration:     "Configuration",
+	OpenbosDatapoints: "OpenbosDatapoints",
 }
 
 // assetR is where relationships are stored.
 type assetR struct {
-	Configuration *Configuration `boil:"Configuration" json:"Configuration" toml:"Configuration" yaml:"Configuration"`
-	Attributes    AttributeSlice `boil:"Attributes" json:"Attributes" toml:"Attributes" yaml:"Attributes"`
+	Configuration     *Configuration        `boil:"Configuration" json:"Configuration" toml:"Configuration" yaml:"Configuration"`
+	OpenbosDatapoints OpenbosDatapointSlice `boil:"OpenbosDatapoints" json:"OpenbosDatapoints" toml:"OpenbosDatapoints" yaml:"OpenbosDatapoints"`
 }
 
 // NewStruct creates a new relationship struct
@@ -200,11 +204,11 @@ func (r *assetR) GetConfiguration() *Configuration {
 	return r.Configuration
 }
 
-func (r *assetR) GetAttributes() AttributeSlice {
+func (r *assetR) GetOpenbosDatapoints() OpenbosDatapointSlice {
 	if r == nil {
 		return nil
 	}
-	return r.Attributes
+	return r.OpenbosDatapoints
 }
 
 // assetL is where Load methods for each relationship are stored.
@@ -554,18 +558,18 @@ func (o *Asset) Configuration(mods ...qm.QueryMod) configurationQuery {
 	return Configurations(queryMods...)
 }
 
-// Attributes retrieves all the attribute's Attributes with an executor.
-func (o *Asset) Attributes(mods ...qm.QueryMod) attributeQuery {
+// OpenbosDatapoints retrieves all the openbos_datapoint's OpenbosDatapoints with an executor.
+func (o *Asset) OpenbosDatapoints(mods ...qm.QueryMod) openbosDatapointQuery {
 	var queryMods []qm.QueryMod
 	if len(mods) != 0 {
 		queryMods = append(queryMods, mods...)
 	}
 
 	queryMods = append(queryMods,
-		qm.Where("\"open_bos\".\"attribute\".\"asset_id\"=?", o.ID),
+		qm.Where("\"open_bos\".\"openbos_datapoint\".\"asset_id\"=?", o.ID),
 	)
 
-	return Attributes(queryMods...)
+	return OpenbosDatapoints(queryMods...)
 }
 
 // LoadConfiguration allows an eager lookup of values, cached into the
@@ -688,9 +692,9 @@ func (assetL) LoadConfiguration(ctx context.Context, e boil.ContextExecutor, sin
 	return nil
 }
 
-// LoadAttributes allows an eager lookup of values, cached into the
+// LoadOpenbosDatapoints allows an eager lookup of values, cached into the
 // loaded structs of the objects. This is for a 1-M or N-M relationship.
-func (assetL) LoadAttributes(ctx context.Context, e boil.ContextExecutor, singular bool, maybeAsset interface{}, mods queries.Applicator) error {
+func (assetL) LoadOpenbosDatapoints(ctx context.Context, e boil.ContextExecutor, singular bool, maybeAsset interface{}, mods queries.Applicator) error {
 	var slice []*Asset
 	var object *Asset
 
@@ -743,8 +747,8 @@ func (assetL) LoadAttributes(ctx context.Context, e boil.ContextExecutor, singul
 	}
 
 	query := NewQuery(
-		qm.From(`open_bos.attribute`),
-		qm.WhereIn(`open_bos.attribute.asset_id in ?`, argsSlice...),
+		qm.From(`open_bos.openbos_datapoint`),
+		qm.WhereIn(`open_bos.openbos_datapoint.asset_id in ?`, argsSlice...),
 	)
 	if mods != nil {
 		mods.Apply(query)
@@ -752,22 +756,22 @@ func (assetL) LoadAttributes(ctx context.Context, e boil.ContextExecutor, singul
 
 	results, err := query.QueryContext(ctx, e)
 	if err != nil {
-		return errors.Wrap(err, "failed to eager load attribute")
+		return errors.Wrap(err, "failed to eager load openbos_datapoint")
 	}
 
-	var resultSlice []*Attribute
+	var resultSlice []*OpenbosDatapoint
 	if err = queries.Bind(results, &resultSlice); err != nil {
-		return errors.Wrap(err, "failed to bind eager loaded slice attribute")
+		return errors.Wrap(err, "failed to bind eager loaded slice openbos_datapoint")
 	}
 
 	if err = results.Close(); err != nil {
-		return errors.Wrap(err, "failed to close results in eager load on attribute")
+		return errors.Wrap(err, "failed to close results in eager load on openbos_datapoint")
 	}
 	if err = results.Err(); err != nil {
-		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for attribute")
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for openbos_datapoint")
 	}
 
-	if len(attributeAfterSelectHooks) != 0 {
+	if len(openbosDatapointAfterSelectHooks) != 0 {
 		for _, obj := range resultSlice {
 			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
 				return err
@@ -775,10 +779,10 @@ func (assetL) LoadAttributes(ctx context.Context, e boil.ContextExecutor, singul
 		}
 	}
 	if singular {
-		object.R.Attributes = resultSlice
+		object.R.OpenbosDatapoints = resultSlice
 		for _, foreign := range resultSlice {
 			if foreign.R == nil {
-				foreign.R = &attributeR{}
+				foreign.R = &openbosDatapointR{}
 			}
 			foreign.R.Asset = object
 		}
@@ -788,9 +792,9 @@ func (assetL) LoadAttributes(ctx context.Context, e boil.ContextExecutor, singul
 	for _, foreign := range resultSlice {
 		for _, local := range slice {
 			if local.ID == foreign.AssetID {
-				local.R.Attributes = append(local.R.Attributes, foreign)
+				local.R.OpenbosDatapoints = append(local.R.OpenbosDatapoints, foreign)
 				if foreign.R == nil {
-					foreign.R = &attributeR{}
+					foreign.R = &openbosDatapointR{}
 				}
 				foreign.R.Asset = local
 				break
@@ -856,20 +860,20 @@ func (o *Asset) SetConfiguration(ctx context.Context, exec boil.ContextExecutor,
 	return nil
 }
 
-// AddAttributesG adds the given related objects to the existing relationships
+// AddOpenbosDatapointsG adds the given related objects to the existing relationships
 // of the asset, optionally inserting them as new records.
-// Appends related to o.R.Attributes.
+// Appends related to o.R.OpenbosDatapoints.
 // Sets related.R.Asset appropriately.
 // Uses the global database handle.
-func (o *Asset) AddAttributesG(ctx context.Context, insert bool, related ...*Attribute) error {
-	return o.AddAttributes(ctx, boil.GetContextDB(), insert, related...)
+func (o *Asset) AddOpenbosDatapointsG(ctx context.Context, insert bool, related ...*OpenbosDatapoint) error {
+	return o.AddOpenbosDatapoints(ctx, boil.GetContextDB(), insert, related...)
 }
 
-// AddAttributes adds the given related objects to the existing relationships
+// AddOpenbosDatapoints adds the given related objects to the existing relationships
 // of the asset, optionally inserting them as new records.
-// Appends related to o.R.Attributes.
+// Appends related to o.R.OpenbosDatapoints.
 // Sets related.R.Asset appropriately.
-func (o *Asset) AddAttributes(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Attribute) error {
+func (o *Asset) AddOpenbosDatapoints(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*OpenbosDatapoint) error {
 	var err error
 	for _, rel := range related {
 		if insert {
@@ -879,9 +883,9 @@ func (o *Asset) AddAttributes(ctx context.Context, exec boil.ContextExecutor, in
 			}
 		} else {
 			updateQuery := fmt.Sprintf(
-				"UPDATE \"open_bos\".\"attribute\" SET %s WHERE %s",
+				"UPDATE \"open_bos\".\"openbos_datapoint\" SET %s WHERE %s",
 				strmangle.SetParamNames("\"", "\"", 1, []string{"asset_id"}),
-				strmangle.WhereClause("\"", "\"", 2, attributePrimaryKeyColumns),
+				strmangle.WhereClause("\"", "\"", 2, openbosDatapointPrimaryKeyColumns),
 			)
 			values := []interface{}{o.ID, rel.ID}
 
@@ -900,15 +904,15 @@ func (o *Asset) AddAttributes(ctx context.Context, exec boil.ContextExecutor, in
 
 	if o.R == nil {
 		o.R = &assetR{
-			Attributes: related,
+			OpenbosDatapoints: related,
 		}
 	} else {
-		o.R.Attributes = append(o.R.Attributes, related...)
+		o.R.OpenbosDatapoints = append(o.R.OpenbosDatapoints, related...)
 	}
 
 	for _, rel := range related {
 		if rel.R == nil {
-			rel.R = &attributeR{
+			rel.R = &openbosDatapointR{
 				Asset: o,
 			}
 		} else {
@@ -1412,7 +1416,7 @@ func (o AssetSlice) DeleteAll(ctx context.Context, exec boil.ContextExecutor) (i
 	}
 
 	sql := "DELETE FROM \"open_bos\".\"asset\" WHERE " +
-		strmangle.WhereClauseRepeated(string(dialect.LQ), string(dialect.RQ), 1, assetPrimaryKeyColumns, len(o))
+		strmangle.WhereInClause(string(dialect.LQ), string(dialect.RQ), 1, assetPrimaryKeyColumns, len(o))
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)

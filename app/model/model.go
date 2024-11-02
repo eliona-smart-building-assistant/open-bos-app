@@ -44,9 +44,14 @@ type Asset struct {
 	AssetID       int32
 }
 
+type Datapoint struct {
+	ProviderID          string
+	Subtype             string
+	Asset               *Asset
+	AttributeNamePrefix string
+	Attributes          []Attribute
+}
+
 type Attribute struct {
-	Name       string
-	ProviderID string
-	Subtype    string
-	Asset      *Asset // todo: is this needed?
+	Name string
 }

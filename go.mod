@@ -4,14 +4,14 @@ go 1.23
 
 require (
 	github.com/eliona-smart-building-assistant/app-integration-tests v1.1.4
-	github.com/eliona-smart-building-assistant/go-eliona v1.10.0
+	github.com/eliona-smart-building-assistant/go-eliona v1.10.1
 	github.com/eliona-smart-building-assistant/go-eliona-api-client/v2 v2.7.3
 	github.com/eliona-smart-building-assistant/go-utils v1.1.1
 	github.com/friendsofgo/errors v0.9.2
 	github.com/gorilla/mux v1.8.1
 	github.com/gorilla/websocket v1.5.3
 	github.com/volatiletech/null/v8 v8.1.2
-	github.com/volatiletech/sqlboiler/v4 v4.16.2
+	github.com/volatiletech/sqlboiler/v4 v4.17.0
 	github.com/volatiletech/strmangle v0.0.8
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -40,8 +40,8 @@ require (
 	github.com/stretchr/testify v1.9.0 // indirect
 	github.com/volatiletech/inflect v0.0.1 // indirect
 	github.com/volatiletech/randomize v0.0.1 // indirect
-	golang.org/x/crypto v0.28.0 // indirect
+	golang.org/x/crypto v0.29.0 // indirect
 	golang.org/x/image v0.15.0 // indirect
-	golang.org/x/text v0.19.0 // indirect
+	golang.org/x/text v0.20.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 )

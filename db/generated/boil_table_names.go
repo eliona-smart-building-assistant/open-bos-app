@@ -4,11 +4,13 @@
 package dbgen
 
 var TableNames = struct {
-	Asset         string
-	Attribute     string
-	Configuration string
+	Asset            string
+	Configuration    string
+	ElionaAttribute  string
+	OpenbosDatapoint string
 }{
-	Asset:         "asset",
-	Attribute:     "attribute",
-	Configuration: "configuration",
+	Asset:            "asset",
+	Configuration:    "configuration",
+	ElionaAttribute:  "eliona_attribute",
+	OpenbosDatapoint: "openbos_datapoint",
 }

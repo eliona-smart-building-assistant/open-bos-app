@@ -18,6 +18,7 @@ package app
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	apiserver "open-bos/api/generated"
 	apiservices "open-bos/api/services"
@@ -25,10 +26,10 @@ import (
 	"open-bos/broker"
 	dbhelper "open-bos/db/helper"
 	"open-bos/eliona"
+	"strings"
 	"sync"
 	"time"
 
-	api "github.com/eliona-smart-building-assistant/go-eliona-api-client/v2"
 	"github.com/eliona-smart-building-assistant/go-eliona/app"
 	"github.com/eliona-smart-building-assistant/go-eliona/asset"
 	"github.com/eliona-smart-building-assistant/go-eliona/frontend"
@@ -171,7 +172,7 @@ type AttributeDataUpdate struct {
 }
 
 // TODO: change to bulk upsert
-func UpdateDataPoint(update AttributeDataUpdate) {
+func UpdateDataPointInEliona(update AttributeDataUpdate) {
 	config, err := dbhelper.GetConfig(context.Background(), update.ConfigID)
 	if err != nil {
 		log.Error("dbhelper", "Couldn't read config %d from DB: %v", update.ConfigID, err)
@@ -187,22 +188,52 @@ func UpdateDataPoint(update AttributeDataUpdate) {
 		dbhelper.SetConfigActiveState(context.Background(), config, true)
 	}
 
-	attribute, err := dbhelper.GetAttributeById(update.DatapointProviderID, config.Id)
+	assetData := make(map[string]any)
+	datapoint, err := dbhelper.GetDatapointById(update.DatapointProviderID, config.Id)
 	if err != nil {
 		log.Error("dbhelper", "getting attribute by ID %v for config %v: %v", update.DatapointProviderID, config.Id, err)
 		return
 	}
-	assetData := map[string]any{
-		attribute.Name: update.Value,
+	// Complex decode support
+	if complexData, ok := update.Value.(map[string]any); ok {
+		decodedData := decodeComplexData(complexData, datapoint.AttributeNamePrefix)
+		for k, v := range decodedData {
+			assetData[k] = v
+		}
+	} else {
+		// If not complex, find the attribute name and map directly
+		if len(datapoint.Attributes) != 1 {
+			log.Error("inconsistency", "received non-complex data %+v, but found datapoint providerID %v with %v != 1 attributes", update, datapoint.ProviderID, len(datapoint.Attributes))
+		}
+		assetData[datapoint.Attributes[0].Name] = update.Value
 	}
 
-	if err := eliona.UpsertAssetData(attribute.Asset.AssetID, assetData, update.Timestamp, api.DataSubtype(attribute.Subtype)); err != nil {
-		log.Error("eliona", "upserting asset data: %v", err)
-		return
-	}
 }
 
-// ListenForOutputChanges listens to output attribute changes from Eliona. Delete if not needed.
+func decodeComplexData(value map[string]any, parentPath string) map[string]any {
+	flattened := make(map[string]any)
+	for key, val := range value {
+		currentPath := parentPath
+		if currentPath != "" {
+			currentPath += "." + key
+		} else {
+			currentPath = key
+		}
+
+		// Handle nested complex values recursively
+		if nested, ok := val.(map[string]any); ok {
+			nestedData := decodeComplexData(nested, currentPath)
+			for nestedKey, nestedVal := range nestedData {
+				flattened[nestedKey] = nestedVal
+			}
+		} else {
+			flattened[currentPath] = val
+		}
+	}
+	return flattened
+}
+
+// ListenForOutputChanges listens to output attribute changes from Eliona.
 func ListenForOutputChanges() {
 	for { // We want to restart listening in case something breaks.
 		outputs, err := eliona.ListenForOutputChanges()
@@ -215,13 +246,8 @@ func ListenForOutputChanges() {
 				// Just an echoed value this app sent.
 				continue
 			}
-			asset, err := dbhelper.GetAssetById(output.AssetId)
-			if err != nil {
-				log.Error("dbhelper", "getting asset by assetID %v: %v", output.AssetId, err)
-				return
-			}
-			if err := outputData(asset, output.Data); err != nil {
-				log.Error("dbhelper", "outputting data (%v) for config %v and assetId %v: %v", output.Data, asset.Config.Id, asset.AssetID, err)
+			if err := outputData(output.AssetId, output.Data); err != nil {
+				log.Error("dbhelper", "outputting data (%v) for assetId %v: %v", output.Data, output.AssetId, err)
 				return
 			}
 		}
@@ -229,10 +255,67 @@ func ListenForOutputChanges() {
 	}
 }
 
-// outputData implements passing output data to broker. Remove if not needed.
-func outputData(asset appmodel.Asset, data map[string]interface{}) error {
-	// Do the output magic here.
+// outputData implements passing output data to broker.
+func outputData(assetID int32, data map[string]interface{}) error {
+	var attributesData []broker.AttributeData
+	for name := range data {
+		// Fetch the datapoint associated with the attribute name
+		datapoint, err := dbhelper.GetDatapointByAttributeName(assetID, name)
+		if err != nil {
+			return fmt.Errorf("getting datapoint by assetID %v and name %v: %v", assetID, name, err)
+		}
+
+		// Fetch and format the latest data for all attributes of the datapoint
+		latestData, err := formatComplexData(datapoint)
+		if err != nil {
+			return fmt.Errorf("formatting complex data for datapoint %v: %v", datapoint.ProviderID, err)
+		}
+
+		attributesData = append(attributesData, broker.AttributeData{
+			Datapoint: datapoint,
+			Value:     latestData,
+		})
+	}
+
+	if len(attributesData) == 0 {
+		return fmt.Errorf("shouldn't happen: no attribute data")
+	}
+
+	if err := broker.PutData(attributesData[0].Datapoint.Asset.Config, attributesData); err != nil {
+		return fmt.Errorf("putting data: %v", err)
+	}
+
 	return nil
+}
+
+func formatComplexData(datapoint appmodel.Datapoint) (interface{}, error) {
+	elionaAssetData, err := eliona.GetAssetData(datapoint.Asset.AssetID, datapoint.Subtype)
+	if err != nil {
+		return nil, fmt.Errorf("getting asset data: %v", err)
+	}
+	complexData := make(map[string]interface{})
+	for _, attr := range datapoint.Attributes {
+		value, ok := elionaAssetData.Data[attr.Name]
+		if !ok {
+			return nil, fmt.Errorf("data for '%s' not found in %+v", attr.Name, elionaAssetData.Data)
+		}
+
+		// Check if this is a nested attribute
+		pathParts := strings.SplitN(attr.Name, ".", 2)
+		if len(pathParts) > 1 {
+			// Nested attribute: add to complex structure recursively
+			if _, exists := complexData[pathParts[0]]; !exists {
+				complexData[pathParts[0]] = make(map[string]interface{})
+			}
+			nestedData := complexData[pathParts[0]].(map[string]interface{})
+			nestedData[pathParts[1]] = value
+		} else {
+			// Primitive attribute: directly set its value
+			complexData[attr.Name] = value
+		}
+	}
+
+	return complexData, nil
 }
 
 // ListenApi starts the API server and listen for requests

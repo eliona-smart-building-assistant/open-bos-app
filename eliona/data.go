@@ -43,3 +43,14 @@ func UpsertAssetData(assetID int32, assetData map[string]any, timestamp time.Tim
 	}
 	return nil
 }
+
+func GetAssetData(assetID int32, subtype string) (api.Data, error) {
+	datas, err := asset.GetData(assetID, subtype)
+	if err != nil {
+		return api.Data{}, err
+	}
+	if len(datas) != 1 {
+		return api.Data{}, fmt.Errorf("got len(datas) %v != 1: %+v", len(datas), datas)
+	}
+	return datas[0], nil
+}

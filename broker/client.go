@@ -1,6 +1,7 @@
 package broker
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 
@@ -44,7 +45,7 @@ type ontologyUnitDTO struct {
 type ontologyDataTypeDTO struct {
 	Format string                     `json:"format"`
 	ID     string                     `json:"id"`
-	Name   string                     `json:"name"`
+	Name   string                     `json:"name,omitempty"`
 	Tags   []string                   `json:"tags,omitempty"`
 	UnitID string                     `json:"unitId,omitempty"`
 	Fields []ontologyDataTypeFieldDTO `json:"fields,omitempty"`
@@ -53,32 +54,54 @@ type ontologyDataTypeDTO struct {
 	Enums  map[string]string          `json:"enums,omitempty"`
 }
 
+type dataTypeUncomplexified struct {
+	Format string
+	Name   string
+	UnitID string
+	Min    *float64
+	Max    *float64
+	Enums  map[string]string
+}
+
 // unwrapComplexType recursively flattens complex datatypes into a slice of simple ones.
-func (dt ontologyDataTypeDTO) unwrapComplexType(datatypeComplexMap map[string]ontologyDataTypeDTO) []ontologyDataTypeDTO {
+func (dt ontologyDataTypeDTO) unwrapComplexType(datatypeComplexMap map[string]ontologyDataTypeDTO, parentName string) []dataTypeUncomplexified {
+	// If no fields, this is a primitive type; set its full path and return as a single-element slice.
 	if len(dt.Fields) == 0 {
-		return []ontologyDataTypeDTO{dt}
+		dt.Name = parentName
+		return []dataTypeUncomplexified{{
+			Format: dt.Format,
+			Name:   dt.Name,
+			UnitID: dt.UnitID,
+			Min:    dt.Min,
+			Max:    dt.Max,
+			Enums:  dt.Enums,
+		}}
 	}
-	var result []ontologyDataTypeDTO
+
+	var result []dataTypeUncomplexified
 	for _, childReference := range dt.Fields {
 		child := datatypeComplexMap[childReference.TypeID]
-		if childReference.Name != "" {
-			// TODO: Is this the right priority?
-			child.Name = childReference.Name
-		}
-		result = append(result, child.unwrapComplexType(datatypeComplexMap)...)
+
+		// Set child path by combining the parent's path with the current field's name.
+		fieldPath := parentName
+		fieldPath += "."
+		fieldPath += childReference.Name
+
+		// Recursively unwrap child
+		result = append(result, child.unwrapComplexType(datatypeComplexMap, fieldPath)...)
 	}
 
 	return result
 }
 
 type ontologyDataTypeFieldDTO struct {
-	Name   string `json:"name"`
+	Name   string `json:"name"` // Will never be empty
 	TypeID string `json:"typeId"`
 }
 
 type ontologyDatapointTemplateDTO struct {
 	ID              string   `json:"id"`
-	Name            string   `json:"name"`
+	Name            string   `json:"name,omitempty"`
 	AssetTemplateID string   `json:"assetTemplateId,omitempty"`
 	SpaceTemplateID string   `json:"spaceTemplateId,omitempty"`
 	Tags            []string `json:"tags,omitempty"`
@@ -89,7 +112,7 @@ type ontologyDatapointTemplateDTO struct {
 
 type ontologyPropertyTemplateDTO struct {
 	ID              string   `json:"id"`
-	Name            string   `json:"name"`
+	Name            string   `json:"name,omitempty"`
 	SpaceTemplateID string   `json:"spaceTemplateId,omitempty"`
 	AssetTemplateID string   `json:"assetTemplateId,omitempty"`
 	Tags            []string `json:"tags,omitempty"`
@@ -388,23 +411,21 @@ func (c *openBOSClient) ackAlarm(ack ontologyAlarmAckDTO) error {
 	return nil
 }
 
-type dataPoint struct {
-	ID            string
-	Name          string
-	Tags          []string
-	Direction     string
-	TypeID        string
-	DisplayUnitID *string
-	Min           *float64
-	Max           *float64
-	Enums         map[string]string
+type datapointTemplateInfo struct {
+	ID         string
+	Name       string
+	Direction  string
+	Attributes []templateAttributeInfo
 }
 
-type property struct {
-	ID            string
+type propertyTemplateInfo struct {
+	ID         string
+	Name       string
+	Attributes []templateAttributeInfo
+}
+
+type templateAttributeInfo struct {
 	Name          string
-	Tags          []string
-	TypeID        string
 	DisplayUnitID *string
 	Min           *float64
 	Max           *float64
@@ -415,8 +436,8 @@ type assetTemplate struct {
 	ID         string
 	Name       string
 	Tags       []string
-	Properties []property
-	Datapoints []dataPoint
+	Properties []propertyTemplateInfo
+	Datapoints []datapointTemplateInfo
 }
 
 func (ontology ontologyDTO) getAssetTemplates() []assetTemplate {
@@ -447,7 +468,7 @@ func (ontology ontologyDTO) getAssetTemplates() []assetTemplate {
 
 	// dataTypeMap organizes datatypes in a map for simple lookup. Inside is a
 	// slice to support complex data types.
-	dataTypeMap := make(map[string][]ontologyDataTypeDTO)
+	dataTypeMap := make(map[string][]dataTypeUncomplexified)
 	{
 		// dataTypeComplexMap is an intermediate step to map dataTypes for lookup,
 		// yet without unwrapping complex types.
@@ -456,7 +477,12 @@ func (ontology ontologyDTO) getAssetTemplates() []assetTemplate {
 			dataTypeComplexMap[dt.ID] = dt
 		}
 		for _, dt := range ontology.DataTypes {
-			dataTypeMap[dt.ID] = dt.unwrapComplexType(dataTypeComplexMap)
+			name := dt.Name
+			if name == "" {
+				// Name might be null, in that case let's use ID as a fallback.
+				name = dt.ID
+			}
+			dataTypeMap[dt.ID] = dt.unwrapComplexType(dataTypeComplexMap, name)
 		}
 	}
 
@@ -471,54 +497,53 @@ func (ontology ontologyDTO) getAssetTemplates() []assetTemplate {
 			ID:         at.ID,
 			Name:       at.Name,
 			Tags:       at.Tags,
-			Datapoints: []dataPoint{},
-			Properties: []property{},
+			Datapoints: []datapointTemplateInfo{},
+			Properties: []propertyTemplateInfo{},
 		}
 
 		for _, datapointTemplate := range datapointTemplateMap[at.ID] {
+			dataPoint := datapointTemplateInfo{
+				ID:        datapointTemplate.ID,
+				Name:      datapointTemplate.Name,
+				Direction: datapointTemplate.Direction,
+			}
 			for _, dataType := range getDataTypes(datapointTemplate.TypeID, dataTypeMap) {
-				// In case there is a complex datatype, it will be split into
-				// multiple attributes.
-				dataPoint := dataPoint{
-					ID:            datapointTemplate.ID,
-					Name:          datapointTemplate.Name,
-					Tags:          datapointTemplate.Tags,
-					TypeID:        datapointTemplate.TypeID,
+				a := templateAttributeInfo{
+					Name:          dataType.Name,
 					Min:           dataType.Min,
 					Max:           dataType.Max,
 					Enums:         dataType.Enums,
-					Direction:     datapointTemplate.Direction,
 					DisplayUnitID: getDisplayUnitID(dataType, unitMap),
 				}
-				assetTemplate.Datapoints = append(assetTemplate.Datapoints, dataPoint)
+				dataPoint.Attributes = append(dataPoint.Attributes, a)
 			}
+			assetTemplate.Datapoints = append(assetTemplate.Datapoints, dataPoint)
 		}
 
 		for _, propertyTemplate := range propertyTemplateMap[at.ID] {
+			property := propertyTemplateInfo{
+				ID:   propertyTemplate.ID,
+				Name: propertyTemplate.Name,
+			}
 			for _, dataType := range getDataTypes(propertyTemplate.TypeID, dataTypeMap) {
-				// In case there is a complex datatype, it will be split into
-				// multiple attributes.
-				property := property{
-					ID:            propertyTemplate.ID,
-					Name:          propertyTemplate.Name,
-					Tags:          propertyTemplate.Tags,
-					TypeID:        propertyTemplate.TypeID,
+				a := templateAttributeInfo{
+					Name:          dataType.Name,
 					Min:           dataType.Min,
 					Max:           dataType.Max,
 					Enums:         dataType.Enums,
 					DisplayUnitID: getDisplayUnitID(dataType, unitMap),
 				}
-				assetTemplate.Properties = append(assetTemplate.Properties, property)
+				property.Attributes = append(property.Attributes, a)
 			}
+			assetTemplate.Properties = append(assetTemplate.Properties, property)
 		}
-
 		assetTemplates = append(assetTemplates, assetTemplate)
 	}
 
 	return assetTemplates
 }
 
-func getDataTypes(typeID string, dataTypeMap map[string][]ontologyDataTypeDTO) []ontologyDataTypeDTO {
+func getDataTypes(typeID string, dataTypeMap map[string][]dataTypeUncomplexified) []dataTypeUncomplexified {
 	dataTypes, exists := dataTypeMap[typeID]
 	if !exists {
 		log.Warn("client", "type %s not found", typeID)
@@ -527,7 +552,7 @@ func getDataTypes(typeID string, dataTypeMap map[string][]ontologyDataTypeDTO) [
 	return dataTypes
 }
 
-func getDisplayUnitID(dataType ontologyDataTypeDTO, unitMap map[string]string) *string {
+func getDisplayUnitID(dataType dataTypeUncomplexified, unitMap map[string]string) *string {
 	var unitSymbol string
 	if dataType.UnitID == "" {
 		return &unitSymbol
@@ -538,4 +563,34 @@ func getDisplayUnitID(dataType ontologyDataTypeDTO, unitMap map[string]string) *
 		return nil
 	}
 	return &unitSymbol
+}
+
+func (c *openBOSClient) putData() error {
+	endpoint := fmt.Sprintf("%s/api/v1/ontology/datapointinstance/livedata", mockURL)
+
+	livedata := []struct {
+		DataPointID string `json:"id"`
+		Value       any    `json:"value"`
+	}{} //todo
+	// complex-encode
+	var result []struct {
+		DataPointID string `json:"id"`
+		ErrorCode   string `json:"errorCode"`
+		InnerError  string `json:"innerError"`
+	}
+	if err := c.doMockRequest("POST", endpoint, nil, livedata, &result); err != nil {
+		return fmt.Errorf("failed to subscribe to ontology changes: %v", err)
+	}
+
+	log.Debug("client", "posting data: received %v results", len(result))
+	var errs []error
+	for _, r := range result {
+		if r.ErrorCode != "" {
+			errs = append(errs, fmt.Errorf("%+v", r))
+		}
+	}
+	if len(errs) != 0 {
+		return fmt.Errorf("received following error(s) while posting data: %v", errors.Join(errs...))
+	}
+	return nil
 }
