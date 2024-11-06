@@ -88,3 +88,5 @@ WHERE asset_type LIKE E'open\\_bos\\_%';
 
 DELETE FROM public.asset_type
 WHERE asset_type LIKE E'open\\_bos\\_%';
+
+UPDATE open_bos."configuration" SET "ontology_version" = '0' WHERE "id" = '1';
