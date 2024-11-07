@@ -44,8 +44,8 @@ create table if not exists open_bos.asset
 
 create table if not exists open_bos.attribute
 (
-	asset_id    bigserial not null references open_bos.asset(id) ON DELETE CASCADE,
 	id          bigserial primary key,
+	asset_id    bigserial not null references open_bos.asset(id) ON DELETE CASCADE,
 	subtype     text      not null,
 	name        text      not null,
 	provider_id text      not null

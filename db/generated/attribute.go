@@ -23,8 +23,8 @@ import (
 
 // Attribute is an object representing the database table.
 type Attribute struct {
-	AssetID    int64  `boil:"asset_id" json:"asset_id" toml:"asset_id" yaml:"asset_id"`
 	ID         int64  `boil:"id" json:"id" toml:"id" yaml:"id"`
+	AssetID    int64  `boil:"asset_id" json:"asset_id" toml:"asset_id" yaml:"asset_id"`
 	Subtype    string `boil:"subtype" json:"subtype" toml:"subtype" yaml:"subtype"`
 	Name       string `boil:"name" json:"name" toml:"name" yaml:"name"`
 	ProviderID string `boil:"provider_id" json:"provider_id" toml:"provider_id" yaml:"provider_id"`
@@ -34,28 +34,28 @@ type Attribute struct {
 }
 
 var AttributeColumns = struct {
-	AssetID    string
 	ID         string
+	AssetID    string
 	Subtype    string
 	Name       string
 	ProviderID string
 }{
-	AssetID:    "asset_id",
 	ID:         "id",
+	AssetID:    "asset_id",
 	Subtype:    "subtype",
 	Name:       "name",
 	ProviderID: "provider_id",
 }
 
 var AttributeTableColumns = struct {
-	AssetID    string
 	ID         string
+	AssetID    string
 	Subtype    string
 	Name       string
 	ProviderID string
 }{
-	AssetID:    "attribute.asset_id",
 	ID:         "attribute.id",
+	AssetID:    "attribute.asset_id",
 	Subtype:    "attribute.subtype",
 	Name:       "attribute.name",
 	ProviderID: "attribute.provider_id",
@@ -64,14 +64,14 @@ var AttributeTableColumns = struct {
 // Generated where
 
 var AttributeWhere = struct {
-	AssetID    whereHelperint64
 	ID         whereHelperint64
+	AssetID    whereHelperint64
 	Subtype    whereHelperstring
 	Name       whereHelperstring
 	ProviderID whereHelperstring
 }{
-	AssetID:    whereHelperint64{field: "\"open_bos\".\"attribute\".\"asset_id\""},
 	ID:         whereHelperint64{field: "\"open_bos\".\"attribute\".\"id\""},
+	AssetID:    whereHelperint64{field: "\"open_bos\".\"attribute\".\"asset_id\""},
 	Subtype:    whereHelperstring{field: "\"open_bos\".\"attribute\".\"subtype\""},
 	Name:       whereHelperstring{field: "\"open_bos\".\"attribute\".\"name\""},
 	ProviderID: whereHelperstring{field: "\"open_bos\".\"attribute\".\"provider_id\""},
@@ -105,9 +105,9 @@ func (r *attributeR) GetAsset() *Asset {
 type attributeL struct{}
 
 var (
-	attributeAllColumns            = []string{"asset_id", "id", "subtype", "name", "provider_id"}
+	attributeAllColumns            = []string{"id", "asset_id", "subtype", "name", "provider_id"}
 	attributeColumnsWithoutDefault = []string{"subtype", "name", "provider_id"}
-	attributeColumnsWithDefault    = []string{"asset_id", "id"}
+	attributeColumnsWithDefault    = []string{"id", "asset_id"}
 	attributePrimaryKeyColumns     = []string{"id"}
 	attributeGeneratedColumns      = []string{}
 )
