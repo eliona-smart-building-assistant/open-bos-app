@@ -17,6 +17,8 @@ import (
 const baseURL = "https://api.buildings.ability.abb/buildings/openbos/apiproxy/v1"
 const mockURL = "http://localhost:5000"
 
+const tokenURL = "https://login.microsoftonline.com/372ee9e0-9ce0-4033-a64a-c07073a91ecd/oauth2/v2.0/token"
+
 type openBOSClient struct {
 	gatewayID    string
 	httpClient   *http.Client
@@ -24,15 +26,19 @@ type openBOSClient struct {
 	clientID     string
 	clientSecret string
 	webhookURL   string
+	baseURL      string
+	tokenURL     string
 }
 
-func newOpenBOSClient(gatewayID, clientID, clientSecret, webhookURL string) (*openBOSClient, error) {
+func newOpenBOSClient(gatewayID, clientID, clientSecret, webhookURL, baseURL, tokenURL string) (*openBOSClient, error) {
 	client := &openBOSClient{
 		gatewayID:    gatewayID,
 		httpClient:   &http.Client{Timeout: 10 * time.Second},
 		clientID:     clientID,
 		clientSecret: clientSecret,
 		webhookURL:   webhookURL,
+		baseURL:      baseURL,
+		tokenURL:     tokenURL,
 	}
 
 	if err := client.authenticateWithClientCredentials(); err != nil {
@@ -43,15 +49,13 @@ func newOpenBOSClient(gatewayID, clientID, clientSecret, webhookURL string) (*op
 }
 
 func (c *openBOSClient) authenticateWithClientCredentials() error {
-	tokenURL := "https://login.microsoftonline.com/372ee9e0-9ce0-4033-a64a-c07073a91ecd/oauth2/v2.0/token"
-
 	data := url.Values{}
 	data.Set("grant_type", "client_credentials")
 	data.Set("client_id", c.clientID)
 	data.Set("client_secret", c.clientSecret)
 	data.Set("scope", "api://openbos/.default")
 
-	req, err := http.NewRequest("POST", tokenURL, bytes.NewBufferString(data.Encode()))
+	req, err := http.NewRequest("POST", c.tokenURL, bytes.NewBufferString(data.Encode()))
 	if err != nil {
 		return fmt.Errorf("creating request: %v", err)
 	}
@@ -88,7 +92,7 @@ func (c *openBOSClient) authenticateWithClientCredentials() error {
 }
 
 func (c *openBOSClient) doRequest(method, endpoint string, queryParams url.Values, body interface{}, result interface{}) error {
-	url := endpoint
+	url := fmt.Sprintf("%s/gateway/%s/api/v1/%s", c.baseURL, c.gatewayID, endpoint)
 	if queryParams != nil && len(queryParams) > 0 {
 		url += "?" + queryParams.Encode()
 	}
@@ -133,7 +137,7 @@ func (c *openBOSClient) doRequest(method, endpoint string, queryParams url.Value
 }
 
 func (c *openBOSClient) doMockRequest(method, endpoint string, queryParams url.Values, body interface{}, result interface{}) error {
-	url := endpoint
+	url := fmt.Sprintf("%s/api/v1/%s", c.baseURL, endpoint)
 	if queryParams != nil && len(queryParams) > 0 {
 		url += "?" + queryParams.Encode()
 	}

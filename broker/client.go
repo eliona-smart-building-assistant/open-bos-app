@@ -180,8 +180,7 @@ type ontologyUserDTO struct {
 
 // getOntology retrieves the complete ontology of the edge.
 func (c *openBOSClient) getOntology() (*ontologyDTO, error) {
-	//endpoint := fmt.Sprintf("%s/gateway/%s/api/v1/core/application/data", baseURL, c.gatewayID)
-	endpoint := fmt.Sprintf("%s/api/v1/core/application/data", mockURL)
+	endpoint := "core/application/data"
 
 	var ontology ontologyDTO
 	if err := c.doMockRequest("GET", endpoint, nil, nil, &ontology); err != nil {
@@ -193,8 +192,7 @@ func (c *openBOSClient) getOntology() (*ontologyDTO, error) {
 
 // getOntologyVersion retrieves the current version of the edge data.
 func (c *openBOSClient) getOntologyVersion() (int32, error) {
-	//endpoint := fmt.Sprintf("%s/gateway/%s/api/v1/core/application/data/version", baseURL, c.gatewayID)
-	endpoint := fmt.Sprintf("%s/api/v1/core/application/data/version", mockURL)
+	endpoint := "core/application/data/version"
 
 	var version int32
 	if err := c.doRequest("GET", endpoint, nil, nil, &version); err != nil {
@@ -222,7 +220,7 @@ type subscriptionResultDTO struct {
 }
 
 func (c *openBOSClient) subscribeToOntologyChanges(configID int64) (*subscriptionResultDTO, error) {
-	endpoint := fmt.Sprintf("%s/api/v1/core/application/data/version/subscribe", mockURL)
+	endpoint := "core/application/data/version/subscribe"
 
 	webhookURL, err := url.JoinPath(c.webhookURL, fmt.Sprint(configID), "ontology-version")
 	if err != nil {
@@ -255,7 +253,7 @@ type subscriptionDeleteDTO struct {
 }
 
 func (c *openBOSClient) deleteOntologySubscription(del subscriptionDeleteDTO) error {
-	endpoint := fmt.Sprintf("%s/api/v1/core/application/data/version/subscribe", mockURL)
+	endpoint := "core/application/data/version/subscribe"
 
 	if err := c.doMockRequest("DELETE", endpoint, nil, del, nil); err != nil {
 		return fmt.Errorf("failed to delete ontology subscription: %v", err)
@@ -265,7 +263,7 @@ func (c *openBOSClient) deleteOntologySubscription(del subscriptionDeleteDTO) er
 }
 
 func (c *openBOSClient) subscribeToDataChanges(configID int64) (*subscriptionResultDTO, error) {
-	endpoint := fmt.Sprintf("%s/api/v1/core/application/livedata/subscribe", mockURL)
+	endpoint := "core/application/livedata/subscribe"
 
 	webhookURL, err := url.JoinPath(c.webhookURL, fmt.Sprint(configID), "ontology-livedata")
 	if err != nil {
@@ -294,7 +292,7 @@ func (c *openBOSClient) subscribeToDataChanges(configID int64) (*subscriptionRes
 }
 
 func (c *openBOSClient) deleteDataSubscription(del subscriptionDeleteDTO) error {
-	endpoint := fmt.Sprintf("%s/api/v1/core/application/livedata/subscribe", mockURL)
+	endpoint := "core/application/livedata/subscribe"
 
 	if err := c.doMockRequest("DELETE", endpoint, nil, del, nil); err != nil {
 		return fmt.Errorf("failed to delete data subscription: %v", err)
@@ -343,7 +341,7 @@ type propertyDTO struct {
 
 // getProperty retrieves the Property (Site) description.
 func (c *openBOSClient) getProperty() (*propertyDTO, error) {
-	endpoint := fmt.Sprintf("%s/gateway/%s/api/v1/ontology/property", baseURL, c.gatewayID)
+	endpoint := "ontology/property"
 
 	var property propertyDTO
 	if err := c.doRequest("GET", endpoint, nil, nil, &property); err != nil {
@@ -379,7 +377,7 @@ type ontologyFullLiveAlarmDTO struct {
 }
 
 func (c *openBOSClient) getLiveAlarms(timestamp string) ([]ontologyFullLiveAlarmDTO, error) {
-	endpoint := fmt.Sprintf("%s/gateway/%s/api/v1/core/application/livealarm", baseURL, c.gatewayID)
+	endpoint := "core/application/livealarm"
 
 	params := url.Values{}
 	if timestamp != "" {
@@ -402,7 +400,7 @@ type ontologyAlarmAckDTO struct {
 }
 
 func (c *openBOSClient) ackAlarm(ack ontologyAlarmAckDTO) error {
-	endpoint := fmt.Sprintf("%s/gateway/%s/api/v1/core/application/livealarm/ack", baseURL, c.gatewayID)
+	endpoint := "core/application/livealarm/ack"
 
 	if err := c.doRequest("POST", endpoint, nil, ack, nil); err != nil {
 		return err
@@ -566,7 +564,7 @@ func getDisplayUnitID(dataType dataTypeUncomplexified, unitMap map[string]string
 }
 
 func (c *openBOSClient) putData() error {
-	endpoint := fmt.Sprintf("%s/api/v1/ontology/datapointinstance/livedata", mockURL)
+	endpoint := "ontology/datapointinstance/livedata"
 
 	livedata := []struct {
 		DataPointID string `json:"id"`
