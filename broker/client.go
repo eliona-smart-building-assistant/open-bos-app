@@ -553,7 +553,7 @@ func getDataTypes(typeID string, dataTypeMap map[string][]dataTypeUncomplexified
 func getDisplayUnitID(dataType dataTypeUncomplexified, unitMap map[string]string) *string {
 	var unitSymbol string
 	if dataType.UnitID == "" {
-		return &unitSymbol
+		return nil
 	}
 	unitSymbol, ok := unitMap[dataType.UnitID]
 	if !ok {

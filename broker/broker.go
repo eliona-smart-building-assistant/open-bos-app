@@ -57,15 +57,18 @@ func convertAssetTemplateToAssetType(template assetTemplate) api.AssetType {
 		for _, attrib := range dp.Attributes {
 			mapping := convertMapping(attrib.Enums)
 
-			// Only set Min and Max if they are not nil
+			// Only set nillables if they are not nil
 			var min api.NullableFloat64
 			if attrib.Min != nil {
 				min = *api.NewNullableFloat64(attrib.Min)
 			}
-
 			var max api.NullableFloat64
 			if attrib.Max != nil {
 				max = *api.NewNullableFloat64(attrib.Max)
+			}
+			var unit api.NullableString
+			if attrib.DisplayUnitID != nil {
+				unit = *api.NewNullableString(attrib.DisplayUnitID)
 			}
 
 			attribute := api.AssetTypeAttribute{
@@ -73,7 +76,7 @@ func convertAssetTemplateToAssetType(template assetTemplate) api.AssetType {
 				Subtype: subtype,
 				Min:     min,
 				Max:     max,
-				Unit:    *api.NewNullableString(attrib.DisplayUnitID),
+				Unit:    unit,
 				Map:     mapping,
 			}
 			apiAsset.Attributes = append(apiAsset.Attributes, attribute)
@@ -96,15 +99,18 @@ func convertAssetTemplateToAssetType(template assetTemplate) api.AssetType {
 		for _, attrib := range prop.Attributes {
 			mapping := convertMapping(attrib.Enums)
 
-			// Only set Min and Max if they are not nil
+			// Only set nillables if they are not nil
 			var min api.NullableFloat64
 			if attrib.Min != nil {
 				min = *api.NewNullableFloat64(attrib.Min)
 			}
-
 			var max api.NullableFloat64
 			if attrib.Max != nil {
 				max = *api.NewNullableFloat64(attrib.Max)
+			}
+			var unit api.NullableString
+			if attrib.DisplayUnitID != nil {
+				unit = *api.NewNullableString(attrib.DisplayUnitID)
 			}
 
 			attribute := api.AssetTypeAttribute{
@@ -112,7 +118,7 @@ func convertAssetTemplateToAssetType(template assetTemplate) api.AssetType {
 				Subtype: subtype,
 				Min:     min,
 				Max:     max,
-				Unit:    *api.NewNullableString(attrib.DisplayUnitID),
+				Unit:    unit,
 				Map:     mapping,
 			}
 			apiAsset.Attributes = append(apiAsset.Attributes, attribute)
