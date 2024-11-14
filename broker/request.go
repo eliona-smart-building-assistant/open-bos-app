@@ -30,7 +30,8 @@ type openBOSClient struct {
 	tokenURL     string
 }
 
-func newOpenBOSClient(gatewayID, clientID, clientSecret, webhookURL, baseURL, tokenURL string) (*openBOSClient, error) {
+// Defined as variable function to allow overriding in tests
+var newOpenBOSClient = func(gatewayID, clientID, clientSecret, webhookURL, baseURL, tokenURL string) (*openBOSClient, error) {
 	client := &openBOSClient{
 		gatewayID:    gatewayID,
 		httpClient:   &http.Client{Timeout: 10 * time.Second},
