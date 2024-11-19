@@ -119,6 +119,60 @@ func (s *webhookServer) handleLivedataUpdate(w http.ResponseWriter, r *http.Requ
 	w.WriteHeader(http.StatusOK)
 }
 
+func (s *webhookServer) handleLiveAlarm(w http.ResponseWriter, r *http.Request) {
+	configID := r.Context().Value("configID").(int64)
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Failed to read request body", http.StatusInternalServerError)
+		return
+	}
+	defer r.Body.Close()
+
+	log.Debug("webhook", "Received alarm request headers: %+v", r.Header)
+	log.Debug("webhook", "Request body: %s", body)
+	log.Debug("webhook", "Method: %s", r.Method)
+	log.Debug("webhook", "Config ID: %d", configID)
+
+	type LiveAlarm struct {
+		DataPointInstanceId string   `json:"dataPointInstanceId"`
+		SessionId           string   `json:"sessionId"`
+		Name                string   `json:"name"`
+		Description         string   `json:"description"`
+		Trigger             string   `json:"trigger"`
+		Active              bool     `json:"active"`
+		Acked               bool     `json:"acked"`
+		Closed              bool     `json:"closed"`
+		TimeStamp           string   `json:"timeStamp"`
+		Quality             string   `json:"quality"`
+		Value               any      `json:"value"`
+		AckedBy             string   `json:"ackedBy"`
+		Comment             string   `json:"comment"`
+		NeedAcknowledge     bool     `json:"needAcknowledge"`
+		Severity            string   `json:"severity"`
+		AssetId             string   `json:"assetId"`
+		SpaceId             string   `json:"spaceId"`
+		AssetName           string   `json:"assetName"`
+		SpaceName           string   `json:"spaceName"`
+		DatapointName       string   `json:"datapointName"`
+		UnitSymbol          string   `json:"unitSymbol"`
+		Tags                []string `json:"tags"`
+	}
+
+	var liveAlarms []LiveAlarm
+	if err := json.Unmarshal(body, &liveAlarms); err != nil {
+		log.Error("webhook", "Failed to parse request body: %v", err)
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// for _, alarm := range liveAlarms {
+	// 	// todo
+	// }
+
+	w.WriteHeader(http.StatusOK)
+}
+
 func parseConfigIDFromPath(path string) (int64, error) {
 	// Matches "/{configID}/rest-of-path"
 	re := regexp.MustCompile(`^/(\d+)/`)
@@ -139,6 +193,7 @@ func StartWebhookListener() {
 
 	server.mux.HandleFunc("/ontology-version", server.handleOntologyVersion)
 	server.mux.HandleFunc("/ontology-livedata", server.handleLivedataUpdate)
+	server.mux.HandleFunc("/ontology-livealarm", server.handleLiveAlarm)
 
 	http.Handle("/", server)
 	if err := http.ListenAndServe(":8081", nil); err != nil {

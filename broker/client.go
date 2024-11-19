@@ -203,15 +203,16 @@ func (c *openBOSClient) getOntologyVersion() (int32, error) {
 }
 
 type subscriptionCreateDTO struct {
-	MinSendTime       int32   `json:"minSendTime"`              // Minimum time between two events. To avoid events flushing. Highly recommended. If zero, events will be sent on the fly (NOT recommended). Min value: 1 mn
-	MaxSendTime       int32   `json:"maxSendTime"`              // Maximum time between two events. Can be used to ensure the client application that the connection is alive. If nothing must be sent, the edge will send an empty event. Min value: 1 mn
-	Timestamp         *string `json:"timestamp,omitempty"`      // UTC date. To receive only datapoints or properties that change since the timestamp.
-	WebHookURL        *string `json:"webHookURL,omitempty"`     // URL of the webhook.
-	WebHookRetries    int32   `json:"webHookRetries"`           // Interval of retries (in seconds) when an error occurs while sending an event.
-	WebHookRetryDelay int32   `json:"webHookRetryDelay"`        // Number of retries when an error occurs while sending an event.
-	WebHookLeaseTime  int32   `json:"webHookLeaseTime"`         // Life span of the webhook if the webhook connection is down. If not present, the webhook will never be destroyed.
-	WebhookPersist    *bool   `json:"webhookPersist,omitempty"` // If true, the subscription will be kept alive when the edge restarts in the middle of the subscription. If false, the subscription is lost when the edge restarts.
-	ContentType       *string `json:"contentType,omitempty"`    // application/json for json (the default) or octet for base64.
+	MinSendTime       int32    `json:"minSendTime"`              // Minimum time between two events. To avoid events flushing. Highly recommended. If zero, events will be sent on the fly (NOT recommended). Min value: 1 mn
+	MaxSendTime       int32    `json:"maxSendTime"`              // Maximum time between two events. Can be used to ensure the client application that the connection is alive. If nothing must be sent, the edge will send an empty event. Min value: 1 mn
+	Timestamp         *string  `json:"timestamp,omitempty"`      // UTC date. To receive only datapoints or properties that change since the timestamp.
+	WebHookURL        *string  `json:"webHookURL,omitempty"`     // URL of the webhook.
+	WebHookRetries    int32    `json:"webHookRetries"`           // Interval of retries (in seconds) when an error occurs while sending an event.
+	WebHookRetryDelay int32    `json:"webHookRetryDelay"`        // Number of retries when an error occurs while sending an event.
+	WebHookLeaseTime  int32    `json:"webHookLeaseTime"`         // Life span of the webhook if the webhook connection is down. If not present, the webhook will never be destroyed.
+	WebhookPersist    *bool    `json:"webhookPersist,omitempty"` // If true, the subscription will be kept alive when the edge restarts in the middle of the subscription. If false, the subscription is lost when the edge restarts.
+	ContentType       *string  `json:"contentType,omitempty"`    // application/json for json (the default) or octet for base64.
+	DesiredUnits      []string `json:"desiredUnits,omitempty"`   // List of units you want for certain datapoints.
 }
 
 type subscriptionResultDTO struct {
@@ -376,6 +377,7 @@ type ontologyFullLiveAlarmDTO struct {
 	Tags                []string    `json:"tags,omitempty"`
 }
 
+// getLiveAlarms retrieves live alarms since the given timestamp.
 func (c *openBOSClient) getLiveAlarms(timestamp string) ([]ontologyFullLiveAlarmDTO, error) {
 	endpoint := "core/application/livealarm"
 
@@ -577,7 +579,7 @@ func (c *openBOSClient) putData() error {
 		InnerError  string `json:"innerError"`
 	}
 	if err := c.doMockRequest("POST", endpoint, nil, livedata, &result); err != nil {
-		return fmt.Errorf("failed to subscribe to ontology changes: %v", err)
+		return fmt.Errorf("failed to put data: %v", err)
 	}
 
 	log.Debug("client", "posting data: received %v results", len(result))
@@ -590,5 +592,45 @@ func (c *openBOSClient) putData() error {
 	if len(errs) != 0 {
 		return fmt.Errorf("received following error(s) while posting data: %v", errors.Join(errs...))
 	}
+	return nil
+}
+
+// subscribeToAlarmChanges subscribes to live alarm updates.
+func (c *openBOSClient) subscribeToAlarmChanges(configID int64) (*subscriptionResultDTO, error) {
+	endpoint := "core/application/livealarm/subscribe"
+
+	webhookURL, err := url.JoinPath(c.webhookURL, fmt.Sprint(configID), "ontology-livealarm")
+	if err != nil {
+		return nil, fmt.Errorf("joining URL for subscription: %v", err)
+	}
+
+	second := int32(1000)
+	minute := 60 * second
+	sub := subscriptionCreateDTO{
+		MinSendTime:       5 * minute,
+		WebHookURL:        common.Ptr(webhookURL),
+		WebHookRetries:    3,
+		WebHookRetryDelay: 5 * second,
+		WebHookLeaseTime:  60 * minute,
+		WebhookPersist:    common.Ptr(true),
+		ContentType:       common.Ptr("application/json"),
+	}
+
+	var result subscriptionResultDTO
+	if err := c.doMockRequest("POST", endpoint, nil, sub, &result); err != nil {
+		return nil, fmt.Errorf("failed to subscribe to alarm changes: %v", err)
+	}
+
+	return &result, nil
+}
+
+// deleteAlarmSubscription deletes the live alarm subscription.
+func (c *openBOSClient) deleteAlarmSubscription(del subscriptionDeleteDTO) error {
+	endpoint := "core/application/livealarm/subscribe"
+
+	if err := c.doMockRequest("DELETE", endpoint, nil, del, nil); err != nil {
+		return fmt.Errorf("failed to delete alarm subscription: %v", err)
+	}
+
 	return nil
 }

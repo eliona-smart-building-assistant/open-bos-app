@@ -443,6 +443,17 @@ func SubscribeToDataChanges(config appmodel.Configuration) error {
 	return nil
 }
 
+func SubscribeToAlarms(config appmodel.Configuration) error {
+	client, err := newOpenBOSClient(config.Gwid, config.ClientID, config.ClientSecret, config.AppPublicAPIURL, mockURL, tokenURL)
+	if err != nil {
+		return fmt.Errorf("creating instance of client: %v", err)
+	}
+	if _, err := client.subscribeToAlarmChanges(config.Id); err != nil {
+		return fmt.Errorf("subscribing: %v", err)
+	}
+	return nil
+}
+
 type AttributeData struct {
 	Datapoint appmodel.Datapoint
 	Value     any
