@@ -197,7 +197,7 @@ func UpdateDataPointInEliona(update AttributeDataUpdate) {
 	assetData := make(map[string]any)
 	datapoint, err := dbhelper.GetDatapointById(update.DatapointProviderID, config.Id)
 	if err != nil {
-		log.Error("dbhelper", "getting attribute by ID %v for config %v: %v", update.DatapointProviderID, config.Id, err)
+		log.Error("dbhelper", "getting datapoint by ID %v for config %v: %v", update.DatapointProviderID, config.Id, err)
 		return
 	}
 	// Complex decode support
@@ -210,10 +210,12 @@ func UpdateDataPointInEliona(update AttributeDataUpdate) {
 		// If not complex, find the attribute name and map directly
 		if len(datapoint.Attributes) != 1 {
 			log.Error("inconsistency", "received non-complex data %+v, but found datapoint providerID %v with %v != 1 attributes", update, datapoint.ProviderID, len(datapoint.Attributes))
+			return
 		}
 		assetData[datapoint.Attributes[0].Name] = update.Value
 	}
 
+	// TODO: Upsert data
 }
 
 func decodeComplexData(value map[string]any, parentPath string) map[string]any {
@@ -237,6 +239,114 @@ func decodeComplexData(value map[string]any, parentPath string) map[string]any {
 		}
 	}
 	return flattened
+}
+
+type AlarmUpdate struct {
+	ConfigID            int64
+	DatapointInstanceId string
+	Timestamp           time.Time
+	AlarmID             string
+	Name                string
+	Description         string
+	Trigger             string
+	Active              bool
+	Acked               bool
+	Closed              bool
+	TimeStamp           string
+	Quality             string
+	Value               any
+	AckedBy             string
+	Comment             string
+	NeedAcknowledge     bool
+	Severity            string
+	AssetId             string
+	SpaceId             string
+	AssetName           string
+	SpaceName           string
+	DatapointName       string
+	UnitSymbol          string
+	Tags                []string
+}
+
+func (alarm AlarmUpdate) getPriority() int {
+	switch alarm.Severity {
+	case "Critical", "Urgent":
+		return 1 // High priority
+	case "High":
+		return 2 // Medium priority
+	case "Low":
+		return 3 // Low priority
+	case "Log":
+		return 10 // Info
+	default:
+		return 10 // Default to lowest priority if severity is unknown
+	}
+}
+
+// buildAlarmMessage builds alarm message to Eliona format.
+func (alarm AlarmUpdate) buildAlarmMessage() map[string]interface{} {
+	message := make(map[string]interface{})
+
+	languageCodes := []string{"de", "en", "fr", "it"}
+
+	var descriptionPart string
+	if alarm.Description != "" {
+		descriptionPart = fmt.Sprintf(": %s", alarm.Description)
+	}
+	templateCome := fmt.Sprintf("%s%s {{asset.name}} ({{alarm.val}})", alarm.Name, descriptionPart)
+
+	come := make(map[string]string)
+	for _, lang := range languageCodes {
+		come[lang] = templateCome
+	}
+
+	goneTranslations := map[string]string{
+		"de": fmt.Sprintf("%s behoben", alarm.Name),
+		"en": fmt.Sprintf("%s resolved", alarm.Name),
+		"fr": fmt.Sprintf("%s résolu", alarm.Name),
+		"it": fmt.Sprintf("%s risolto", alarm.Name),
+	}
+
+	gone := make(map[string]string)
+	for _, lang := range languageCodes {
+		gone[lang] = goneTranslations[lang]
+	}
+
+	message["come"] = come
+	message["gone"] = gone
+
+	return message
+}
+
+func UpdateAlarmInEliona(update AlarmUpdate) {
+	config, err := dbhelper.GetConfig(context.Background(), update.ConfigID)
+	if err != nil {
+		log.Error("dbhelper", "Couldn't read config %d from DB: %v", update.ConfigID, err)
+		return
+	}
+	if !config.Enable {
+		if config.Active {
+			dbhelper.SetConfigActiveState(context.Background(), config, false)
+		}
+		return
+	}
+	if !config.Active {
+		dbhelper.SetConfigActiveState(context.Background(), config, true)
+	}
+	datapoint, err := dbhelper.GetDatapointById(update.DatapointInstanceId, config.Id)
+	if err != nil {
+		log.Error("dbhelper", "getting datapoint by ID %v for config %v: %v", update.DatapointInstanceId, config.Id, err)
+		return
+	}
+
+	// Alarm rule creation
+	for _, attribute := range datapoint.Attributes {
+		err = eliona.CreateAlarm(datapoint.Asset.AssetID, datapoint.Subtype, attribute.Name, update.NeedAcknowledge, update.getPriority(), update.buildAlarmMessage())
+		if err != nil {
+			log.Error("eliona", "creating alarm: %v", err)
+			return
+		}
+	}
 }
 
 // ListenForOutputChanges listens to output attribute changes from Eliona.

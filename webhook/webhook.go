@@ -135,28 +135,28 @@ func (s *webhookServer) handleLiveAlarm(w http.ResponseWriter, r *http.Request) 
 	log.Debug("webhook", "Config ID: %d", configID)
 
 	type LiveAlarm struct {
-		DataPointInstanceId string   `json:"dataPointInstanceId"`
-		SessionId           string   `json:"sessionId"`
-		Name                string   `json:"name"`
-		Description         string   `json:"description"`
-		Trigger             string   `json:"trigger"`
-		Active              bool     `json:"active"`
-		Acked               bool     `json:"acked"`
-		Closed              bool     `json:"closed"`
-		TimeStamp           string   `json:"timeStamp"`
-		Quality             string   `json:"quality"`
-		Value               any      `json:"value"`
-		AckedBy             string   `json:"ackedBy"`
-		Comment             string   `json:"comment"`
-		NeedAcknowledge     bool     `json:"needAcknowledge"`
-		Severity            string   `json:"severity"`
-		AssetId             string   `json:"assetId"`
-		SpaceId             string   `json:"spaceId"`
-		AssetName           string   `json:"assetName"`
-		SpaceName           string   `json:"spaceName"`
-		DatapointName       string   `json:"datapointName"`
-		UnitSymbol          string   `json:"unitSymbol"`
-		Tags                []string `json:"tags"`
+		DataPointInstanceId string   `json:"dataPointInstanceId"` // DataPointInstanceId: Id of datapoint that caused the alarm. Nullable.
+		SessionId           string   `json:"sessionId"`           // SessionId: Id of the alarm. Called sessionId and not id because for a single alarm you can receive several events. Nullable.
+		Name                string   `json:"name"`                // Name: Name of the alarm. Nullable.
+		Description         string   `json:"description"`         // Description: Description of the alarm. Nullable.
+		Trigger             string   `json:"trigger"`             // Trigger: Trigger type of the alarm. Can be: Analognotvalue, analogvalue, digitaloff, digitalon, analogoutband2, analogoutband1, analoginband2, analoginband1, analoglo, analoglolo, analoghi, analoghihi, networkerror. Nullable.
+		Active              bool     `json:"active"`              // Active: True if still active on the bus.
+		Acked               bool     `json:"acked"`               // Acked: True if already acked.
+		Closed              bool     `json:"closed"`              // Closed: True if alarm is closed. This is true ONLY for an event during a subscription to notify the alarm disappears.
+		TimeStamp           string   `json:"timeStamp"`           // TimeStamp: UTC timestamp of the apparition of the alarm. Nullable.
+		Quality             string   `json:"quality"`             // Quality: Quality of the value that caused the alarm. "Good" for a valid value, "bad..." for a bad quality. Nullable.
+		Value               any      `json:"value"`               // Value: Value that caused the alarm. Value format depends on the DataType of the datapoint instance. Nullable.
+		AckedBy             string   `json:"ackedBy"`             // AckedBy: The user who acknowledged the alarm. Nullable.
+		Comment             string   `json:"comment"`             // Comment: Comment added when acknowledging the alarm. Nullable.
+		NeedAcknowledge     bool     `json:"needAcknowledge"`     // NeedAcknowledge: True if alarm requires an ack.
+		Severity            string   `json:"severity"`            // Severity: Severity of the alarm. Can be: Log, Low, High, Urgent, Critical. Nullable.
+		AssetId             string   `json:"assetId"`             // AssetId: Id of the asset the alarm is attached to. Relevant especially for alarm attached to an orphan datapoint. Nullable.
+		SpaceId             string   `json:"spaceId"`             // SpaceId: Id of the space the alarm is attached to. Relevant especially for alarm attached to an orphan datapoint. Nullable.
+		AssetName           string   `json:"assetName"`           // AssetName: Name of the asset the alarm is attached to. Only if datapoint belongs to an asset. Nullable.
+		SpaceName           string   `json:"spaceName"`           // SpaceName: Name of the space the alarm is attached to. Only if datapoint belongs to a space. Nullable.
+		DatapointName       string   `json:"datapointName"`       // DatapointName: Name of the datapoint the alarm is attached to. Nullable.
+		UnitSymbol          string   `json:"unitSymbol"`          // UnitSymbol: Unit symbol of the value. Nullable.
+		Tags                []string `json:"tags"`                // Tags: Tags of the datapoint plus space/asset. Nullable.
 	}
 
 	var liveAlarms []LiveAlarm
@@ -166,9 +166,46 @@ func (s *webhookServer) handleLiveAlarm(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// for _, alarm := range liveAlarms {
-	// 	// todo
-	// }
+	for _, alarm := range liveAlarms {
+		// Timestamps are always in UTC - see docs
+		layout := "02/01/2006 15:04:05"
+		timestamp, err := time.ParseInLocation(layout, alarm.TimeStamp, time.UTC)
+		if err != nil {
+			log.Warn("webhook", "Invalid timestamp format for alarm SessionId %s: %v", alarm.SessionId, err)
+			continue
+		}
+
+		if alarm.Quality != "Good" {
+			log.Debug("webhook", "Received alarm with bad quality for SessionId %s: Quality=%s", alarm.SessionId, alarm.Quality)
+			continue
+		}
+
+		alarmUpdate := app.AlarmUpdate{
+			ConfigID:            configID,
+			AlarmID:             alarm.SessionId,
+			DatapointInstanceId: alarm.DataPointInstanceId,
+			Timestamp:           timestamp,
+			Severity:            alarm.Severity,
+			Active:              alarm.Active,
+			Acked:               alarm.Acked,
+			Closed:              alarm.Closed,
+			Name:                alarm.Name,
+			Description:         alarm.Description,
+			Value:               alarm.Value,
+			AckedBy:             alarm.AckedBy,
+			Comment:             alarm.Comment,
+			NeedAcknowledge:     alarm.NeedAcknowledge,
+			AssetId:             alarm.AssetId,
+			SpaceId:             alarm.SpaceId,
+			AssetName:           alarm.AssetName,
+			SpaceName:           alarm.SpaceName,
+			DatapointName:       alarm.DatapointName,
+			UnitSymbol:          alarm.UnitSymbol,
+			Tags:                alarm.Tags,
+		}
+
+		app.UpdateAlarmInEliona(alarmUpdate)
+	}
 
 	w.WriteHeader(http.StatusOK)
 }
