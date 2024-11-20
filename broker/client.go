@@ -596,12 +596,12 @@ func (c *openBOSClient) putData() error {
 }
 
 // subscribeToAlarmChanges subscribes to live alarm updates.
-func (c *openBOSClient) subscribeToAlarmChanges(configID int64) (*subscriptionResultDTO, error) {
+func (c *openBOSClient) subscribeToAlarmChanges(configID int64) error {
 	endpoint := "core/application/livealarm/subscribe"
 
 	webhookURL, err := url.JoinPath(c.webhookURL, fmt.Sprint(configID), "ontology-livealarm")
 	if err != nil {
-		return nil, fmt.Errorf("joining URL for subscription: %v", err)
+		return fmt.Errorf("joining URL for subscription: %v", err)
 	}
 
 	second := int32(1000)
@@ -616,12 +616,11 @@ func (c *openBOSClient) subscribeToAlarmChanges(configID int64) (*subscriptionRe
 		ContentType:       common.Ptr("application/json"),
 	}
 
-	var result subscriptionResultDTO
-	if err := c.doMockRequest("POST", endpoint, nil, sub, &result); err != nil {
-		return nil, fmt.Errorf("failed to subscribe to alarm changes: %v", err)
+	if err := c.doMockRequest("POST", endpoint, nil, sub, nil); err != nil {
+		return fmt.Errorf("failed to subscribe to alarm changes: %v", err)
 	}
 
-	return &result, nil
+	return nil
 }
 
 // deleteAlarmSubscription deletes the live alarm subscription.

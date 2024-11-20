@@ -448,7 +448,7 @@ func SubscribeToAlarms(config appmodel.Configuration) error {
 	if err != nil {
 		return fmt.Errorf("creating instance of client: %v", err)
 	}
-	if _, err := client.subscribeToAlarmChanges(config.Id); err != nil {
+	if err := client.subscribeToAlarmChanges(config.Id); err != nil {
 		return fmt.Errorf("subscribing: %v", err)
 	}
 	return nil
