@@ -24,8 +24,8 @@ import (
 
 var CHECK_TYPE_EXTERNAL = "external"
 
-func CreateAlarm(assetID int32, subtype, attribute string, needsAck bool, priority int, message map[string]any) error {
-	_, _, err := client.NewClient().AlarmRulesAPI.
+func CreateAlarm(assetID int32, subtype, attribute string, needsAck bool, priority int, message map[string]any) (int32, error) {
+	alarmRule, _, err := client.NewClient().AlarmRulesAPI.
 		PostAlarmRule(client.AuthenticationContext()).
 		AlarmRule(api.AlarmRule{
 			AssetId:             assetID,
@@ -40,7 +40,7 @@ func CreateAlarm(assetID int32, subtype, attribute string, needsAck bool, priori
 		}).
 		Execute()
 	if err != nil {
-		return fmt.Errorf("creating alarm: %v", err)
+		return 0, fmt.Errorf("creating alarm: %v", err)
 	}
-	return nil
+	return alarmRule.GetId(), nil
 }

@@ -339,11 +339,15 @@ func UpdateAlarmInEliona(update AlarmUpdate) {
 		return
 	}
 
-	// Alarm rule creation
-	for _, attribute := range datapoint.Attributes {
-		err = eliona.CreateAlarm(datapoint.Asset.AssetID, datapoint.Subtype, attribute.Name, update.NeedAcknowledge, update.getPriority(), update.buildAlarmMessage())
+	// Alarm rule creation. This might be eventually moved to ontology sync.
+	for i := range datapoint.Attributes {
+		datapoint.Attributes[i].ElionaAlarmID, err = eliona.CreateAlarm(datapoint.Asset.AssetID, datapoint.Subtype, datapoint.Attributes[i].Name, update.NeedAcknowledge, update.getPriority(), update.buildAlarmMessage())
 		if err != nil {
 			log.Error("eliona", "creating alarm: %v", err)
+			return
+		}
+		if err := dbhelper.UpdateAttributeAlarmID(datapoint.Attributes[i]); err != nil {
+			log.Error("dbhelper", "updating attribute alarm ID: %v", err)
 			return
 		}
 	}

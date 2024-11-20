@@ -55,7 +55,8 @@ create table if not exists open_bos.eliona_attribute
 (
 	id                    bigserial primary key,
 	openbos_datapoint_id  bigserial not null references open_bos.openbos_datapoint(id) ON DELETE CASCADE,
-	eliona_attribute_name text      not null
+	eliona_attribute_name text      not null,
+	eliona_alarm_id       integer
 );
 
 -- There is a transaction started in app.Init(). We need to commit to make the

@@ -303,7 +303,9 @@ func GetDatapointById(providerDatapointID string, configID int64) (appmodel.Data
 	var appAttributes []appmodel.Attribute
 	for _, attr := range attributes {
 		appAttributes = append(appAttributes, appmodel.Attribute{
-			Name: attr.ElionaAttributeName,
+			ID:            attr.ID,
+			Name:          attr.ElionaAttributeName,
+			ElionaAlarmID: attr.ElionaAlarmID.Int32,
 		})
 	}
 
@@ -377,7 +379,9 @@ func GetDatapointByAttributeName(assetID int32, attributeName string) (appmodel.
 	var appAttributes []appmodel.Attribute
 	for _, attr := range relatedAttributes {
 		appAttributes = append(appAttributes, appmodel.Attribute{
-			Name: attr.ElionaAttributeName,
+			ID:            attr.ID,
+			Name:          attr.ElionaAttributeName,
+			ElionaAlarmID: attr.ElionaAlarmID.Int32,
 		})
 	}
 
@@ -409,4 +413,13 @@ func GetDatapointByAttributeName(assetID int32, attributeName string) (appmodel.
 		AttributeNamePrefix: datapoint.Name,
 		Attributes:          appAttributes,
 	}, nil
+}
+
+func UpdateAttributeAlarmID(appAtribute appmodel.Attribute) error {
+	dbAttribute := dbgen.ElionaAttribute{
+		ID:            appAtribute.ID,
+		ElionaAlarmID: null.Int32From(appAtribute.ElionaAlarmID),
+	}
+	dbAttribute.UpdateG(context.Background(), boil.Whitelist(dbgen.ElionaAttributeColumns.ElionaAlarmID))
+	return nil
 }
