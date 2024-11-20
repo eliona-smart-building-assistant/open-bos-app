@@ -186,7 +186,7 @@ func FetchOntology(config appmodel.Configuration) (ontologyVersion int32, assetT
 	}
 
 	if version, err := client.getOntologyVersion(); err != nil {
-		return 0, nil, eliona.Asset{}, fmt.Errorf("getting ontology: %v", err)
+		return 0, nil, eliona.Asset{}, fmt.Errorf("getting ontology version: %v", err)
 	} else if version == config.OntologyVersion {
 		return 0, nil, eliona.Asset{}, ErrNoUpdate
 	}

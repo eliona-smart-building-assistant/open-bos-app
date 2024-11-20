@@ -195,7 +195,7 @@ func (c *openBOSClient) getOntologyVersion() (int32, error) {
 	endpoint := "core/application/data/version"
 
 	var version int32
-	if err := c.doRequest("GET", endpoint, nil, nil, &version); err != nil {
+	if err := c.doMockRequest("GET", endpoint, nil, nil, &version); err != nil {
 		return 0, err
 	}
 
@@ -345,7 +345,7 @@ func (c *openBOSClient) getProperty() (*propertyDTO, error) {
 	endpoint := "ontology/property"
 
 	var property propertyDTO
-	if err := c.doRequest("GET", endpoint, nil, nil, &property); err != nil {
+	if err := c.doMockRequest("GET", endpoint, nil, nil, &property); err != nil {
 		return nil, err
 	}
 
@@ -387,7 +387,7 @@ func (c *openBOSClient) getLiveAlarms(timestamp string) ([]ontologyFullLiveAlarm
 	}
 
 	var alarms []ontologyFullLiveAlarmDTO
-	if err := c.doRequest("GET", endpoint, params, nil, &alarms); err != nil {
+	if err := c.doMockRequest("GET", endpoint, params, nil, &alarms); err != nil {
 		return nil, err
 	}
 
@@ -404,7 +404,7 @@ type ontologyAlarmAckDTO struct {
 func (c *openBOSClient) ackAlarm(ack ontologyAlarmAckDTO) error {
 	endpoint := "core/application/livealarm/ack"
 
-	if err := c.doRequest("POST", endpoint, nil, ack, nil); err != nil {
+	if err := c.doMockRequest("POST", endpoint, nil, ack, nil); err != nil {
 		return err
 	}
 
