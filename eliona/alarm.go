@@ -17,6 +17,7 @@ package eliona
 
 import (
 	"fmt"
+	"time"
 
 	api "github.com/eliona-smart-building-assistant/go-eliona-api-client/v2"
 	"github.com/eliona-smart-building-assistant/go-eliona/client"
@@ -43,4 +44,28 @@ func CreateAlarm(assetID int32, subtype, attribute string, needsAck bool, priori
 		return 0, fmt.Errorf("creating alarm: %v", err)
 	}
 	return alarmRule.GetId(), nil
+}
+
+func UpdateAlarmStatus(alarmID int32, appeared time.Time, ack bool, ackText string, closed bool) error {
+	now := time.Now()
+	alarm := api.Alarm{
+		RuleId:    alarmID,
+		Timestamp: *api.NewNullableTime(&appeared),
+	}
+
+	if ack {
+		alarm.AcknowledgeTimestamp = *api.NewNullableTime(&now)
+		alarm.AcknowledgeText = *api.NewNullableString(&ackText)
+	}
+	if closed {
+		alarm.GoneTimestamp = *api.NewNullableTime(&now)
+	}
+	_, _, err := client.NewClient().AlarmsAPI.
+		PutAlarm(client.AuthenticationContext()).
+		Alarm(alarm).
+		Execute()
+	if err != nil {
+		return fmt.Errorf("updating alarm: %v", err)
+	}
+	return nil
 }

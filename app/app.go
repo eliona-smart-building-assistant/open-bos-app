@@ -318,6 +318,10 @@ func (alarm AlarmUpdate) buildAlarmMessage() map[string]interface{} {
 	return message
 }
 
+func (alarm AlarmUpdate) getAckMessage() string {
+	return fmt.Sprintf("%s: %s", alarm.AckedBy, alarm.Comment)
+}
+
 func UpdateAlarmInEliona(update AlarmUpdate) {
 	config, err := dbhelper.GetConfig(context.Background(), update.ConfigID)
 	if err != nil {
@@ -348,6 +352,13 @@ func UpdateAlarmInEliona(update AlarmUpdate) {
 		}
 		if err := dbhelper.UpdateAttributeAlarmID(datapoint.Attributes[i]); err != nil {
 			log.Error("dbhelper", "updating attribute alarm ID: %v", err)
+			return
+		}
+	}
+
+	for _, attribute := range datapoint.Attributes {
+		if err := eliona.UpdateAlarmStatus(attribute.ElionaAlarmID, update.Timestamp, update.Acked, update.getAckMessage(), update.Closed); err != nil {
+			log.Error("eliona", "triggering alarm: %v", err)
 			return
 		}
 	}
