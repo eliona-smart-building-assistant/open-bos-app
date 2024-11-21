@@ -280,7 +280,7 @@ func GetDatapointById(providerDatapointID string, configID int64) (appmodel.Data
 	// Query to fetch the OpenBOS datapoint and its associated asset
 	datapoint, err := dbgen.OpenbosDatapoints(
 		qm.InnerJoin(fmt.Sprintf("%s ON %s.asset_id = %s.id", assetTable, datapointTable, assetTable)),
-		qm.InnerJoin(fmt.Sprintf("%s ON %s.id = %s.configuration_id", configTable, assetTable, configTable)),
+		qm.InnerJoin(fmt.Sprintf("%s ON %s.id = %s.configuration_id", configTable, configTable, assetTable)),
 		dbgen.ConfigurationWhere.ID.EQ(configID),
 		dbgen.OpenbosDatapointWhere.ProviderID.EQ(providerDatapointID),
 	).OneG(ctx)
@@ -350,7 +350,7 @@ func GetDatapointByAttributeName(assetID int32, attributeName string) (appmodel.
 	attribute, err := dbgen.ElionaAttributes(
 		qm.InnerJoin(fmt.Sprintf("%s ON %s.id = %s.openbos_datapoint_id", datapointTable, datapointTable, attributeTable)),
 		qm.InnerJoin(fmt.Sprintf("%s ON %s.asset_id = %s.id", assetTable, datapointTable, assetTable)),
-		qm.InnerJoin(fmt.Sprintf("%s ON %s.id = %s.configuration_id", configTable, assetTable, configTable)),
+		qm.InnerJoin(fmt.Sprintf("%s ON %s.id = %s.configuration_id", configTable, configTable, assetTable)),
 		dbgen.AssetWhere.AssetID.EQ(null.Int32From(assetID)),
 		dbgen.ElionaAttributeWhere.ElionaAttributeName.EQ(attributeName),
 	).OneG(ctx)
