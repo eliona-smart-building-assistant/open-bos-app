@@ -454,6 +454,46 @@ func formatComplexData(datapoint appmodel.Datapoint) (interface{}, error) {
 	return complexData, nil
 }
 
+// ListenForAlarmChanges listens to output attribute changes from Eliona.
+func ListenForAlarmChanges() {
+	for { // We want to restart listening in case something breaks.
+		outputs, err := eliona.ListenForAlarmChanges()
+		if err != nil {
+			log.Error("eliona", "listening for output changes: %v", err)
+			return
+		}
+		for output := range outputs {
+			if !output.AcknowledgeTimestamp.IsSet() {
+				// We are only updating the acknowledges
+				continue
+			}
+			alarm, err := dbhelper.GetAlarmByElionaID(output.RuleId)
+			if errors.Is(err, dbhelper.ErrNotFound) {
+				// Not from OpenBOS
+				continue
+			} else if err != nil {
+				log.Error("dbhelper", "getting alarm by alarm ID: %v", err)
+				return
+			}
+			config, err := dbhelper.GetConfigByElionaAlarmID(output.RuleId)
+			if err != nil {
+				log.Error("dbhelper", "getting config by alarm ID: %v", err)
+				return
+			}
+
+			username, err := eliona.GetUserName(output.GetAcknowledgeUserId())
+			if err != nil {
+				log.Error("eliona", "getting ack username: %v", err)
+				username = ""
+			}
+			if err := broker.AcknowledgeAlarm(config, alarm.OpenBOSAlarmID, username, output.GetAcknowledgeText()); err != nil {
+				log.Error("broker", "acknowledging alarm: %v", err)
+			}
+		}
+		time.Sleep(time.Second * 5) // Give the server a little break.
+	}
+}
+
 // ListenApi starts the API server and listen for requests
 func ListenApi() {
 	err := http.ListenAndServe(":"+common.Getenv("API_SERVER_PORT", "3000"),

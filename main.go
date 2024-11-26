@@ -54,6 +54,7 @@ func main() {
 		common.Loop(app.CollectData, time.Second),
 		app.ListenApi,
 		app.ListenForOutputChanges,
+		app.ListenForAlarmChanges,
 		webhook.StartWebhookListener,
 	)
 

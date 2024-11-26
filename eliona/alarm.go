@@ -16,6 +16,7 @@
 package eliona
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -68,4 +69,14 @@ func UpdateAlarmStatus(alarmID int32, appeared time.Time, ack bool, ackText stri
 		return fmt.Errorf("updating alarm: %v", err)
 	}
 	return nil
+}
+
+func GetUserName(userID string) (string, error) {
+	user, _, err := client.NewClient().UsersAPI.
+		GetUserById(context.Background(), userID).
+		Execute()
+	if err != nil {
+		return "", fmt.Errorf("getting user %v: %v", userID, err)
+	}
+	return fmt.Sprintf("%s %s", user.GetFirstname(), user.GetLastname()), nil
 }

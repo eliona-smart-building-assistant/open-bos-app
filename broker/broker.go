@@ -466,3 +466,26 @@ func PutData(config appmodel.Configuration, attributesData []AttributeData) erro
 	}
 	return client.putData() //todo
 }
+
+func AcknowledgeAlarm(config appmodel.Configuration, sessionID, ackedBy, comment string) error {
+	client, err := newOpenBOSClient(config.Gwid, config.ClientID, config.ClientSecret, config.AppPublicAPIURL, mockURL, tokenURL)
+	if err != nil {
+		return fmt.Errorf("creating instance of client: %v", err)
+	}
+
+	ack := ontologyAlarmAckDTO{
+		SessionID: sessionID,
+		AckedBy:   ackedBy,
+		Comment:   comment,
+	}
+
+	log.Debug("client", "Acknowledging alarm with session ID: %s", sessionID)
+
+	if err := client.ackAlarm(ack); err != nil {
+		log.Error("client", "Failed to acknowledge alarm: %v", err)
+		return fmt.Errorf("acknowledging alarm: %v", err)
+	}
+
+	log.Debug("client", "Successfully acknowledged alarm with session ID: %s", sessionID)
+	return nil
+}

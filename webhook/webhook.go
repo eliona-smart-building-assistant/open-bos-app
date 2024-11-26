@@ -175,7 +175,7 @@ func (s *webhookServer) handleLiveAlarm(w http.ResponseWriter, r *http.Request) 
 			continue
 		}
 
-		if alarm.Quality != "Good" {
+		if alarm.Quality != "good" {
 			log.Debug("webhook", "Received alarm with bad quality for SessionId %s: Quality=%s", alarm.SessionId, alarm.Quality)
 			continue
 		}

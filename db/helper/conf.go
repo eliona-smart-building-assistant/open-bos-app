@@ -439,3 +439,53 @@ func GetAlarmsByOpenbosID(openbosID string) ([]appmodel.Alarm, error) {
 	}
 	return appAlarms, nil
 }
+
+func GetConfigByElionaAlarmID(elionaAlarmID int32) (appmodel.Configuration, error) {
+	ctx := context.Background()
+
+	alarmTable := "open_bos.alarm"
+	attributeTable := "open_bos.eliona_attribute"
+	datapointTable := "open_bos.openbos_datapoint"
+	assetTable := "open_bos.asset"
+	configTable := "open_bos.configuration"
+
+	config, err := dbgen.Configurations(
+		qm.InnerJoin(fmt.Sprintf("%s ON %s.id = %s.configuration_id", assetTable, configTable, assetTable)),
+		qm.InnerJoin(fmt.Sprintf("%s ON %s.asset_id = %s.id", datapointTable, datapointTable, assetTable)),
+		qm.InnerJoin(fmt.Sprintf("%s ON %s.id = %s.openbos_datapoint_id", attributeTable, datapointTable, attributeTable)),
+		qm.InnerJoin(fmt.Sprintf("%s ON %s.id = %s.eliona_attribute_id", alarmTable, attributeTable, alarmTable)),
+		dbgen.AlarmWhere.ElionaAlarmID.EQ(elionaAlarmID),
+	).OneG(ctx)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return appmodel.Configuration{}, ErrNotFound
+		}
+		return appmodel.Configuration{}, fmt.Errorf("fetching attribute: %v", err)
+	}
+
+	appConfig, err := toAppConfig(config)
+	if err != nil {
+		return appmodel.Configuration{}, fmt.Errorf("translating configuration: %v", err)
+	}
+
+	return appConfig, nil
+}
+
+func GetAlarmByElionaID(elionaAlarmID int32) (appmodel.Alarm, error) {
+	ctx := context.Background()
+
+	dbAlarm, err := dbgen.Alarms(
+		dbgen.AlarmWhere.ElionaAlarmID.EQ(elionaAlarmID),
+	).OneG(ctx)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return appmodel.Alarm{}, ErrNotFound
+		}
+		return appmodel.Alarm{}, fmt.Errorf("fetching attribute: %v", err)
+	}
+
+	return appmodel.Alarm{
+		ElionaAlarmID:  elionaAlarmID,
+		OpenBOSAlarmID: dbAlarm.OpenbosAlarmID,
+	}, nil
+}
