@@ -212,6 +212,7 @@ func InsertAssetAttributes(ctx context.Context, assetId int64, datapoints []appm
 			AssetID:    assetId,
 			Subtype:    datapoint.Subtype,
 			ProviderID: datapoint.ProviderID,
+			// Name:       datapoint.AttributeNamePrefix, // todo: is this correct?
 		}
 
 		if err := dbDatapoint.InsertG(ctx, boil.Infer()); err != nil {
@@ -303,9 +304,8 @@ func GetDatapointById(providerDatapointID string, configID int64) (appmodel.Data
 	var appAttributes []appmodel.Attribute
 	for _, attr := range attributes {
 		appAttributes = append(appAttributes, appmodel.Attribute{
-			ID:            attr.ID,
-			Name:          attr.ElionaAttributeName,
-			ElionaAlarmID: attr.ElionaAlarmID.Int32,
+			ID:   attr.ID,
+			Name: attr.ElionaAttributeName,
 		})
 	}
 
@@ -379,9 +379,8 @@ func GetDatapointByAttributeName(assetID int32, attributeName string) (appmodel.
 	var appAttributes []appmodel.Attribute
 	for _, attr := range relatedAttributes {
 		appAttributes = append(appAttributes, appmodel.Attribute{
-			ID:            attr.ID,
-			Name:          attr.ElionaAttributeName,
-			ElionaAlarmID: attr.ElionaAlarmID.Int32,
+			ID:   attr.ID,
+			Name: attr.ElionaAttributeName,
 		})
 	}
 
@@ -410,16 +409,33 @@ func GetDatapointByAttributeName(assetID int32, attributeName string) (appmodel.
 		ProviderID:          datapoint.ProviderID,
 		Subtype:             datapoint.Subtype,
 		Asset:               &appAsset,
-		AttributeNamePrefix: datapoint.Name,
+		AttributeNamePrefix: datapoint.Name, // Mapped to 'name' in openbos_datapoint. Why?
 		Attributes:          appAttributes,
 	}, nil
 }
 
-func UpdateAttributeAlarmID(appAtribute appmodel.Attribute) error {
-	dbAttribute := dbgen.ElionaAttribute{
-		ID:            appAtribute.ID,
-		ElionaAlarmID: null.Int32From(appAtribute.ElionaAlarmID),
+func CreateAlarm(attributeID int64, elionaAlarmID int32, openbosAlarmID string) error {
+	dbAlarm := dbgen.Alarm{
+		ElionaAttributeID: attributeID,
+		ElionaAlarmID:     elionaAlarmID,
+		OpenbosAlarmID:    openbosAlarmID,
 	}
-	dbAttribute.UpdateG(context.Background(), boil.Whitelist(dbgen.ElionaAttributeColumns.ElionaAlarmID))
-	return nil
+	return dbAlarm.UpsertG(context.Background(), true, []string{dbgen.AlarmColumns.ElionaAlarmID}, boil.Infer(), boil.Infer())
+}
+
+func GetAlarmsByOpenbosID(openbosID string) ([]appmodel.Alarm, error) {
+	alarms, err := dbgen.Alarms(
+		dbgen.AlarmWhere.OpenbosAlarmID.EQ(openbosID),
+	).AllG(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("fetching alarms: %v", err)
+	}
+	var appAlarms []appmodel.Alarm
+	for _, alarm := range alarms {
+		appAlarms = append(appAlarms, appmodel.Alarm{
+			ElionaAlarmID:  alarm.ElionaAlarmID,
+			OpenBOSAlarmID: alarm.OpenbosAlarmID,
+		})
+	}
+	return appAlarms, nil
 }

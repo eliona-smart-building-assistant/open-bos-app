@@ -53,7 +53,11 @@ type Datapoint struct {
 }
 
 type Attribute struct {
-	ID            int64
-	Name          string
-	ElionaAlarmID int32
+	ID   int64
+	Name string
+}
+
+type Alarm struct {
+	ElionaAlarmID  int32
+	OpenBOSAlarmID string
 }

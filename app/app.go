@@ -345,19 +345,24 @@ func UpdateAlarmInEliona(update AlarmUpdate) {
 
 	// Alarm rule creation. This might be eventually moved to ontology sync.
 	for i := range datapoint.Attributes {
-		datapoint.Attributes[i].ElionaAlarmID, err = eliona.CreateAlarm(datapoint.Asset.AssetID, datapoint.Subtype, datapoint.Attributes[i].Name, update.NeedAcknowledge, update.getPriority(), update.buildAlarmMessage())
+		elionaAlarmID, err := eliona.CreateAlarm(datapoint.Asset.AssetID, datapoint.Subtype, datapoint.Attributes[i].Name, update.NeedAcknowledge, update.getPriority(), update.buildAlarmMessage())
 		if err != nil {
 			log.Error("eliona", "creating alarm: %v", err)
 			return
 		}
-		if err := dbhelper.UpdateAttributeAlarmID(datapoint.Attributes[i]); err != nil {
-			log.Error("dbhelper", "updating attribute alarm ID: %v", err)
+		if err := dbhelper.CreateAlarm(datapoint.Attributes[i].ID, elionaAlarmID, update.AlarmID); err != nil {
+			log.Error("dbhelper", "creating alarm: %v", err)
 			return
 		}
 	}
 
-	for _, attribute := range datapoint.Attributes {
-		if err := eliona.UpdateAlarmStatus(attribute.ElionaAlarmID, update.Timestamp, update.Acked, update.getAckMessage(), update.Closed); err != nil {
+	alarms, err := dbhelper.GetAlarmsByOpenbosID(update.AlarmID)
+	if err != nil {
+		log.Error("dbhelper", "getting alarms for alarmID %s: %v", update.AlarmID, err)
+		return
+	}
+	for _, alarm := range alarms {
+		if err := eliona.UpdateAlarmStatus(alarm.ElionaAlarmID, update.Timestamp, update.Acked, update.getAckMessage(), update.Closed); err != nil {
 			log.Error("eliona", "triggering alarm: %v", err)
 			return
 		}

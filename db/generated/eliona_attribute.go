@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/friendsofgo/errors"
-	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
@@ -24,10 +23,9 @@ import (
 
 // ElionaAttribute is an object representing the database table.
 type ElionaAttribute struct {
-	ID                  int64      `boil:"id" json:"id" toml:"id" yaml:"id"`
-	OpenbosDatapointID  int64      `boil:"openbos_datapoint_id" json:"openbos_datapoint_id" toml:"openbos_datapoint_id" yaml:"openbos_datapoint_id"`
-	ElionaAttributeName string     `boil:"eliona_attribute_name" json:"eliona_attribute_name" toml:"eliona_attribute_name" yaml:"eliona_attribute_name"`
-	ElionaAlarmID       null.Int32 `boil:"eliona_alarm_id" json:"eliona_alarm_id,omitempty" toml:"eliona_alarm_id" yaml:"eliona_alarm_id,omitempty"`
+	ID                  int64  `boil:"id" json:"id" toml:"id" yaml:"id"`
+	OpenbosDatapointID  int64  `boil:"openbos_datapoint_id" json:"openbos_datapoint_id" toml:"openbos_datapoint_id" yaml:"openbos_datapoint_id"`
+	ElionaAttributeName string `boil:"eliona_attribute_name" json:"eliona_attribute_name" toml:"eliona_attribute_name" yaml:"eliona_attribute_name"`
 
 	R *elionaAttributeR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L elionaAttributeL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -37,24 +35,20 @@ var ElionaAttributeColumns = struct {
 	ID                  string
 	OpenbosDatapointID  string
 	ElionaAttributeName string
-	ElionaAlarmID       string
 }{
 	ID:                  "id",
 	OpenbosDatapointID:  "openbos_datapoint_id",
 	ElionaAttributeName: "eliona_attribute_name",
-	ElionaAlarmID:       "eliona_alarm_id",
 }
 
 var ElionaAttributeTableColumns = struct {
 	ID                  string
 	OpenbosDatapointID  string
 	ElionaAttributeName string
-	ElionaAlarmID       string
 }{
 	ID:                  "eliona_attribute.id",
 	OpenbosDatapointID:  "eliona_attribute.openbos_datapoint_id",
 	ElionaAttributeName: "eliona_attribute.eliona_attribute_name",
-	ElionaAlarmID:       "eliona_attribute.eliona_alarm_id",
 }
 
 // Generated where
@@ -63,24 +57,25 @@ var ElionaAttributeWhere = struct {
 	ID                  whereHelperint64
 	OpenbosDatapointID  whereHelperint64
 	ElionaAttributeName whereHelperstring
-	ElionaAlarmID       whereHelpernull_Int32
 }{
 	ID:                  whereHelperint64{field: "\"open_bos\".\"eliona_attribute\".\"id\""},
 	OpenbosDatapointID:  whereHelperint64{field: "\"open_bos\".\"eliona_attribute\".\"openbos_datapoint_id\""},
 	ElionaAttributeName: whereHelperstring{field: "\"open_bos\".\"eliona_attribute\".\"eliona_attribute_name\""},
-	ElionaAlarmID:       whereHelpernull_Int32{field: "\"open_bos\".\"eliona_attribute\".\"eliona_alarm_id\""},
 }
 
 // ElionaAttributeRels is where relationship names are stored.
 var ElionaAttributeRels = struct {
 	OpenbosDatapoint string
+	Alarms           string
 }{
 	OpenbosDatapoint: "OpenbosDatapoint",
+	Alarms:           "Alarms",
 }
 
 // elionaAttributeR is where relationships are stored.
 type elionaAttributeR struct {
 	OpenbosDatapoint *OpenbosDatapoint `boil:"OpenbosDatapoint" json:"OpenbosDatapoint" toml:"OpenbosDatapoint" yaml:"OpenbosDatapoint"`
+	Alarms           AlarmSlice        `boil:"Alarms" json:"Alarms" toml:"Alarms" yaml:"Alarms"`
 }
 
 // NewStruct creates a new relationship struct
@@ -95,13 +90,20 @@ func (r *elionaAttributeR) GetOpenbosDatapoint() *OpenbosDatapoint {
 	return r.OpenbosDatapoint
 }
 
+func (r *elionaAttributeR) GetAlarms() AlarmSlice {
+	if r == nil {
+		return nil
+	}
+	return r.Alarms
+}
+
 // elionaAttributeL is where Load methods for each relationship are stored.
 type elionaAttributeL struct{}
 
 var (
-	elionaAttributeAllColumns            = []string{"id", "openbos_datapoint_id", "eliona_attribute_name", "eliona_alarm_id"}
+	elionaAttributeAllColumns            = []string{"id", "openbos_datapoint_id", "eliona_attribute_name"}
 	elionaAttributeColumnsWithoutDefault = []string{"eliona_attribute_name"}
-	elionaAttributeColumnsWithDefault    = []string{"id", "openbos_datapoint_id", "eliona_alarm_id"}
+	elionaAttributeColumnsWithDefault    = []string{"id", "openbos_datapoint_id"}
 	elionaAttributePrimaryKeyColumns     = []string{"id"}
 	elionaAttributeGeneratedColumns      = []string{}
 )
@@ -442,6 +444,20 @@ func (o *ElionaAttribute) OpenbosDatapoint(mods ...qm.QueryMod) openbosDatapoint
 	return OpenbosDatapoints(queryMods...)
 }
 
+// Alarms retrieves all the alarm's Alarms with an executor.
+func (o *ElionaAttribute) Alarms(mods ...qm.QueryMod) alarmQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"open_bos\".\"alarm\".\"eliona_attribute_id\"=?", o.ID),
+	)
+
+	return Alarms(queryMods...)
+}
+
 // LoadOpenbosDatapoint allows an eager lookup of values, cached into the
 // loaded structs of the objects. This is for an N-1 relationship.
 func (elionaAttributeL) LoadOpenbosDatapoint(ctx context.Context, e boil.ContextExecutor, singular bool, maybeElionaAttribute interface{}, mods queries.Applicator) error {
@@ -562,6 +578,119 @@ func (elionaAttributeL) LoadOpenbosDatapoint(ctx context.Context, e boil.Context
 	return nil
 }
 
+// LoadAlarms allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (elionaAttributeL) LoadAlarms(ctx context.Context, e boil.ContextExecutor, singular bool, maybeElionaAttribute interface{}, mods queries.Applicator) error {
+	var slice []*ElionaAttribute
+	var object *ElionaAttribute
+
+	if singular {
+		var ok bool
+		object, ok = maybeElionaAttribute.(*ElionaAttribute)
+		if !ok {
+			object = new(ElionaAttribute)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeElionaAttribute)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeElionaAttribute))
+			}
+		}
+	} else {
+		s, ok := maybeElionaAttribute.(*[]*ElionaAttribute)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeElionaAttribute)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeElionaAttribute))
+			}
+		}
+	}
+
+	args := make(map[interface{}]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &elionaAttributeR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &elionaAttributeR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]interface{}, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`open_bos.alarm`),
+		qm.WhereIn(`open_bos.alarm.eliona_attribute_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load alarm")
+	}
+
+	var resultSlice []*Alarm
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice alarm")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on alarm")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for alarm")
+	}
+
+	if len(alarmAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.Alarms = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &alarmR{}
+			}
+			foreign.R.ElionaAttribute = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if local.ID == foreign.ElionaAttributeID {
+				local.R.Alarms = append(local.R.Alarms, foreign)
+				if foreign.R == nil {
+					foreign.R = &alarmR{}
+				}
+				foreign.R.ElionaAttribute = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
 // SetOpenbosDatapointG of the elionaAttribute to the related item.
 // Sets o.R.OpenbosDatapoint to related.
 // Adds o to related.R.ElionaAttributes.
@@ -614,6 +743,68 @@ func (o *ElionaAttribute) SetOpenbosDatapoint(ctx context.Context, exec boil.Con
 		related.R.ElionaAttributes = append(related.R.ElionaAttributes, o)
 	}
 
+	return nil
+}
+
+// AddAlarmsG adds the given related objects to the existing relationships
+// of the eliona_attribute, optionally inserting them as new records.
+// Appends related to o.R.Alarms.
+// Sets related.R.ElionaAttribute appropriately.
+// Uses the global database handle.
+func (o *ElionaAttribute) AddAlarmsG(ctx context.Context, insert bool, related ...*Alarm) error {
+	return o.AddAlarms(ctx, boil.GetContextDB(), insert, related...)
+}
+
+// AddAlarms adds the given related objects to the existing relationships
+// of the eliona_attribute, optionally inserting them as new records.
+// Appends related to o.R.Alarms.
+// Sets related.R.ElionaAttribute appropriately.
+func (o *ElionaAttribute) AddAlarms(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Alarm) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			rel.ElionaAttributeID = o.ID
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"open_bos\".\"alarm\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"eliona_attribute_id"}),
+				strmangle.WhereClause("\"", "\"", 2, alarmPrimaryKeyColumns),
+			)
+			values := []interface{}{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.ElionaAttributeID = o.ID
+		}
+	}
+
+	if o.R == nil {
+		o.R = &elionaAttributeR{
+			Alarms: related,
+		}
+	} else {
+		o.R.Alarms = append(o.R.Alarms, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &alarmR{
+				ElionaAttribute: o,
+			}
+		} else {
+			rel.R.ElionaAttribute = o
+		}
+	}
 	return nil
 }
 
