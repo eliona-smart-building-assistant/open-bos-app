@@ -180,7 +180,7 @@ func convertMapping(enum map[string]string) []map[string]any {
 }
 
 func FetchOntology(config appmodel.Configuration) (ontologyVersion int32, assetTypes []api.AssetType, root eliona.Asset, err error) {
-	client, err := newOpenBOSClient(config.Gwid, config.ClientID, config.ClientSecret, config.AppPublicAPIURL, mockURL, tokenURL)
+	client, err := newOpenBOSClient(config.Gwid, config.ClientID, config.ClientSecret, config.AppPublicAPIURL, baseURL, tokenURL)
 	if err != nil {
 		return 0, nil, eliona.Asset{}, fmt.Errorf("creating instance of client: %v", err)
 	}
@@ -422,7 +422,7 @@ func buildAssetHierarchy(asset *eliona.Asset, spaces map[string]*ontologySpaceDT
 }
 
 func SubscribeToOntologyChanges(config appmodel.Configuration) error {
-	client, err := newOpenBOSClient(config.Gwid, config.ClientID, config.ClientSecret, config.AppPublicAPIURL, mockURL, tokenURL)
+	client, err := newOpenBOSClient(config.Gwid, config.ClientID, config.ClientSecret, config.AppPublicAPIURL, baseURL, tokenURL)
 	if err != nil {
 		return fmt.Errorf("creating instance of client: %v", err)
 	}
@@ -433,7 +433,7 @@ func SubscribeToOntologyChanges(config appmodel.Configuration) error {
 }
 
 func SubscribeToDataChanges(config appmodel.Configuration) error {
-	client, err := newOpenBOSClient(config.Gwid, config.ClientID, config.ClientSecret, config.AppPublicAPIURL, mockURL, tokenURL)
+	client, err := newOpenBOSClient(config.Gwid, config.ClientID, config.ClientSecret, config.AppPublicAPIURL, baseURL, tokenURL)
 	if err != nil {
 		return fmt.Errorf("creating instance of client: %v", err)
 	}
@@ -444,7 +444,7 @@ func SubscribeToDataChanges(config appmodel.Configuration) error {
 }
 
 func SubscribeToAlarms(config appmodel.Configuration) error {
-	client, err := newOpenBOSClient(config.Gwid, config.ClientID, config.ClientSecret, config.AppPublicAPIURL, mockURL, tokenURL)
+	client, err := newOpenBOSClient(config.Gwid, config.ClientID, config.ClientSecret, config.AppPublicAPIURL, baseURL, tokenURL)
 	if err != nil {
 		return fmt.Errorf("creating instance of client: %v", err)
 	}
@@ -460,7 +460,7 @@ type AttributeData struct {
 }
 
 func PutData(config appmodel.Configuration, attributesData []AttributeData) error {
-	client, err := newOpenBOSClient(config.Gwid, config.ClientID, config.ClientSecret, config.AppPublicAPIURL, mockURL, tokenURL)
+	client, err := newOpenBOSClient(config.Gwid, config.ClientID, config.ClientSecret, config.AppPublicAPIURL, baseURL, tokenURL)
 	if err != nil {
 		return fmt.Errorf("creating instance of client: %v", err)
 	}
@@ -468,7 +468,7 @@ func PutData(config appmodel.Configuration, attributesData []AttributeData) erro
 }
 
 func AcknowledgeAlarm(config appmodel.Configuration, sessionID, ackedBy, comment string) error {
-	client, err := newOpenBOSClient(config.Gwid, config.ClientID, config.ClientSecret, config.AppPublicAPIURL, mockURL, tokenURL)
+	client, err := newOpenBOSClient(config.Gwid, config.ClientID, config.ClientSecret, config.AppPublicAPIURL, baseURL, tokenURL)
 	if err != nil {
 		return fmt.Errorf("creating instance of client: %v", err)
 	}
