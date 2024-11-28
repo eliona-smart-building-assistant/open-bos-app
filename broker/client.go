@@ -198,7 +198,7 @@ func (c *openBOSClient) getOntology() (*ontologyDTO, error) {
 	endpoint := "core/application/data"
 
 	var ontology ontologyDTO
-	if err := c.doMockRequest("GET", endpoint, nil, nil, &ontology); err != nil {
+	if err := c.doRequest("GET", endpoint, nil, nil, &ontology); err != nil {
 		return nil, err
 	}
 
@@ -210,7 +210,7 @@ func (c *openBOSClient) getOntologyVersion() (int32, error) {
 	endpoint := "core/application/data/version"
 
 	var version int32
-	if err := c.doMockRequest("GET", endpoint, nil, nil, &version); err != nil {
+	if err := c.doRequest("GET", endpoint, nil, nil, &version); err != nil {
 		return 0, err
 	}
 
@@ -256,7 +256,7 @@ func (c *openBOSClient) subscribeToOntologyChanges(configID int64) (*subscriptio
 	}
 
 	var result subscriptionResultDTO
-	if err := c.doMockRequest("POST", endpoint, nil, sub, &result); err != nil {
+	if err := c.doRequest("POST", endpoint, nil, sub, &result); err != nil {
 		return nil, fmt.Errorf("failed to subscribe to ontology changes: %v", err)
 	}
 
@@ -271,7 +271,7 @@ type subscriptionDeleteDTO struct {
 func (c *openBOSClient) deleteOntologySubscription(del subscriptionDeleteDTO) error {
 	endpoint := "core/application/data/version/subscribe"
 
-	if err := c.doMockRequest("DELETE", endpoint, nil, del, nil); err != nil {
+	if err := c.doRequest("DELETE", endpoint, nil, del, nil); err != nil {
 		return fmt.Errorf("failed to delete ontology subscription: %v", err)
 	}
 
@@ -300,7 +300,7 @@ func (c *openBOSClient) subscribeToDataChanges(configID int64) (*subscriptionRes
 	}
 
 	var result subscriptionResultDTO
-	if err := c.doMockRequest("POST", endpoint, nil, sub, &result); err != nil {
+	if err := c.doRequest("POST", endpoint, nil, sub, &result); err != nil {
 		return nil, fmt.Errorf("failed to subscribe to data changes: %v", err)
 	}
 
@@ -310,7 +310,7 @@ func (c *openBOSClient) subscribeToDataChanges(configID int64) (*subscriptionRes
 func (c *openBOSClient) deleteDataSubscription(del subscriptionDeleteDTO) error {
 	endpoint := "core/application/livedata/subscribe"
 
-	if err := c.doMockRequest("DELETE", endpoint, nil, del, nil); err != nil {
+	if err := c.doRequest("DELETE", endpoint, nil, del, nil); err != nil {
 		return fmt.Errorf("failed to delete data subscription: %v", err)
 	}
 
@@ -360,7 +360,7 @@ func (c *openBOSClient) getProperty() (*propertyDTO, error) {
 	endpoint := "ontology/property"
 
 	var property propertyDTO
-	if err := c.doMockRequest("GET", endpoint, nil, nil, &property); err != nil {
+	if err := c.doRequest("GET", endpoint, nil, nil, &property); err != nil {
 		return nil, err
 	}
 
@@ -402,7 +402,7 @@ func (c *openBOSClient) getLiveAlarms(timestamp string) ([]ontologyFullLiveAlarm
 	}
 
 	var alarms []ontologyFullLiveAlarmDTO
-	if err := c.doMockRequest("GET", endpoint, params, nil, &alarms); err != nil {
+	if err := c.doRequest("GET", endpoint, params, nil, &alarms); err != nil {
 		return nil, err
 	}
 
@@ -419,7 +419,7 @@ type ontologyAlarmAckDTO struct {
 func (c *openBOSClient) ackAlarm(ack ontologyAlarmAckDTO) error {
 	endpoint := "core/application/livealarm/ack"
 
-	if err := c.doMockRequest("POST", endpoint, nil, ack, nil); err != nil {
+	if err := c.doRequest("POST", endpoint, nil, ack, nil); err != nil {
 		return err
 	}
 
@@ -593,7 +593,7 @@ func (c *openBOSClient) putData() error {
 		ErrorCode   string `json:"errorCode"`
 		InnerError  string `json:"innerError"`
 	}
-	if err := c.doMockRequest("POST", endpoint, nil, livedata, &result); err != nil {
+	if err := c.doRequest("POST", endpoint, nil, livedata, &result); err != nil {
 		return fmt.Errorf("failed to put data: %v", err)
 	}
 
@@ -631,7 +631,7 @@ func (c *openBOSClient) subscribeToAlarmChanges(configID int64) error {
 		ContentType:       common.Ptr("application/json"),
 	}
 
-	if err := c.doMockRequest("POST", endpoint, nil, sub, nil); err != nil {
+	if err := c.doRequest("POST", endpoint, nil, sub, nil); err != nil {
 		return fmt.Errorf("failed to subscribe to alarm changes: %v", err)
 	}
 
@@ -642,7 +642,7 @@ func (c *openBOSClient) subscribeToAlarmChanges(configID int64) error {
 func (c *openBOSClient) deleteAlarmSubscription(del subscriptionDeleteDTO) error {
 	endpoint := "core/application/livealarm/subscribe"
 
-	if err := c.doMockRequest("DELETE", endpoint, nil, del, nil); err != nil {
+	if err := c.doRequest("DELETE", endpoint, nil, del, nil); err != nil {
 		return fmt.Errorf("failed to delete alarm subscription: %v", err)
 	}
 
