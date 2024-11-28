@@ -30,6 +30,7 @@ import (
 	"sync"
 	"time"
 
+	api "github.com/eliona-smart-building-assistant/go-eliona-api-client/v2"
 	"github.com/eliona-smart-building-assistant/go-eliona/app"
 	"github.com/eliona-smart-building-assistant/go-eliona/asset"
 	"github.com/eliona-smart-building-assistant/go-eliona/frontend"
@@ -177,7 +178,6 @@ type AttributeDataUpdate struct {
 	Value               any
 }
 
-// TODO: change to bulk upsert
 func UpdateDataPointInEliona(update AttributeDataUpdate) {
 	config, err := dbhelper.GetConfig(context.Background(), update.ConfigID)
 	if err != nil {
@@ -215,7 +215,10 @@ func UpdateDataPointInEliona(update AttributeDataUpdate) {
 		assetData[datapoint.Attributes[0].Name] = update.Value
 	}
 
-	// TODO: Upsert data
+	if err := eliona.UpsertAssetData(datapoint.Asset.AssetID, assetData, update.Timestamp, api.DataSubtype(datapoint.Subtype)); err != nil {
+		log.Error("eliona", "upserting data: %v", err)
+		return
+	}
 }
 
 func decodeComplexData(value map[string]any, parentPath string) map[string]any {
