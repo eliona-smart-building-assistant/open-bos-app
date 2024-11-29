@@ -400,6 +400,10 @@ func outputData(assetID int32, data map[string]interface{}) error {
 	for name := range data {
 		// Fetch the datapoint associated with the attribute name
 		datapoint, err := dbhelper.GetDatapointByAttributeName(assetID, name)
+		if errors.Is(err, dbhelper.ErrNotFound) {
+			// Asset not originating from this app.
+			continue
+		}
 		if err != nil {
 			return fmt.Errorf("getting datapoint by assetID %v and name %v: %v", assetID, name, err)
 		}

@@ -356,7 +356,7 @@ func GetDatapointByAttributeName(assetID int32, attributeName string) (appmodel.
 	).OneG(ctx)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return appmodel.Datapoint{}, fmt.Errorf("no attribute found for asset ID %v and attribute name %v", assetID, attributeName)
+			return appmodel.Datapoint{}, fmt.Errorf("no attribute found for asset ID %v and attribute name %v: %w", assetID, attributeName, ErrNotFound)
 		}
 		return appmodel.Datapoint{}, fmt.Errorf("fetching attribute: %v", err)
 	}
