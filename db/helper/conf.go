@@ -212,7 +212,7 @@ func InsertAssetAttributes(ctx context.Context, assetId int64, datapoints []appm
 			AssetID:    assetId,
 			Subtype:    datapoint.Subtype,
 			ProviderID: datapoint.ProviderID,
-			// Name:       datapoint.AttributeNamePrefix, // todo: is this correct?
+			Name:       datapoint.AttributeNamePrefix,
 		}
 
 		if err := dbDatapoint.InsertG(ctx, boil.Infer()); err != nil {
@@ -409,7 +409,7 @@ func GetDatapointByAttributeName(assetID int32, attributeName string) (appmodel.
 		ProviderID:          datapoint.ProviderID,
 		Subtype:             datapoint.Subtype,
 		Asset:               &appAsset,
-		AttributeNamePrefix: datapoint.Name, // Mapped to 'name' in openbos_datapoint. Why?
+		AttributeNamePrefix: datapoint.Name,
 		Attributes:          appAttributes,
 	}, nil
 }
