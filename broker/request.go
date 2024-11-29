@@ -30,6 +30,7 @@ import (
 )
 
 // const baseURL = "https://api.buildings.ability.abb/buildings/openbos/apiproxy/v1"
+// todo: change *scope* to prod as well
 // const baseURL = "http://localhost:5000"
 const baseURL = "https://dev.api.buildings.ability.abb/buildings/openbos/apiproxy/v1"
 
@@ -70,7 +71,7 @@ func (c *openBOSClient) authenticateWithClientCredentials() error {
 	data.Set("grant_type", "client_credentials")
 	data.Set("client_id", c.clientID)
 	data.Set("client_secret", c.clientSecret)
-	data.Set("scope", "api://openbos/.default")
+	data.Set("scope", "api://dev.openbos/.default")
 
 	req, err := http.NewRequest("POST", c.tokenURL, bytes.NewBufferString(data.Encode()))
 	if err != nil {

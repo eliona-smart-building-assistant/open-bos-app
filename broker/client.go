@@ -218,21 +218,21 @@ func (c *openBOSClient) getOntologyVersion() (int32, error) {
 }
 
 type subscriptionCreateDTO struct {
-	MinSendTime       int32    `json:"minSendTime"`              // Minimum time between two events. To avoid events flushing. Highly recommended. If zero, events will be sent on the fly (NOT recommended). Min value: 1 mn
-	MaxSendTime       int32    `json:"maxSendTime"`              // Maximum time between two events. Can be used to ensure the client application that the connection is alive. If nothing must be sent, the edge will send an empty event. Min value: 1 mn
-	Timestamp         *string  `json:"timestamp,omitempty"`      // UTC date. To receive only datapoints or properties that change since the timestamp.
-	WebHookURL        *string  `json:"webHookURL,omitempty"`     // URL of the webhook.
-	WebHookRetries    int32    `json:"webHookRetries"`           // Interval of retries (in seconds) when an error occurs while sending an event.
-	WebHookRetryDelay int32    `json:"webHookRetryDelay"`        // Number of retries when an error occurs while sending an event.
-	WebHookLeaseTime  int32    `json:"webHookLeaseTime"`         // Life span of the webhook if the webhook connection is down. If not present, the webhook will never be destroyed.
-	WebhookPersist    *bool    `json:"webhookPersist,omitempty"` // If true, the subscription will be kept alive when the edge restarts in the middle of the subscription. If false, the subscription is lost when the edge restarts.
-	ContentType       *string  `json:"contentType,omitempty"`    // application/json for json (the default) or octet for base64.
-	DesiredUnits      []string `json:"desiredUnits,omitempty"`   // List of units you want for certain datapoints.
+	MinSendTime       int32    `json:"minSendTime"`                // Minimum time between two events. To avoid events flushing. Highly recommended. If zero, events will be sent on the fly (NOT recommended). Min value: 1 mn
+	MaxSendTime       int32    `json:"maxSendTime"`                // Maximum time between two events. Can be used to ensure the client application that the connection is alive. If nothing must be sent, the edge will send an empty event. Min value: 1 mn
+	Timestamp         *string  `json:"timestamp,omitempty"`        // UTC date. To receive only datapoints or properties that change since the timestamp.
+	WebHookURL        *string  `json:"webhookURL,omitempty"`       // URL of the webhook.
+	WebHookRetries    int32    `json:"webhookRetries"`             // Interval of retries (in seconds) when an error occurs while sending an event.
+	WebHookRetryDelay int32    `json:"webhookRetryDelay"`          // Number of retries when an error occurs while sending an event.
+	WebHookLeaseTime  int32    `json:"webhookLeaseTime,omitempty"` // Life span of the webhook if the webhook connection is down. If not present, the webhook will never be destroyed. CAUTION server error 500 if too big (i.e. 60 minutes).
+	WebhookPersist    *bool    `json:"webhookPersist,omitempty"`   // If true, the subscription will be kept alive when the edge restarts in the middle of the subscription. If false, the subscription is lost when the edge restarts.
+	ContentType       *string  `json:"contentType,omitempty"`      // application/json for json (the default) or octet for base64.
+	DesiredUnits      []string `json:"desiredUnits,omitempty"`     // List of units you want for certain datapoints.
 }
 
 type subscriptionResultDTO struct {
 	ID         *string `json:"id,omitempty"`
-	WebHookURL *string `json:"webHookURL,omitempty"`
+	WebHookURL *string `json:"webhookURL,omitempty"`
 }
 
 func (c *openBOSClient) subscribeToOntologyChanges(configID int64) (*subscriptionResultDTO, error) {
@@ -250,9 +250,7 @@ func (c *openBOSClient) subscribeToOntologyChanges(configID int64) (*subscriptio
 		WebHookURL:        common.Ptr(webhookURL),
 		WebHookRetries:    3,
 		WebHookRetryDelay: 5 * second,
-		WebHookLeaseTime:  60 * minute,
 		WebhookPersist:    common.Ptr(true),
-		ContentType:       common.Ptr("application/json"),
 	}
 
 	var result subscriptionResultDTO
@@ -264,7 +262,7 @@ func (c *openBOSClient) subscribeToOntologyChanges(configID int64) (*subscriptio
 }
 
 type subscriptionDeleteDTO struct {
-	WebHookURL *string `json:"webHookURL,omitempty"`
+	WebHookURL *string `json:"webhookURL,omitempty"`
 	ID         *string `json:"id,omitempty"`
 }
 
