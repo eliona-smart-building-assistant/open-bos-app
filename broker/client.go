@@ -456,11 +456,18 @@ type assetTemplate struct {
 func (ontology ontologyDTO) getAssetTemplates() []assetTemplate {
 	datapointTemplateMap := make(map[string][]ontologyDatapointTemplateDTO)
 	for _, dt := range ontology.DatapointTemplates {
-		if dt.AssetTemplateID == "" {
-			log.Warn("client", "datapoint template %s has no template ID", dt.ID)
+		switch {
+		case dt.AssetTemplateID != "" && dt.SpaceTemplateID != "":
+			log.Warn("client", "datapoint template %s has both asset and space template ID", dt.ID)
+			continue
+		case dt.AssetTemplateID != "":
+			datapointTemplateMap[dt.AssetTemplateID] = append(datapointTemplateMap[dt.AssetTemplateID], dt)
+		case dt.SpaceTemplateID != "":
+			datapointTemplateMap[dt.SpaceTemplateID] = append(datapointTemplateMap[dt.SpaceTemplateID], dt)
+		default:
+			log.Warn("client", "datapoint template %s has neither asset nor space template ID", dt.ID)
 			continue
 		}
-		datapointTemplateMap[dt.AssetTemplateID] = append(datapointTemplateMap[dt.AssetTemplateID], dt)
 	}
 
 	propertyTemplateMap := make(map[string][]ontologyPropertyTemplateDTO)
