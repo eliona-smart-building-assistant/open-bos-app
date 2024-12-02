@@ -389,3 +389,112 @@ func TestFetchOntologyWithComplexDataTypes(t *testing.T) {
 		assert.True(t, found, "Expected attribute %s not found", expectedAttr.Name)
 	}
 }
+
+// TestFetchOntologyWithSpaces tests the FetchOntology function with spaces and LocationalChildrenMap.
+func TestFetchOntologyWithSpaces(t *testing.T) {
+	// Prepare configuration
+	config := appmodel.Configuration{
+		Id:              1,
+		Gwid:            "test-gwid",
+		ClientID:        "test-client-id",
+		ClientSecret:    "test-client-secret",
+		AppPublicAPIURL: "http://test-api-url",
+		OntologyVersion: 1, // Previous version
+	}
+
+	// Create a test HTTP server to simulate API responses
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		// Handle token request
+		case strings.Contains(r.URL.Path, "/oauth2/v2.0/token"):
+			w.Header().Set("Content-Type", "application/json")
+			fmt.Fprintln(w, `{"access_token": "test-token"}`)
+		// Handle getOntologyVersion request
+		case strings.Contains(r.URL.Path, "/api/v1/core/application/data/version"):
+			w.Header().Set("Content-Type", "application/json")
+			fmt.Fprintln(w, `2`)
+		// Handle getOntology request
+		case strings.Contains(r.URL.Path, "/api/v1/core/application/data"):
+			w.Header().Set("Content-Type", "application/json")
+			fmt.Fprintln(w, `{
+                "settings": {"version": 2},
+                "assetTemplates": [
+                    {"id": "asset-template-1", "name": "Temperature Sensor"}
+                ],
+                "dataTypes": [
+                    {"id": "datatype-1", "format": "float", "name": "Temperature", "unitId": "unit-1"}
+                ],
+                "units": [
+                    {"id": "unit-1", "symbol": "°C"}
+                ],
+                "datapointTemplates": [
+                    {"id": "datapoint-template-1", "name": "Temperature", "assetTemplateId": "asset-template-1", "typeId": "datatype-1", "direction": "feedback"}
+                ],
+                "assets": [
+                    {"id": "asset-1", "name": "Sensor 1", "templateId": "asset-template-1"}
+                ],
+                "spaceTemplates": [
+                    {"id": "space-template-1", "name": "Building"},
+                    {"id": "space-template-2", "name": "Floor"}
+                ],
+                "spaces": [
+                    {"id": "space-1", "name": "Building 1", "templateId": "space-template-1", "parentId": ""},
+                    {
+                        "id": "space-2", "name": "Floor 1", "templateId": "space-template-2", "parentId": "space-1",
+                        "assets": [{
+                            "id": "asset-1",
+                            "master": true
+                        }]
+                    }
+                ],
+                "datapoints": [
+                    {"id": "datapoint-1", "templateId": "datapoint-template-1", "assetId": "asset-1"}
+                ]
+            }`)
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer ts.Close()
+
+	// Override newOpenBOSClient in the test
+	originalNewOpenBOSClient := newOpenBOSClient
+	newOpenBOSClient = func(gatewayID, clientID, clientSecret, webhookURL, baseURL, tokenURL string) (*openBOSClient, error) {
+		client := &openBOSClient{
+			gatewayID:    gatewayID,
+			httpClient:   ts.Client(),
+			clientID:     clientID,
+			clientSecret: clientSecret,
+			webhookURL:   webhookURL,
+			baseURL:      ts.URL,
+			tokenURL:     ts.URL + "/oauth2/v2.0/token",
+			accessToken:  "test-token",
+		}
+		return client, nil
+	}
+	defer func() { newOpenBOSClient = originalNewOpenBOSClient }()
+
+	// Call the function under test
+	_, _, rootAsset, err := FetchOntology(config)
+	if err != nil {
+		t.Fatalf("FetchOntology returned error: %v", err)
+	}
+
+	// Check that root asset's LocationalChildrenMap contains "Building 1"
+	assert.Equal(t, 1, len(rootAsset.LocationalChildrenMap), "Root asset should have 1 locational child")
+	building1, ok := rootAsset.LocationalChildrenMap["space-1"]
+	assert.True(t, ok, "Root asset should contain 'Building 1' in LocationalChildrenMap")
+	assert.Equal(t, "Building 1", building1.Name, "Building 1 name mismatch")
+
+	// Check that 'Building 1' has 'Floor 1' as a locational child
+	assert.Equal(t, 1, len(building1.LocationalChildrenMap), "'Building 1' should have 1 locational child")
+	floor1, ok := building1.LocationalChildrenMap["space-2"]
+	assert.True(t, ok, "'Building 1' should contain 'Floor 1' in LocationalChildrenMap")
+	assert.Equal(t, "Floor 1", floor1.Name, "Floor 1 name mismatch")
+
+	// Check that 'Floor 1' has 'Sensor 1'
+	assert.Equal(t, 1, len(floor1.LocationalChildrenMap), "'Floor 1' should have 1 locational child")
+	sensor1, ok := floor1.LocationalChildrenMap["asset-1"]
+	assert.True(t, ok, "'Floor 1' should contain 'Sensor 1' in LocationalChildrenMap")
+	assert.Equal(t, "Sensor 1", sensor1.Name, "Sensor 1 name mismatch")
+}
