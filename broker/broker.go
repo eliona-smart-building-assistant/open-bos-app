@@ -199,7 +199,7 @@ func FetchOntology(config appmodel.Configuration) (ontologyVersion int32, assetT
 	ats := ontology.getAssetTemplates()
 	ats = append(ats, assetTemplate{
 		ID:   "root",
-		Name: "OpenBOS root",
+		Name: "root",
 	})
 	for _, assetTemplate := range ats {
 		assetType := convertAssetTemplateToAssetType(assetTemplate)
