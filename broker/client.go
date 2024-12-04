@@ -315,56 +315,6 @@ func (c *openBOSClient) deleteDataSubscription(del subscriptionDeleteDTO) error 
 	return nil
 }
 
-type propertyDTO struct {
-	ID               string        `json:"id"`
-	Name             string        `json:"name"`
-	Icon             string        `json:"icon,omitempty"`
-	IconFillColor    string        `json:"iconFillColor,omitempty"`
-	TemplateID       string        `json:"templateId,omitempty"`
-	Tags             []string      `json:"tags,omitempty"`
-	PropertyZoneType string        `json:"propertyZoneType,omitempty"`
-	IsExternal       bool          `json:"isExternal"`
-	Authorized       bool          `json:"authorized"`
-	ParentIDs        []string      `json:"parentIds,omitempty"`
-	ChildrenIDs      []string      `json:"childrenIds,omitempty"`
-	AllChildrenCount int32         `json:"allChildrenCount"`
-	HasMapView       bool          `json:"hasMapView"`
-	DisplayIndex     int32         `json:"displayIndex"`
-	Datapoints       []interface{} `json:"datapoints,omitempty"`
-	Properties       []interface{} `json:"properties,omitempty"`
-	Address1         string        `json:"address1,omitempty"`
-	Address2         string        `json:"address2,omitempty"`
-	Town             string        `json:"town,omitempty"`
-	Country          string        `json:"country,omitempty"`
-	State            string        `json:"state,omitempty"`
-	SurfaceGross     string        `json:"surfaceGross,omitempty"`
-	SurfaceNet       string        `json:"surfaceNet,omitempty"`
-	People           string        `json:"people,omitempty"`
-	Image            string        `json:"image,omitempty"`
-	GPSLat           string        `json:"gpsLat,omitempty"`
-	GPSLon           string        `json:"gpsLon,omitempty"`
-	Buildings        string        `json:"buildings,omitempty"`
-	Tenants          string        `json:"tenants,omitempty"`
-	Owners           string        `json:"owners,omitempty"`
-	PropertyManagers string        `json:"propertyManagers,omitempty"`
-	FacilityManagers string        `json:"facilityManagers,omitempty"`
-	Visitors         string        `json:"visitors,omitempty"`
-	Administrators   string        `json:"administrators,omitempty"`
-	Devices          string        `json:"devices,omitempty"`
-}
-
-// getProperty retrieves the Property (Site) description.
-func (c *openBOSClient) getProperty() (*propertyDTO, error) {
-	endpoint := "ontology/property"
-
-	var property propertyDTO
-	if err := c.doRequest("GET", endpoint, nil, nil, &property); err != nil {
-		return nil, err
-	}
-
-	return &property, nil
-}
-
 type ontologyFullLiveAlarmDTO struct {
 	DataPointInstanceID string      `json:"dataPointInstanceId"`
 	SessionID           string      `json:"sessionId"`
