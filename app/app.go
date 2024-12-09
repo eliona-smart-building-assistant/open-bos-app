@@ -197,6 +197,10 @@ func UpdateDataPointInEliona(update AttributeDataUpdate) {
 
 	assetData := make(map[string]any)
 	datapoint, err := dbhelper.GetDatapointById(update.DatapointProviderID, config.Id)
+	if errors.Is(err, dbhelper.ErrNotFound) {
+		log.Info("dbhelper", "datapoint not found (this may be caused by asset filter): %v", err)
+		return
+	}
 	if err != nil {
 		log.Error("dbhelper", "getting datapoint by ID %v for config %v: %v", update.DatapointProviderID, config.Id, err)
 		return
@@ -319,6 +323,10 @@ func UpdateAlarmInEliona(update AlarmUpdate) {
 		dbhelper.SetConfigActiveState(context.Background(), config, true)
 	}
 	datapoint, err := dbhelper.GetDatapointById(update.DatapointInstanceId, config.Id)
+	if errors.Is(err, dbhelper.ErrNotFound) {
+		log.Info("dbhelper", "datapoint not found (this may be caused by asset filter): %v", err)
+		return
+	}
 	if err != nil {
 		log.Error("dbhelper", "getting datapoint by ID %v for config %v: %v", update.DatapointInstanceId, config.Id, err)
 		return

@@ -298,7 +298,7 @@ func GetDatapointById(providerDatapointID string, configID int64) (appmodel.Data
 	).OneG(ctx)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return appmodel.Datapoint{}, fmt.Errorf("no datapoint found for provider ID %v in config %v", providerDatapointID, configID)
+			return appmodel.Datapoint{}, fmt.Errorf("no datapoint found for provider ID %v in config %v: %w", providerDatapointID, configID, ErrNotFound)
 		}
 		return appmodel.Datapoint{}, fmt.Errorf("fetching datapoint for provider ID %v: %v", providerDatapointID, err)
 	}
