@@ -90,3 +90,20 @@ func (r *Asset) GetFunctionalChildren() []asset.FunctionalNode {
 	}
 	return functionalChildren
 }
+
+func (r *Asset) getLocationalAssetChildren() []Asset {
+	locationalChildren := make([]Asset, 0, len(r.LocationalChildrenMap))
+	for _, room := range r.LocationalChildrenMap {
+		roomCopy := room
+		locationalChildren = append(locationalChildren, roomCopy)
+	}
+	return locationalChildren
+}
+
+func (r *Asset) getFunctionalAssetChildren() []Asset {
+	functionalChildren := make([]Asset, 0, len(r.FunctionalChildrenSlice))
+	for i := range r.FunctionalChildrenSlice {
+		functionalChildren = append(functionalChildren, r.FunctionalChildrenSlice[i])
+	}
+	return functionalChildren
+}

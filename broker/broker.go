@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	appmodel "open-bos/app/model"
+	"open-bos/complexdata"
 	"open-bos/eliona"
 	"strings"
 
@@ -336,12 +337,32 @@ func buildAssetHierarchy(asset *eliona.Asset, spaces map[string]*ontologySpaceDT
 					Name: attributeInfo.name,
 				})
 			}
-			dps = append(dps, appmodel.Datapoint{
+			dp := appmodel.Datapoint{
 				Subtype:             datapoint.subtype,
 				ProviderID:          prop.ID,
 				AttributeNamePrefix: datapoint.name,
 				Attributes:          attributes,
-			})
+			}
+
+			if prop.Value != nil {
+				assetData := make(map[string]any)
+				// Complex decode support
+				if complexData, ok := prop.Value.(map[string]any); ok {
+					decodedData := complexdata.DecodeComplexData(complexData, dp.AttributeNamePrefix)
+					for k, v := range decodedData {
+						assetData[k] = v
+					}
+				} else {
+					// If not complex, find the attribute name and map directly
+					if len(dp.Attributes) != 1 {
+						log.Error("inconsistency", "received non-complex data %+v for property %v of datapoint %v, but found datapoint providerID %v with %v != 1 attributes", prop.Value, prop.ID, datapoint.name, dp.ProviderID, len(dp.Attributes))
+					}
+					assetData[dp.Attributes[0].Name] = prop.Value
+				}
+				dp.Data = assetData
+			}
+
+			dps = append(dps, dp)
 		}
 
 		childAsset := eliona.Asset{
@@ -354,6 +375,7 @@ func buildAssetHierarchy(asset *eliona.Asset, spaces map[string]*ontologySpaceDT
 		}
 		buildAssetHierarchy(&childAsset, spaces, assetsMap, config)
 		asset.LocationalChildrenMap[childSpace.ID] = childAsset
+		// todo: add functional slice here as well
 	}
 	// Process assets associated with this space
 	for _, spaceAsset := range space.Assets {
@@ -397,12 +419,31 @@ func buildAssetHierarchy(asset *eliona.Asset, spaces map[string]*ontologySpaceDT
 					Name: attributeInfo.name,
 				})
 			}
-			dps = append(dps, appmodel.Datapoint{
+			dp := appmodel.Datapoint{
 				Subtype:             datapoint.subtype,
 				ProviderID:          prop.ID,
 				AttributeNamePrefix: datapoint.name,
 				Attributes:          attributes,
-			})
+			}
+
+			if prop.Value != nil {
+				assetData := make(map[string]any)
+				// Complex decode support
+				if complexData, ok := prop.Value.(map[string]any); ok {
+					decodedData := complexdata.DecodeComplexData(complexData, dp.AttributeNamePrefix)
+					for k, v := range decodedData {
+						assetData[k] = v
+					}
+				} else {
+					// If not complex, find the attribute name and map directly
+					if len(dp.Attributes) != 1 {
+						log.Error("inconsistency", "received non-complex data %+v for property %v of datapoint %v, but found datapoint providerID %v with %v != 1 attributes", prop.Value, prop.ID, assetDetails.ID, dp.ProviderID, len(dp.Attributes))
+					}
+					assetData[dp.Attributes[0].Name] = prop.Value
+				}
+				dp.Data = assetData
+			}
+			dps = append(dps, dp)
 		}
 
 		isMaster := int8(0)
@@ -414,10 +455,12 @@ func buildAssetHierarchy(asset *eliona.Asset, spaces map[string]*ontologySpaceDT
 			Name:       assetDetails.Name,
 			TemplateID: assetDetails.TemplateID,
 			Config:     &config,
+			Datapoints: dps,
 
 			IsMaster: isMaster,
 		}
 		asset.LocationalChildrenMap[spaceAsset.ID] = assetInstance
+		// todo: add functional slice here as well
 	}
 }
 

@@ -28,7 +28,7 @@ const ClientReference string = "open-bos"
 
 func UpsertAssetData(assetID int32, assetData map[string]any, timestamp time.Time, subtype api.DataSubtype) error {
 	cr := ClientReference
-	log.Debug("Eliona", "upserting data for asset '%v'", assetID)
+	log.Debug("Eliona", "upserting %v data for asset '%v'", assetData, assetID)
 
 	data := api.Data{
 		AssetId:         assetID,

@@ -51,7 +51,7 @@ type openBOSClient struct {
 var newOpenBOSClient = func(gatewayID, clientID, clientSecret, webhookURL, baseURL, tokenURL string) (*openBOSClient, error) {
 	client := &openBOSClient{
 		gatewayID:    gatewayID,
-		httpClient:   &http.Client{Timeout: 10 * time.Second},
+		httpClient:   &http.Client{Timeout: 30 * time.Second},
 		clientID:     clientID,
 		clientSecret: clientSecret,
 		webhookURL:   webhookURL,

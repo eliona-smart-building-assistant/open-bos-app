@@ -50,6 +50,8 @@ type Datapoint struct {
 	Asset               *Asset
 	AttributeNamePrefix string
 	Attributes          []Attribute
+
+	Data map[string]any // For passing data of properties during ontology sync.
 }
 
 type Attribute struct {

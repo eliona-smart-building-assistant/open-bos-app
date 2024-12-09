@@ -23,13 +23,12 @@ import (
 	api "github.com/eliona-smart-building-assistant/go-eliona-api-client/v2"
 	"github.com/eliona-smart-building-assistant/go-eliona/asset"
 	"github.com/eliona-smart-building-assistant/go-eliona/client"
-	"github.com/eliona-smart-building-assistant/go-utils/common"
 	"github.com/eliona-smart-building-assistant/go-utils/log"
 )
 
-func CreateAssets(config appmodel.Configuration, root asset.Root) error {
+func CreateAssets(config appmodel.Configuration, root Asset) error {
 	for _, projectId := range config.ProjectIDs {
-		assetsCreated, err := asset.CreateAssetsAndUpsertData(root, projectId, common.Ptr(time.Now()), common.Ptr(ClientReference))
+		assetsCreated, err := asset.CreateAssets(asset.Root(&root), projectId)
 		if err != nil {
 			return err
 		}
@@ -38,7 +37,43 @@ func CreateAssets(config appmodel.Configuration, root asset.Root) error {
 				return fmt.Errorf("notifying user about CAC: %v", err)
 			}
 		}
+		if err := upsertDataRecursively(root, projectId); err != nil {
+			return fmt.Errorf("upserting data: %v", err)
+		}
 	}
+	return nil
+}
+
+func upsertDataRecursively(node Asset, projectId string) error {
+	assetID, err := node.GetAssetID(projectId)
+	if err != nil {
+		return fmt.Errorf("getting asset ID: %v", err)
+	}
+	if assetID == nil {
+		return fmt.Errorf("assetID is nil for asset %v, project %v", node.GetGAI(), projectId)
+	}
+
+	for _, datapoint := range node.Datapoints {
+		if datapoint.Data == nil || len(datapoint.Data) == 0 {
+			continue
+		}
+		if err := UpsertAssetData(*assetID, datapoint.Data, time.Now(), api.DataSubtype(datapoint.Subtype)); err != nil {
+			return fmt.Errorf("upserting asset data %v for asset ID %v subtype %v: %v", datapoint.Data, *assetID, datapoint.Subtype, err)
+		}
+	}
+
+	for _, child := range node.getLocationalAssetChildren() {
+		if err := upsertDataRecursively(child, projectId); err != nil {
+			return err
+		}
+	}
+
+	for _, child := range node.getFunctionalAssetChildren() {
+		if err := upsertDataRecursively(child, projectId); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

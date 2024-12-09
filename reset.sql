@@ -1,4 +1,4 @@
---  This file is part of the Eliona project.
+)--  This file is part of the Eliona project.
 --  Copyright © 2024 IoTEC AG. All Rights Reserved.
 --  ______ _ _
 -- |  ____| (_)

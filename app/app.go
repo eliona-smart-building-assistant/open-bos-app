@@ -24,6 +24,7 @@ import (
 	apiservices "open-bos/api/services"
 	appmodel "open-bos/app/model"
 	"open-bos/broker"
+	"open-bos/complexdata"
 	dbhelper "open-bos/db/helper"
 	"open-bos/eliona"
 	"strings"
@@ -160,7 +161,7 @@ func collectResources(config *appmodel.Configuration) error {
 			return err
 		}
 	}
-	if err := eliona.CreateAssets(*config, &root); err != nil {
+	if err := eliona.CreateAssets(*config, root); err != nil {
 		log.Error("eliona", "creating assets: %v", err)
 		return err
 	}
@@ -202,7 +203,7 @@ func UpdateDataPointInEliona(update AttributeDataUpdate) {
 	}
 	// Complex decode support
 	if complexData, ok := update.Value.(map[string]any); ok {
-		decodedData := decodeComplexData(complexData, datapoint.AttributeNamePrefix)
+		decodedData := complexdata.DecodeComplexData(complexData, datapoint.AttributeNamePrefix)
 		for k, v := range decodedData {
 			assetData[k] = v
 		}
@@ -219,29 +220,6 @@ func UpdateDataPointInEliona(update AttributeDataUpdate) {
 		log.Error("eliona", "upserting data: %v", err)
 		return
 	}
-}
-
-func decodeComplexData(value map[string]any, parentPath string) map[string]any {
-	flattened := make(map[string]any)
-	for key, val := range value {
-		currentPath := parentPath
-		if currentPath != "" {
-			currentPath += "." + key
-		} else {
-			currentPath = key
-		}
-
-		// Handle nested complex values recursively
-		if nested, ok := val.(map[string]any); ok {
-			nestedData := decodeComplexData(nested, currentPath)
-			for nestedKey, nestedVal := range nestedData {
-				flattened[nestedKey] = nestedVal
-			}
-		} else {
-			flattened[currentPath] = val
-		}
-	}
-	return flattened
 }
 
 type AlarmUpdate struct {
