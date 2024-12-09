@@ -376,6 +376,7 @@ func buildAssetHierarchy(asset *eliona.Asset, spaces map[string]*ontologySpaceDT
 		}
 		if adheres, err := childAsset.AdheresToFilter(config.AssetFilter); err != nil {
 			log.Error("broker", "checking if asset adheres to filter: %v", err)
+			continue
 		} else if !adheres {
 			continue
 		}
@@ -468,6 +469,7 @@ func buildAssetHierarchy(asset *eliona.Asset, spaces map[string]*ontologySpaceDT
 		}
 		if adheres, err := assetInstance.AdheresToFilter(config.AssetFilter); err != nil {
 			log.Error("broker", "checking if asset adheres to filter: %v", err)
+			continue
 		} else if !adheres {
 			continue
 		}
