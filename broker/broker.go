@@ -375,9 +375,10 @@ func buildAssetHierarchy(asset *eliona.Asset, spaces map[string]*ontologySpaceDT
 			Datapoints:            dps,
 		}
 		if adheres, err := childAsset.AdheresToFilter(config.AssetFilter); err != nil {
-			log.Error("broker", "checking if asset adheres to filter: %v", err)
+			log.Error("broker", "checking if space adheres to filter: %v", err)
 			continue
 		} else if !adheres {
+			log.Debug("broker", "skipped space ID %v name '%v' due to asset filter rule.", childSpace.ID, childSpace.Name)
 			continue
 		}
 		buildAssetHierarchy(&childAsset, spaces, assetsMap, config)
@@ -471,6 +472,7 @@ func buildAssetHierarchy(asset *eliona.Asset, spaces map[string]*ontologySpaceDT
 			log.Error("broker", "checking if asset adheres to filter: %v", err)
 			continue
 		} else if !adheres {
+			log.Debug("broker", "skipped asset ID %v name '%v' due to asset filter rule.", assetInstance.ID, assetInstance.Name)
 			continue
 		}
 		asset.LocationalChildrenMap[spaceAsset.ID] = assetInstance
