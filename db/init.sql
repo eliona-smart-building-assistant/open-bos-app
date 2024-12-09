@@ -26,6 +26,7 @@ create table if not exists open_bos.configuration
 	app_public_api_url   text not null,
 	refresh_interval     integer not null default 60,
 	request_timeout      integer not null default 120,
+	asset_filter         json not null,
 	active               boolean not null default false,
 	enable               boolean not null default false,
 	project_ids          text[] not null,

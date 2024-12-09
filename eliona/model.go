@@ -22,13 +22,15 @@ import (
 	conf "open-bos/db/helper"
 
 	"github.com/eliona-smart-building-assistant/go-eliona/asset"
+	"github.com/eliona-smart-building-assistant/go-eliona/utils"
+	"github.com/eliona-smart-building-assistant/go-utils/common"
 )
 
 type Asset struct {
-	ID   string
-	Name string
+	ID   string `eliona:"id,filterable"`
+	Name string `eliona:"name,filterable"`
 
-	TemplateID string
+	TemplateID string `eliona:"templateID,filterable"`
 
 	IsMaster int8 `eliona:"is_master" subtype:"property"`
 
@@ -42,6 +44,19 @@ type Asset struct {
 
 func (d *Asset) GetName() string {
 	return d.Name
+}
+
+func (d *Asset) AdheresToFilter(filter [][]appmodel.FilterRule) (bool, error) {
+	f := appFilterToCommonFilter(filter)
+	fp, err := utils.StructToMap(d)
+	if err != nil {
+		return false, fmt.Errorf("converting struct to map: %v", err)
+	}
+	adheres, err := common.Filter(f, fp)
+	if err != nil {
+		return false, err
+	}
+	return adheres, nil
 }
 
 func (d *Asset) GetDescription() string {
@@ -106,4 +121,18 @@ func (r *Asset) getFunctionalAssetChildren() []Asset {
 		functionalChildren = append(functionalChildren, r.FunctionalChildrenSlice[i])
 	}
 	return functionalChildren
+}
+
+func appFilterToCommonFilter(input [][]appmodel.FilterRule) [][]common.FilterRule {
+	result := make([][]common.FilterRule, len(input))
+	for i := 0; i < len(input); i++ {
+		result[i] = make([]common.FilterRule, len(input[i]))
+		for j := 0; j < len(input[i]); j++ {
+			result[i][j] = common.FilterRule{
+				Parameter: input[i][j].Parameter,
+				Regex:     input[i][j].Regex,
+			}
+		}
+	}
+	return result
 }

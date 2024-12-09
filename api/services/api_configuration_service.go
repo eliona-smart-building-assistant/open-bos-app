@@ -95,6 +95,7 @@ func toAPIConfig(appConfig appmodel.Configuration) apiserver.Configuration {
 		ClientID:        appConfig.ClientID,
 		ClientSecret:    appConfig.ClientSecret,
 		AppPublicAPIURL: appConfig.AppPublicAPIURL,
+		AssetFilter:     toAPIAssetFilter(appConfig.AssetFilter),
 		Enable:          &appConfig.Enable,
 		RefreshInterval: appConfig.RefreshInterval,
 		RequestTimeout:  &appConfig.RequestTimeout,
@@ -131,6 +132,9 @@ func toAppConfig(apiConfig apiserver.Configuration) (appConfig appmodel.Configur
 	if apiConfig.RequestTimeout != nil {
 		appConfig.RequestTimeout = *apiConfig.RequestTimeout
 	}
+	if apiConfig.AssetFilter != nil {
+		appConfig.AssetFilter = toAppAssetFilter(apiConfig.AssetFilter)
+	}
 	if apiConfig.Active != nil {
 		appConfig.Active = *apiConfig.Active
 	}
@@ -141,4 +145,18 @@ func toAppConfig(apiConfig apiserver.Configuration) (appConfig appmodel.Configur
 		appConfig.ProjectIDs = *apiConfig.ProjectIDs
 	}
 	return appConfig
+}
+
+func toAppAssetFilter(apiAF [][]apiserver.FilterRule) (result [][]appmodel.FilterRule) {
+	for _, outer := range apiAF {
+		var innerResult []appmodel.FilterRule
+		for _, fr := range outer {
+			innerResult = append(innerResult, appmodel.FilterRule{
+				Parameter: fr.Parameter,
+				Regex:     fr.Regex,
+			})
+		}
+		result = append(result, innerResult)
+	}
+	return result
 }

@@ -356,6 +356,7 @@ func buildAssetHierarchy(asset *eliona.Asset, spaces map[string]*ontologySpaceDT
 					// If not complex, find the attribute name and map directly
 					if len(dp.Attributes) != 1 {
 						log.Error("inconsistency", "received non-complex data %+v for property %v of datapoint %v, but found datapoint providerID %v with %v != 1 attributes", prop.Value, prop.ID, datapoint.name, dp.ProviderID, len(dp.Attributes))
+						continue
 					}
 					assetData[dp.Attributes[0].Name] = prop.Value
 				}
@@ -372,6 +373,11 @@ func buildAssetHierarchy(asset *eliona.Asset, spaces map[string]*ontologySpaceDT
 			Config:                &config,
 			LocationalChildrenMap: make(map[string]eliona.Asset),
 			Datapoints:            dps,
+		}
+		if adheres, err := childAsset.AdheresToFilter(config.AssetFilter); err != nil {
+			log.Error("broker", "checking if asset adheres to filter: %v", err)
+		} else if !adheres {
+			continue
 		}
 		buildAssetHierarchy(&childAsset, spaces, assetsMap, config)
 		asset.LocationalChildrenMap[childSpace.ID] = childAsset
@@ -438,6 +444,7 @@ func buildAssetHierarchy(asset *eliona.Asset, spaces map[string]*ontologySpaceDT
 					// If not complex, find the attribute name and map directly
 					if len(dp.Attributes) != 1 {
 						log.Error("inconsistency", "received non-complex data %+v for property %v of datapoint %v, but found datapoint providerID %v with %v != 1 attributes", prop.Value, prop.ID, assetDetails.ID, dp.ProviderID, len(dp.Attributes))
+						continue
 					}
 					assetData[dp.Attributes[0].Name] = prop.Value
 				}
@@ -458,6 +465,11 @@ func buildAssetHierarchy(asset *eliona.Asset, spaces map[string]*ontologySpaceDT
 			Datapoints: dps,
 
 			IsMaster: isMaster,
+		}
+		if adheres, err := assetInstance.AdheresToFilter(config.AssetFilter); err != nil {
+			log.Error("broker", "checking if asset adheres to filter: %v", err)
+		} else if !adheres {
+			continue
 		}
 		asset.LocationalChildrenMap[spaceAsset.ID] = assetInstance
 		// todo: add functional slice here as well

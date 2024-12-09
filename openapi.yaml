@@ -257,6 +257,15 @@ components:
           description: Timeout in seconds
           default: 120
           nullable: true
+        assetFilter:
+          $ref: "#/components/schemas/AssetFilter"
+          nullable: true
+          example:
+            [
+              [{ "parameter": "deviceName", "regex": "Main.*" }, { "parameter": "deviceType", "regex": "110" }],
+              [{ "parameter": "macAddress", "regex": "(70:82:0e:12:28:cc|70:56:06:12:.*)" }],
+              [{ "parameter": "ipAddress", "regex": "192\\.168\\..*" }],
+            ]
         active:
           type: boolean
           readOnly: true

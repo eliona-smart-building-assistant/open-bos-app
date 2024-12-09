@@ -24,6 +24,7 @@ type Configuration struct {
 	AppPublicAPIURL string
 	RefreshInterval int32
 	RequestTimeout  int32
+	AssetFilter     [][]FilterRule
 	Enable          bool
 	Active          bool
 	ProjectIDs      []string

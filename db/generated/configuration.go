@@ -32,6 +32,7 @@ type Configuration struct {
 	AppPublicAPIURL string            `boil:"app_public_api_url" json:"app_public_api_url" toml:"app_public_api_url" yaml:"app_public_api_url"`
 	RefreshInterval int32             `boil:"refresh_interval" json:"refresh_interval" toml:"refresh_interval" yaml:"refresh_interval"`
 	RequestTimeout  int32             `boil:"request_timeout" json:"request_timeout" toml:"request_timeout" yaml:"request_timeout"`
+	AssetFilter     types.JSON        `boil:"asset_filter" json:"asset_filter" toml:"asset_filter" yaml:"asset_filter"`
 	Active          bool              `boil:"active" json:"active" toml:"active" yaml:"active"`
 	Enable          bool              `boil:"enable" json:"enable" toml:"enable" yaml:"enable"`
 	ProjectIds      types.StringArray `boil:"project_ids" json:"project_ids" toml:"project_ids" yaml:"project_ids"`
@@ -50,6 +51,7 @@ var ConfigurationColumns = struct {
 	AppPublicAPIURL string
 	RefreshInterval string
 	RequestTimeout  string
+	AssetFilter     string
 	Active          string
 	Enable          string
 	ProjectIds      string
@@ -63,6 +65,7 @@ var ConfigurationColumns = struct {
 	AppPublicAPIURL: "app_public_api_url",
 	RefreshInterval: "refresh_interval",
 	RequestTimeout:  "request_timeout",
+	AssetFilter:     "asset_filter",
 	Active:          "active",
 	Enable:          "enable",
 	ProjectIds:      "project_ids",
@@ -78,6 +81,7 @@ var ConfigurationTableColumns = struct {
 	AppPublicAPIURL string
 	RefreshInterval string
 	RequestTimeout  string
+	AssetFilter     string
 	Active          string
 	Enable          string
 	ProjectIds      string
@@ -91,6 +95,7 @@ var ConfigurationTableColumns = struct {
 	AppPublicAPIURL: "configuration.app_public_api_url",
 	RefreshInterval: "configuration.refresh_interval",
 	RequestTimeout:  "configuration.request_timeout",
+	AssetFilter:     "configuration.asset_filter",
 	Active:          "configuration.active",
 	Enable:          "configuration.enable",
 	ProjectIds:      "configuration.project_ids",
@@ -98,6 +103,27 @@ var ConfigurationTableColumns = struct {
 }
 
 // Generated where
+
+type whereHelpertypes_JSON struct{ field string }
+
+func (w whereHelpertypes_JSON) EQ(x types.JSON) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.EQ, x)
+}
+func (w whereHelpertypes_JSON) NEQ(x types.JSON) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.NEQ, x)
+}
+func (w whereHelpertypes_JSON) LT(x types.JSON) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.LT, x)
+}
+func (w whereHelpertypes_JSON) LTE(x types.JSON) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.LTE, x)
+}
+func (w whereHelpertypes_JSON) GT(x types.JSON) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.GT, x)
+}
+func (w whereHelpertypes_JSON) GTE(x types.JSON) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.GTE, x)
+}
 
 type whereHelperbool struct{ field string }
 
@@ -138,6 +164,7 @@ var ConfigurationWhere = struct {
 	AppPublicAPIURL whereHelperstring
 	RefreshInterval whereHelperint32
 	RequestTimeout  whereHelperint32
+	AssetFilter     whereHelpertypes_JSON
 	Active          whereHelperbool
 	Enable          whereHelperbool
 	ProjectIds      whereHelpertypes_StringArray
@@ -151,6 +178,7 @@ var ConfigurationWhere = struct {
 	AppPublicAPIURL: whereHelperstring{field: "\"open_bos\".\"configuration\".\"app_public_api_url\""},
 	RefreshInterval: whereHelperint32{field: "\"open_bos\".\"configuration\".\"refresh_interval\""},
 	RequestTimeout:  whereHelperint32{field: "\"open_bos\".\"configuration\".\"request_timeout\""},
+	AssetFilter:     whereHelpertypes_JSON{field: "\"open_bos\".\"configuration\".\"asset_filter\""},
 	Active:          whereHelperbool{field: "\"open_bos\".\"configuration\".\"active\""},
 	Enable:          whereHelperbool{field: "\"open_bos\".\"configuration\".\"enable\""},
 	ProjectIds:      whereHelpertypes_StringArray{field: "\"open_bos\".\"configuration\".\"project_ids\""},
@@ -185,8 +213,8 @@ func (r *configurationR) GetAssets() AssetSlice {
 type configurationL struct{}
 
 var (
-	configurationAllColumns            = []string{"id", "gwid", "client_id", "client_secret", "ontology_version", "app_public_api_url", "refresh_interval", "request_timeout", "active", "enable", "project_ids", "user_id"}
-	configurationColumnsWithoutDefault = []string{"gwid", "client_id", "client_secret", "ontology_version", "app_public_api_url", "project_ids", "user_id"}
+	configurationAllColumns            = []string{"id", "gwid", "client_id", "client_secret", "ontology_version", "app_public_api_url", "refresh_interval", "request_timeout", "asset_filter", "active", "enable", "project_ids", "user_id"}
+	configurationColumnsWithoutDefault = []string{"gwid", "client_id", "client_secret", "ontology_version", "app_public_api_url", "asset_filter", "project_ids", "user_id"}
 	configurationColumnsWithDefault    = []string{"id", "refresh_interval", "request_timeout", "active", "enable"}
 	configurationPrimaryKeyColumns     = []string{"id"}
 	configurationGeneratedColumns      = []string{}
