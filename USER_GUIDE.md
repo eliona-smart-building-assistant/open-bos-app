@@ -62,6 +62,12 @@ Example configuration JSON:
 
 Once configured, the app starts Continuous Asset Creation (CAC). Discovered resources are automatically created as assets in Eliona, and user who configured the app is notified via Eliona’s notification system.
 
+### Asset filtering
+
+In case it's not desired to import all assets from OpenBOS to Eliona, it's possible to write an asset filter that would include only matching assets. This app is able to filter the assets by: ID, Name and Template ID (for both assets and spaces).
+
+If you want to filter out just a few assets, you can as well let the app create all the assets in Eliona and then archive the unwanted ones. The app will not create them again.
+
 ### Asset types
 
 Asset types are automatically created and synchronized from OpenBOS asset templates. 
