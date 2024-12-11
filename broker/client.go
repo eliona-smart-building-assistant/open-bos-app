@@ -403,7 +403,7 @@ type assetTemplate struct {
 	Datapoints []datapointTemplateInfo
 }
 
-func (ontology ontologyDTO) getAssetTemplates() []assetTemplate {
+func (ontology ontologyDTO) getAssetTemplates(orphanDatapoints []ontologyDatapointDTO) []assetTemplate {
 	datapointTemplateMap := make(map[string][]ontologyDatapointTemplateDTO)
 	for _, dt := range ontology.DatapointTemplates {
 		switch {
@@ -417,6 +417,20 @@ func (ontology ontologyDTO) getAssetTemplates() []assetTemplate {
 		default:
 			log.Warn("client", "datapoint template %s has neither asset nor space template ID", dt.ID)
 			continue
+		}
+	}
+
+	// Root asset containing orphan datapoints
+	rootAsset := ontologyAssetOrSpaceTemplateDTO{
+		ID:   "root",
+		Name: "root",
+	}
+	ontology.SpaceTemplates = append(ontology.SpaceTemplates, rootAsset)
+	for _, orphanDatapoint := range orphanDatapoints {
+		for _, dt := range ontology.DatapointTemplates {
+			if orphanDatapoint.TemplateID == dt.ID {
+				datapointTemplateMap["root"] = append(datapointTemplateMap["root"], dt)
+			}
 		}
 	}
 

@@ -197,25 +197,8 @@ func FetchOntology(config appmodel.Configuration) (ontologyVersion int32, assetT
 		return 0, nil, eliona.Asset{}, fmt.Errorf("getting ontology: %v", err)
 	}
 
-	ats := ontology.getAssetTemplates()
-	ats = append(ats, assetTemplate{
-		ID:   "root",
-		Name: "root",
-	})
-	for _, assetTemplate := range ats {
-		assetType := convertAssetTemplateToAssetType(assetTemplate)
-		assetTypes = append(assetTypes, assetType)
-	}
-
-	root = eliona.Asset{
-		ID:                    "",
-		TemplateID:            "root",
-		Name:                  "OpenBOS",
-		Config:                &config,
-		LocationalChildrenMap: make(map[string]eliona.Asset),
-	}
-
 	// [datapoint-attribution] Assign datapoints and properties to assets and spaces
+	var orphanDatapoints []ontologyDatapointDTO
 	{
 		datapointsMap := make(map[string][]ontologyDatapointDTO)
 		for _, datapointDTO := range ontology.Datapoints {
@@ -224,6 +207,9 @@ func FetchOntology(config appmodel.Configuration) (ontologyVersion int32, assetT
 			}
 			if datapointDTO.SpaceID != "" {
 				datapointsMap[datapointDTO.SpaceID] = append(datapointsMap[datapointDTO.SpaceID], datapointDTO)
+			}
+			if datapointDTO.AssetID == "" && datapointDTO.SpaceID == "" {
+				orphanDatapoints = append(orphanDatapoints, datapointDTO)
 			}
 		}
 		propertiesMap := make(map[string][]ontologyPropertyDTO)
@@ -244,6 +230,20 @@ func FetchOntology(config appmodel.Configuration) (ontologyVersion int32, assetT
 			ontology.Spaces[i].datapoints = datapointsMap[space.ID]
 			ontology.Spaces[i].properties = propertiesMap[space.ID]
 		}
+	}
+
+	ats := ontology.getAssetTemplates(orphanDatapoints)
+	for _, assetTemplate := range ats {
+		assetType := convertAssetTemplateToAssetType(assetTemplate)
+		assetTypes = append(assetTypes, assetType)
+	}
+
+	root = eliona.Asset{
+		ID:                    "",
+		TemplateID:            "root",
+		Name:                  "OpenBOS",
+		Config:                &config,
+		LocationalChildrenMap: make(map[string]eliona.Asset),
 	}
 
 	// Initialize spaces map with root space

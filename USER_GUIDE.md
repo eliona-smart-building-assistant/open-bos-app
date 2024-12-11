@@ -84,6 +84,10 @@ Asset types are automatically created and synchronized from OpenBOS asset templa
 
 Complex data types from OpenBOS are split into separate attributes in Eliona.
 
+### Orphan datapoints
+
+In case an asset is deleted from OpenBOS and there is still an alarm linked to that datapoint, OpenBOS leaves that datapoint in the ontology. Eliona respects that behaviour, and assigns those datapoints to a root asset.
+
 ## Alarms
 
 Alarms triggered in OpenBOS are synchronized to Eliona. These are created in Eliona as alarm rules of type "External", and are managed by updates received from OpenBOS -> if an alarm is triggered in OpenBOS, it will be triggered in Eliona as well. Similarly if the alarm is gone.
