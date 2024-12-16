@@ -276,12 +276,12 @@ func (c *openBOSClient) deleteOntologySubscription(del subscriptionDeleteDTO) er
 	return nil
 }
 
-func (c *openBOSClient) subscribeToDataChanges(configID int64) (*subscriptionResultDTO, error) {
+func (c *openBOSClient) subscribeToDataChanges(configID int64) error {
 	endpoint := "core/application/livedata/subscribe"
 
 	webhookURL, err := url.JoinPath(c.webhookURL, fmt.Sprint(configID), "ontology-livedata")
 	if err != nil {
-		return nil, fmt.Errorf("joining URL for subscription: %v", err)
+		return fmt.Errorf("joining URL for subscription: %v", err)
 	}
 
 	second := int32(1000)
@@ -291,18 +291,17 @@ func (c *openBOSClient) subscribeToDataChanges(configID int64) (*subscriptionRes
 		WebHookURL:        common.Ptr(webhookURL),
 		WebHookRetries:    3,
 		WebHookRetryDelay: 5 * second,
-		WebHookLeaseTime:  60 * minute,
+		WebHookLeaseTime:  5 * minute,
 		WebhookPersist:    common.Ptr(true),
 		ContentType:       common.Ptr("application/json"),
 		// Info: There is also a parameter "desiredUnits" available. Implement if there is a use case.
 	}
 
-	var result subscriptionResultDTO
-	if err := c.doRequest("POST", endpoint, nil, sub, &result); err != nil {
-		return nil, fmt.Errorf("failed to subscribe to data changes: %v", err)
+	if err := c.doRequest("POST", endpoint, nil, sub, nil); err != nil {
+		return fmt.Errorf("failed to subscribe to data changes: %v", err)
 	}
 
-	return &result, nil
+	return nil
 }
 
 func (c *openBOSClient) deleteDataSubscription(del subscriptionDeleteDTO) error {
