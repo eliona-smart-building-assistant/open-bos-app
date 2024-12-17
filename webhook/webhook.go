@@ -56,7 +56,25 @@ func (s *webhookServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	r.URL.Path = removeConfigIDFromPath(r.URL.Path)
 
-	s.mux.ServeHTTP(w, r)
+	// Use a custom ResponseWriter to capture all status codes
+	lrw := &loggingResponseWriter{ResponseWriter: w, statusCode: http.StatusOK}
+	s.mux.ServeHTTP(lrw, r)
+
+	// Log all errors (non-2xx status codes)
+	if lrw.statusCode >= 400 {
+		log.Error("webhook", "Error response: Status=%d, URL=%s, Method=%s", lrw.statusCode, r.URL.Path, r.Method)
+	}
+}
+
+// loggingResponseWriter is a wrapper for http.ResponseWriter to capture the status code.
+type loggingResponseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func (lrw *loggingResponseWriter) WriteHeader(code int) {
+	lrw.statusCode = code
+	lrw.ResponseWriter.WriteHeader(code)
 }
 
 func (s *webhookServer) handleOntologyVersion(w http.ResponseWriter, r *http.Request) {
