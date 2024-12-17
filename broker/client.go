@@ -594,7 +594,7 @@ func (c *openBOSClient) subscribeToAlarmChanges(configID int64) error {
 		WebHookURL:        common.Ptr(webhookURL),
 		WebHookRetries:    3,
 		WebHookRetryDelay: 5 * second,
-		WebHookLeaseTime:  60 * minute,
+		WebHookLeaseTime:  5 * minute,
 		WebhookPersist:    common.Ptr(true),
 		ContentType:       common.Ptr("application/json"),
 	}
