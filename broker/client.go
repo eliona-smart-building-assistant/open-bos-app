@@ -301,6 +301,19 @@ func (c *openBOSClient) subscribeToDataChanges(configID int64) error {
 		return fmt.Errorf("failed to subscribe to data changes: %v", err)
 	}
 
+	// After successful subscription, trigger the initial synchronization
+	refreshEndpoint := fmt.Sprintf("core/application/livedata/subscribe/refresh")
+
+	req := struct {
+		WebhookURL string `json:"webhookURL"`
+	}{
+		WebhookURL: webhookURL,
+	}
+
+	if err := c.doRequest("PUT", refreshEndpoint, nil, req, nil); err != nil {
+		return fmt.Errorf("failed to trigger initial synchronization for webhookURL %s: %v", webhookURL, err)
+	}
+
 	return nil
 }
 
