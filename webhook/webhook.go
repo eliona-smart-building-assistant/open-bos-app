@@ -69,14 +69,28 @@ func (s *webhookServer) handleOntologyVersion(w http.ResponseWriter, r *http.Req
 	}
 	defer r.Body.Close()
 
-	log.Debug("webhook", "Received ontology request headers: %+v", r.Header)
-	log.Debug("webhook", "Request body: %s", body)
-	log.Debug("webhook", "Method: %s", r.Method)
-	log.Debug("webhook", "Config ID: %d", configID)
+	type OntologyResponse struct {
+		Version                int     `json:"Version"`
+		Id                     *string `json:"Id"`
+		Tags                   *string `json:"Tags"`
+		NotificationIdentifier string  `json:"NotificationIdentifier"`
+	}
 
-	// TODO: Implement version parsing once we know the format of the data.
+	var ontologyResponse OntologyResponse
+	if err := json.Unmarshal(body, &ontologyResponse); err != nil {
+		log.Error("webhook", "failed to parse request body (%s): %v", string(body), err)
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
 
-	app.CollectConfigData(configID)
+	if ontologyResponse.NotificationIdentifier == "StructureVersion" {
+		log.Info("webhook", "collecting structure version update for ConfigID=%d: Version=%d", configID, ontologyResponse.Version)
+		app.CollectConfigData(configID)
+	} else {
+		log.Warn("webhook", "unknown NotificationIdentifier: %s", ontologyResponse.NotificationIdentifier)
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func (s *webhookServer) handleLivedataUpdate(w http.ResponseWriter, r *http.Request) {
