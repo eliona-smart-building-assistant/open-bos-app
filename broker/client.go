@@ -41,7 +41,7 @@ type ontologyDTO struct {
 }
 
 type ontologySettingsDTO struct {
-	Version int32 `json:"version"`
+	FormatVersion int32 `json:"version"` // While this looks and is documented as ontology version, it means version of the format.
 }
 
 type ontologyAssetOrSpaceTemplateDTO struct {

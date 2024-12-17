@@ -186,9 +186,11 @@ func FetchOntology(config appmodel.Configuration) (ontologyVersion int32, assetT
 		return 0, nil, eliona.Asset{}, fmt.Errorf("creating instance of client: %v", err)
 	}
 
-	if version, err := client.getOntologyVersion(); err != nil {
+	version, err := client.getOntologyVersion()
+	if err != nil {
 		return 0, nil, eliona.Asset{}, fmt.Errorf("getting ontology version: %v", err)
-	} else if version == config.OntologyVersion {
+	}
+	if version == config.OntologyVersion {
 		return 0, nil, eliona.Asset{}, ErrNoUpdate
 	}
 
@@ -291,7 +293,7 @@ func FetchOntology(config appmodel.Configuration) (ontologyVersion int32, assetT
 		}
 	}
 
-	return ontology.Settings.Version, assetTypes, root, nil
+	return version, assetTypes, root, nil
 }
 
 func buildAssetHierarchy(asset *eliona.Asset, spaces map[string]*ontologySpaceDTO, assetsMap map[string]ontologyAssetDTO, config appmodel.Configuration) {
