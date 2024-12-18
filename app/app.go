@@ -407,7 +407,8 @@ func outputData(assetID int32, data map[string]interface{}) error {
 	}
 
 	if len(attributesData) == 0 {
-		return fmt.Errorf("shouldn't happen: no attribute data")
+		log.Warn("app", "outputting data: no attribute data for assetID %v, data %v", assetID, data)
+		return nil
 	}
 
 	if err := broker.PutData(attributesData[0].Datapoint.Asset.Config, attributesData); err != nil {
