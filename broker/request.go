@@ -140,7 +140,7 @@ func (c *openBOSClient) doRequest(method, endpoint string, queryParams url.Value
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode >= 300 {
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("unexpected status code: %d body: %s", resp.StatusCode, string(bodyBytes))
 	}
