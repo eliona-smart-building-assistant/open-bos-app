@@ -407,7 +407,6 @@ func outputData(assetID int32, data map[string]interface{}) error {
 	}
 
 	if len(attributesData) == 0 {
-		log.Warn("app", "outputting data: no attribute data for assetID %v, data %v", assetID, data)
 		return nil
 	}
 
