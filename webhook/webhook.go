@@ -121,47 +121,50 @@ func (s *webhookServer) handleLivedataUpdate(w http.ResponseWriter, r *http.Requ
 	}
 	defer r.Body.Close()
 
-	log.Debug("webhook", "Received data request headers: %+v", r.Header)
-	log.Debug("webhook", "Request body: %s", body)
-	log.Debug("webhook", "Method: %s", r.Method)
-	log.Debug("webhook", "Config ID: %d", configID)
-
-	type LiveData struct {
-		DatapointID string `json:"Id"`
-		IsProperty  bool   `json:"IsProperty"`
-		TimeStamp   string `json:"TimeStamp"`
-		Quality     string `json:"Quality"`
-		Value       any    `json:"Value"`
+	type LiveDataItem struct {
+		DatapointID string   `json:"Id"`
+		TimeStamp   string   `json:"Timestamp"`
+		Quality     string   `json:"Quality"`
+		Value       any      `json:"Value"`
+		UnitSymbol  string   `json:"UnitSymbol"`
+		IsProperty  bool     `json:"IsProperty"`
+		Tags        []string `json:"Tags"`
 	}
 
-	var liveData []LiveData
-	if err := json.Unmarshal(body, &liveData); err != nil {
+	type LiveDataUpdate struct {
+		Items                  []LiveDataItem `json:"Items"`
+		Id                     string         `json:"Id"`
+		Tags                   *string        `json:"Tags"`
+		NotificationIdentifier string         `json:"NotificationIdentifier"`
+	}
+
+	var liveDataUpdate LiveDataUpdate
+	if err := json.Unmarshal(body, &liveDataUpdate); err != nil {
 		log.Error("webhook", "Failed to parse request body: %v", err)
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	for _, data := range liveData {
-		// Timestamps are always in UTC - see docs
-		layout := "02/01/2006 15:04:05"
-		timestamp, err := time.ParseInLocation(layout, data.TimeStamp, time.UTC)
+	for _, item := range liveDataUpdate.Items {
+		timestamp, err := time.Parse(time.RFC3339, item.TimeStamp)
 		if err != nil {
-			log.Warn("webhook", "Invalid timestamp format for ID %s: %v", data.DatapointID, err)
+			log.Warn("webhook", "Invalid timestamp format %v for ID %s: %v", item.TimeStamp, item.DatapointID, err)
 			continue
 		}
 
-		if data.Quality == "good" {
+		if item.Quality == "good" {
 			app.UpdateDataPointInEliona(app.AttributeDataUpdate{
 				ConfigID:            configID,
-				DatapointProviderID: data.DatapointID,
+				DatapointProviderID: item.DatapointID,
 				Timestamp:           timestamp,
-				Value:               data.Value,
+				Value:               item.Value,
 			})
 		} else {
-			log.Debug("webhook", "Received bad quality data for ID %s: IsProperty=%v, TimeStamp=%v, Quality=%s, Value=%v",
-				data.DatapointID, data.IsProperty, timestamp, data.Quality, data.Value)
+			log.Info("webhook", "Received bad quality data for ID %s: IsProperty=%v, TimeStamp=%v, Quality=%s, Value=%v", item.DatapointID, item.IsProperty, timestamp, item.Quality, item.Value)
 		}
 	}
+
+	log.Debug("webhook", "Processed live data update. NotificationIdentifier: %s, Id: %s, Tags: %v", liveDataUpdate.NotificationIdentifier, liveDataUpdate.Id, liveDataUpdate.Tags)
 
 	w.WriteHeader(http.StatusOK)
 }
