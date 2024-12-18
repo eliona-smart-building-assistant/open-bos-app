@@ -41,7 +41,7 @@ type ontologyDTO struct {
 }
 
 type ontologySettingsDTO struct {
-	FormatVersion int32 `json:"version"` // While this looks and is documented as ontology version, it means version of the format.
+	FormatVersion int32 `json:"version"` // TODO: Change this back to ontology version and use it, after ABB fixes the API implementation.
 }
 
 type ontologyAssetOrSpaceTemplateDTO struct {
