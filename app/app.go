@@ -422,7 +422,7 @@ func formatComplexData(datapoint appmodel.Datapoint) (interface{}, error) {
 	if err != nil {
 		return nil, fmt.Errorf("getting asset data: %v", err)
 	}
-	complexData := make(map[string]interface{})
+	var data any
 	for _, attr := range datapoint.Attributes {
 		value, ok := elionaAssetData.Data[attr.Name]
 		if !ok {
@@ -433,6 +433,7 @@ func formatComplexData(datapoint appmodel.Datapoint) (interface{}, error) {
 		pathParts := strings.SplitN(attr.Name, ".", 2)
 		if len(pathParts) > 1 {
 			// Nested attribute: add to complex structure recursively
+			complexData := make(map[string]interface{})
 			if _, exists := complexData[pathParts[0]]; !exists {
 				complexData[pathParts[0]] = make(map[string]interface{})
 			}
@@ -440,11 +441,12 @@ func formatComplexData(datapoint appmodel.Datapoint) (interface{}, error) {
 			nestedData[pathParts[1]] = value
 		} else {
 			// Primitive attribute: directly set its value
-			complexData[attr.Name] = value
+			simpleData := value
+			data = simpleData
 		}
 	}
 
-	return complexData, nil
+	return data, nil
 }
 
 // ListenForAlarmChanges listens to output attribute changes from Eliona.

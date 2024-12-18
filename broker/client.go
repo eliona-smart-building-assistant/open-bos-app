@@ -561,20 +561,27 @@ func getDisplayUnitID(dataType dataTypeUncomplexified, unitMap map[string]string
 	return &unitSymbol
 }
 
-func (c *openBOSClient) putData() error {
+func (c *openBOSClient) putData(attributesData []AttributeData) error {
 	endpoint := "ontology/datapointinstance/livedata"
 
-	livedata := []struct {
+	type livedata struct {
 		DataPointID string `json:"id"`
 		Value       any    `json:"value"`
-	}{} //todo
-	// complex-encode
+	}
+	data := []livedata{}
+	for _, attr := range attributesData {
+		data = append(data, livedata{
+			DataPointID: attr.Datapoint.ProviderID,
+			Value:       attr.Value,
+		})
+	}
+	log.Debug("client", "passing data to openBOS: %+v", data)
 	var result []struct {
 		DataPointID string `json:"id"`
 		ErrorCode   string `json:"errorCode"`
 		InnerError  string `json:"innerError"`
 	}
-	if err := c.doRequest("POST", endpoint, nil, livedata, &result); err != nil {
+	if err := c.doRequest("POST", endpoint, nil, data, &result); err != nil {
 		return fmt.Errorf("failed to put data: %v", err)
 	}
 

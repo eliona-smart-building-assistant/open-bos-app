@@ -525,7 +525,7 @@ func PutData(config appmodel.Configuration, attributesData []AttributeData) erro
 	if err != nil {
 		return fmt.Errorf("creating instance of client: %v", err)
 	}
-	return client.putData() //todo
+	return client.putData(attributesData)
 }
 
 func AcknowledgeAlarm(config appmodel.Configuration, sessionID, ackedBy, comment string) error {
