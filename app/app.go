@@ -364,7 +364,7 @@ func ListenForOutputChanges() {
 		outputs, err := eliona.ListenForOutputChanges()
 		if err != nil {
 			log.Error("eliona", "listening for output changes: %v", err)
-			return
+			continue
 		}
 		for output := range outputs {
 			if cr := output.ClientReference.Get(); cr != nil && *cr == eliona.ClientReference {
@@ -373,7 +373,7 @@ func ListenForOutputChanges() {
 			}
 			if err := outputData(output.AssetId, output.Data); err != nil {
 				log.Error("dbhelper", "outputting data (%v) for assetId %v: %v", output.Data, output.AssetId, err)
-				return
+				continue
 			}
 		}
 		time.Sleep(time.Second * 5) // Give the server a little break.
