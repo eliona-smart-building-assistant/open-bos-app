@@ -383,7 +383,7 @@ func ListenForOutputChanges() {
 // outputData implements passing output data to broker.
 func outputData(assetID int32, data map[string]interface{}) error {
 	var attributesData []broker.AttributeData
-	for name := range data {
+	for name, value := range data {
 		// Fetch the datapoint associated with the attribute name
 		datapoint, err := dbhelper.GetDatapointByAttributeName(assetID, name)
 		if errors.Is(err, dbhelper.ErrNotFound) {
@@ -394,10 +394,15 @@ func outputData(assetID int32, data map[string]interface{}) error {
 			return fmt.Errorf("getting datapoint by assetID %v and name %v: %v", assetID, name, err)
 		}
 
-		// Fetch and format the latest data for all attributes of the datapoint
-		latestData, err := formatComplexData(datapoint)
-		if err != nil {
-			return fmt.Errorf("formatting complex data for datapoint %v: %v", datapoint.ProviderID, err)
+		var latestData any
+		if len(datapoint.Attributes) == 1 {
+			latestData = value
+		} else {
+			// Fetch and format the latest data for all attributes of the datapoint
+			latestData, err = formatComplexData(datapoint)
+			if err != nil {
+				return fmt.Errorf("formatting complex data for datapoint %v: %v", datapoint.ProviderID, err)
+			}
 		}
 
 		attributesData = append(attributesData, broker.AttributeData{
@@ -422,31 +427,23 @@ func formatComplexData(datapoint appmodel.Datapoint) (interface{}, error) {
 	if err != nil {
 		return nil, fmt.Errorf("getting asset data: %v", err)
 	}
-	var data any
+
+	complexData := make(map[string]interface{})
 	for _, attr := range datapoint.Attributes {
 		value, ok := elionaAssetData.Data[attr.Name]
 		if !ok {
 			return nil, fmt.Errorf("data for '%s' not found in %+v", attr.Name, elionaAssetData.Data)
 		}
 
-		// Check if this is a nested attribute
 		pathParts := strings.SplitN(attr.Name, ".", 2)
-		if len(pathParts) > 1 {
-			// Nested attribute: add to complex structure recursively
-			complexData := make(map[string]interface{})
-			if _, exists := complexData[pathParts[0]]; !exists {
-				complexData[pathParts[0]] = make(map[string]interface{})
-			}
-			nestedData := complexData[pathParts[0]].(map[string]interface{})
-			nestedData[pathParts[1]] = value
-		} else {
-			// Primitive attribute: directly set its value
-			simpleData := value
-			data = simpleData
+		// Check if this is a nested attribute
+		if len(pathParts) < 2 {
+			return nil, fmt.Errorf("inconsistency: not a nested attribute")
 		}
+		complexData[pathParts[1]] = value
 	}
 
-	return data, nil
+	return complexData, nil
 }
 
 // ListenForAlarmChanges listens to output attribute changes from Eliona.
