@@ -244,9 +244,7 @@ func (c *openBOSClient) subscribeToOntologyChanges(configID int64) (*subscriptio
 	}
 
 	second := int32(1000)
-	minute := 60 * second
 	sub := subscriptionCreateDTO{
-		MinSendTime:       5 * minute,
 		WebHookURL:        common.Ptr(webhookURL),
 		WebHookRetries:    3,
 		WebHookRetryDelay: 5 * second,
@@ -287,7 +285,6 @@ func (c *openBOSClient) subscribeToDataChanges(configID int64) error {
 	second := int32(1000)
 	minute := 60 * second
 	sub := subscriptionCreateDTO{
-		MinSendTime:       5 * minute,
 		WebHookURL:        common.Ptr(webhookURL),
 		WebHookRetries:    3,
 		WebHookRetryDelay: 5 * second,
@@ -610,7 +607,6 @@ func (c *openBOSClient) subscribeToAlarmChanges(configID int64) error {
 	second := int32(1000)
 	minute := 60 * second
 	sub := subscriptionCreateDTO{
-		MinSendTime:       5 * minute,
 		WebHookURL:        common.Ptr(webhookURL),
 		WebHookRetries:    3,
 		WebHookRetryDelay: 5 * second,
