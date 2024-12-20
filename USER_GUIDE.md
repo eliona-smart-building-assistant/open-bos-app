@@ -2,7 +2,7 @@
 
 ### Introduction
 
-> The OpenBOS app provides integration and synchronization between Eliona and ABB Open Building Operating System (OpenBOS).
+> The OpenBOS app provides integration and synchronization between Eliona and ABB Ability™ Buildings (OpenBOS).
 
 ## Overview
 
@@ -38,7 +38,7 @@ Configurations can be created in Eliona under `Settings > Apps > OpenBOS` which 
 | `active`          | Set to `true` by the app when running and to `false` when app is stopped. Read-only. |
 | `projectIDs`      | List of Eliona project IDs for data collection. For each project ID, all smart devices are automatically created as assets in Eliona, with mappings stored in the KentixONE app. Example: `["42", "99"]`. |
 
-Example configuration JSON:
+Example full configuration JSON:
 
 ```json
 {
@@ -57,6 +57,19 @@ Example configuration JSON:
 
 ```
 
+Some fields have defaults, so the minimal configuration JSON can be simplified:
+
+```json
+{
+  "gwid": "1234acbd-3faa-ab32-ab32-21c3876ba",
+  "clientID": "4321dcba-3faa-ab32-ab32-21c3876ba",
+  "clientSecret": "your-client-secret",
+  "projectIDs": [
+    "42"
+  ]
+}
+
+```
 
 ## Continuous Asset Creation
 
@@ -93,9 +106,3 @@ In case an asset is deleted from OpenBOS and there is still an alarm linked to t
 Alarms triggered in OpenBOS are synchronized to Eliona. These are created in Eliona as alarm rules of type "External", and are managed by updates received from OpenBOS -> if an alarm is triggered in OpenBOS, it will be triggered in Eliona as well. Similarly if the alarm is gone.
 
 If the alarm needs to be acknowledged, users can acknowledge it in Eliona, and this acknowledgement will get synchronized to OpenBOS.
-
-### <mark>TODO: Dashboard templates</mark>
-
-The app offers a predefined dashboard that clearly displays the most important information. YOu can create such a dashboard under `Dashboards > Copy Dashboard > From App > OpenBOS`.
-
-### <mark>TODO: Other features</mark>
