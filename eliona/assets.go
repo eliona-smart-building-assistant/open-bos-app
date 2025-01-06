@@ -28,18 +28,22 @@ import (
 
 func CreateAssets(config appmodel.Configuration, root Asset) error {
 	for _, projectId := range config.ProjectIDs {
+		log.Debug("eliona", "started creating assets for projectID %v", projectId)
 		assetsCreated, err := asset.CreateAssets(asset.Root(&root), projectId)
 		if err != nil {
 			return err
 		}
+		log.Debug("eliona", "finished creating %v assets", assetsCreated)
 		if assetsCreated != 0 {
 			if err := notifyUser(config.UserId, projectId, assetsCreated); err != nil {
 				return fmt.Errorf("notifying user about CAC: %v", err)
 			}
 		}
+		log.Debug("eliona", "started upserting properties data for assets")
 		if err := upsertDataRecursively(root, projectId); err != nil {
 			return fmt.Errorf("upserting data: %v", err)
 		}
+		log.Debug("eliona", "finished upserting properties data for assets")
 	}
 	return nil
 }
