@@ -180,23 +180,23 @@ func convertMapping(enum map[string]string) []map[string]any {
 	return mapping
 }
 
-func FetchOntology(config appmodel.Configuration) (ontologyVersion int32, assetTypes []api.AssetType, root eliona.Asset, err error) {
+func FetchOntology(config appmodel.Configuration) (ontologyVersion int32, assetTypes []api.AssetType, assets []eliona.Asset, err error) {
 	client, err := newOpenBOSClient(config.Gwid, config.ClientID, config.ClientSecret, config.AppPublicAPIURL, baseURL, tokenURL)
 	if err != nil {
-		return 0, nil, eliona.Asset{}, fmt.Errorf("creating instance of client: %v", err)
+		return 0, nil, nil, fmt.Errorf("creating instance of client: %v", err)
 	}
 
 	version, err := client.getOntologyVersion()
 	if err != nil {
-		return 0, nil, eliona.Asset{}, fmt.Errorf("getting ontology version: %v", err)
+		return 0, nil, nil, fmt.Errorf("getting ontology version: %v", err)
 	}
 	if version == config.OntologyVersion {
-		return 0, nil, eliona.Asset{}, ErrNoUpdate
+		return 0, nil, nil, ErrNoUpdate
 	}
 
 	ontology, err := client.getOntology()
 	if err != nil {
-		return 0, nil, eliona.Asset{}, fmt.Errorf("getting ontology: %v", err)
+		return 0, nil, nil, fmt.Errorf("getting ontology: %v", err)
 	}
 
 	// [datapoint-attribution] Assign datapoints and properties to assets and spaces
@@ -240,12 +240,13 @@ func FetchOntology(config appmodel.Configuration) (ontologyVersion int32, assetT
 		assetTypes = append(assetTypes, assetType)
 	}
 
-	root = eliona.Asset{
-		ID:                    "",
-		TemplateID:            "root",
-		Name:                  "OpenBOS",
-		Config:                &config,
-		LocationalChildrenMap: make(map[string]eliona.Asset),
+	root := eliona.Asset{
+		ID:                  "",
+		TemplateID:          "root",
+		Name:                "OpenBOS",
+		Config:              &config,
+		LocationalParentGAI: "",
+		FunctionalParentGAI: "",
 	}
 
 	// Initialize spaces map with root space
@@ -272,7 +273,7 @@ func FetchOntology(config appmodel.Configuration) (ontologyVersion int32, assetT
 	}
 
 	// Build the asset hierarchy based on spaces
-	buildAssetHierarchy(&root, spaces, assetsMap, config)
+	buildAssetHierarchy(&root, &assets, spaces, assetsMap, config)
 
 	// Handle assets not associated with any space
 	associatedAssetIDs := make(map[string]struct{})
@@ -284,24 +285,27 @@ func FetchOntology(config appmodel.Configuration) (ontologyVersion int32, assetT
 	for _, asset := range ontology.Assets {
 		if _, associated := associatedAssetIDs[asset.ID]; !associated {
 			// Asset not associated with any space; add to root
-			root.FunctionalChildrenSlice = append(root.FunctionalChildrenSlice, eliona.Asset{
-				ID:         asset.ID,
-				Name:       asset.Name,
-				TemplateID: asset.TemplateID,
-				Config:     &config,
+			assets = append(assets, eliona.Asset{
+				ID:                  asset.ID,
+				Name:                asset.Name,
+				TemplateID:          asset.TemplateID,
+				Config:              &config,
+				LocationalParentGAI: root.GetGAI(),
+				FunctionalParentGAI: root.GetGAI(),
 			})
 		}
 	}
 
-	return version, assetTypes, root, nil
+	return version, assetTypes, assets, nil
 }
 
-func buildAssetHierarchy(asset *eliona.Asset, spaces map[string]*ontologySpaceDTO, assetsMap map[string]ontologyAssetDTO, config appmodel.Configuration) {
+func buildAssetHierarchy(asset *eliona.Asset, assets *[]eliona.Asset, spaces map[string]*ontologySpaceDTO, assetsMap map[string]ontologyAssetDTO, config appmodel.Configuration) {
 	space, exists := spaces[asset.ID]
 	if !exists {
 		log.Error("broker", "Should not happen: space %s not found.", asset.ID)
 		return
 	}
+	*assets = append(*assets, *asset)
 	// Process child spaces
 	for _, childSpace := range space.children {
 
@@ -369,12 +373,12 @@ func buildAssetHierarchy(asset *eliona.Asset, spaces map[string]*ontologySpaceDT
 		}
 
 		childAsset := eliona.Asset{
-			ID:                    childSpace.ID,
-			Name:                  childSpace.Name,
-			TemplateID:            childSpace.TemplateID,
-			Config:                &config,
-			LocationalChildrenMap: make(map[string]eliona.Asset),
-			Datapoints:            dps,
+			ID:                  childSpace.ID,
+			Name:                childSpace.Name,
+			TemplateID:          childSpace.TemplateID,
+			Config:              &config,
+			LocationalParentGAI: asset.GetGAI(),
+			Datapoints:          dps,
 		}
 		if adheres, err := childAsset.AdheresToFilter(config.AssetFilter); err != nil {
 			log.Error("broker", "checking if space adheres to filter: %v", err)
@@ -383,9 +387,7 @@ func buildAssetHierarchy(asset *eliona.Asset, spaces map[string]*ontologySpaceDT
 			log.Debug("broker", "skipped space ID %v name '%v' due to asset filter rule.", childSpace.ID, childSpace.Name)
 			continue
 		}
-		buildAssetHierarchy(&childAsset, spaces, assetsMap, config)
-		asset.LocationalChildrenMap[childSpace.ID] = childAsset
-		// todo: add functional slice here as well
+		buildAssetHierarchy(&childAsset, assets, spaces, assetsMap, config)
 	}
 	// Process assets associated with this space
 	for _, spaceAsset := range space.Assets {
@@ -462,11 +464,12 @@ func buildAssetHierarchy(asset *eliona.Asset, spaces map[string]*ontologySpaceDT
 			isMaster = 1
 		}
 		assetInstance := eliona.Asset{
-			ID:         assetDetails.ID,
-			Name:       assetDetails.Name,
-			TemplateID: assetDetails.TemplateID,
-			Config:     &config,
-			Datapoints: dps,
+			ID:                  assetDetails.ID,
+			Name:                assetDetails.Name,
+			TemplateID:          assetDetails.TemplateID,
+			Config:              &config,
+			Datapoints:          dps,
+			LocationalParentGAI: asset.GetGAI(),
 
 			IsMaster: isMaster,
 		}
@@ -477,8 +480,7 @@ func buildAssetHierarchy(asset *eliona.Asset, spaces map[string]*ontologySpaceDT
 			log.Debug("broker", "skipped asset ID %v name '%v' due to asset filter rule.", assetInstance.ID, assetInstance.Name)
 			continue
 		}
-		asset.LocationalChildrenMap[spaceAsset.ID] = assetInstance
-		// todo: add functional slice here as well
+		*assets = append(*assets, assetInstance)
 	}
 }
 

@@ -21,7 +21,6 @@ import (
 	appmodel "open-bos/app/model"
 	conf "open-bos/db/helper"
 
-	"github.com/eliona-smart-building-assistant/go-eliona/asset"
 	"github.com/eliona-smart-building-assistant/go-eliona/utils"
 	"github.com/eliona-smart-building-assistant/go-utils/common"
 )
@@ -34,8 +33,8 @@ type Asset struct {
 
 	IsMaster int8 `eliona:"is_master" subtype:"property"`
 
-	LocationalChildrenMap   map[string]Asset
-	FunctionalChildrenSlice []Asset
+	LocationalParentGAI string
+	FunctionalParentGAI string
 
 	Datapoints []appmodel.Datapoint
 
@@ -89,38 +88,12 @@ func (d *Asset) SetAssetID(elionaAssetID int32, projectID string) error {
 	return nil
 }
 
-func (r *Asset) GetLocationalChildren() []asset.LocationalNode {
-	locationalChildren := make([]asset.LocationalNode, 0, len(r.LocationalChildrenMap))
-	for _, room := range r.LocationalChildrenMap {
-		roomCopy := room
-		locationalChildren = append(locationalChildren, &roomCopy)
-	}
-	return locationalChildren
+func (a *Asset) GetLocationalParentGAI() string {
+	return a.LocationalParentGAI
 }
 
-func (r *Asset) GetFunctionalChildren() []asset.FunctionalNode {
-	functionalChildren := make([]asset.FunctionalNode, 0, len(r.FunctionalChildrenSlice))
-	for i := range r.FunctionalChildrenSlice {
-		functionalChildren = append(functionalChildren, &r.FunctionalChildrenSlice[i])
-	}
-	return functionalChildren
-}
-
-func (r *Asset) getLocationalAssetChildren() []Asset {
-	locationalChildren := make([]Asset, 0, len(r.LocationalChildrenMap))
-	for _, room := range r.LocationalChildrenMap {
-		roomCopy := room
-		locationalChildren = append(locationalChildren, roomCopy)
-	}
-	return locationalChildren
-}
-
-func (r *Asset) getFunctionalAssetChildren() []Asset {
-	functionalChildren := make([]Asset, 0, len(r.FunctionalChildrenSlice))
-	for i := range r.FunctionalChildrenSlice {
-		functionalChildren = append(functionalChildren, r.FunctionalChildrenSlice[i])
-	}
-	return functionalChildren
+func (a *Asset) GetFunctionalParentGAI() string {
+	return a.FunctionalParentGAI
 }
 
 func appFilterToCommonFilter(input [][]appmodel.FilterRule) [][]common.FilterRule {

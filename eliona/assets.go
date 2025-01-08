@@ -26,10 +26,14 @@ import (
 	"github.com/eliona-smart-building-assistant/go-utils/log"
 )
 
-func CreateAssets(config appmodel.Configuration, root Asset) error {
+func CreateAssets(config appmodel.Configuration, assets []Asset) error {
+	var elionaAssets []asset.AssetWithParentReferences
+	for _, a := range assets {
+		elionaAssets = append(elionaAssets, asset.AssetWithParentReferences(&a))
+	}
 	for _, projectId := range config.ProjectIDs {
 		log.Debug("eliona", "started creating assets for projectID %v", projectId)
-		assetsCreated, err := asset.CreateAssets(asset.Root(&root), projectId)
+		assetsCreated, err := asset.CreateAssetsBulk(elionaAssets, projectId)
 		if err != nil {
 			return err
 		}
@@ -40,7 +44,7 @@ func CreateAssets(config appmodel.Configuration, root Asset) error {
 			}
 		}
 		log.Debug("eliona", "started upserting properties data for assets")
-		if err := upsertDataRecursively(root, projectId); err != nil {
+		if err := upsertData(assets, projectId); err != nil {
 			return fmt.Errorf("upserting data: %v", err)
 		}
 		log.Debug("eliona", "finished upserting properties data for assets")
@@ -48,36 +52,25 @@ func CreateAssets(config appmodel.Configuration, root Asset) error {
 	return nil
 }
 
-func upsertDataRecursively(node Asset, projectId string) error {
-	assetID, err := node.GetAssetID(projectId)
-	if err != nil {
-		return fmt.Errorf("getting asset ID: %v", err)
-	}
-	if assetID == nil {
-		return fmt.Errorf("assetID is nil for asset %v, project %v", node.GetGAI(), projectId)
-	}
-
-	for _, datapoint := range node.Datapoints {
-		if datapoint.Data == nil || len(datapoint.Data) == 0 {
-			continue
+func upsertData(assets []Asset, projectId string) error {
+	for _, asset := range assets {
+		assetID, err := asset.GetAssetID(projectId)
+		if err != nil {
+			return fmt.Errorf("getting asset ID: %v", err)
 		}
-		if err := UpsertAssetData(*assetID, datapoint.Data, time.Now(), api.DataSubtype(datapoint.Subtype)); err != nil {
-			return fmt.Errorf("upserting asset data %v for asset ID %v subtype %v: %v", datapoint.Data, *assetID, datapoint.Subtype, err)
+		if assetID == nil {
+			return fmt.Errorf("assetID is nil for asset %v, project %v", asset.GetGAI(), projectId)
 		}
-	}
 
-	for _, child := range node.getLocationalAssetChildren() {
-		if err := upsertDataRecursively(child, projectId); err != nil {
-			return err
+		for _, datapoint := range asset.Datapoints {
+			if datapoint.Data == nil || len(datapoint.Data) == 0 {
+				continue
+			}
+			if err := UpsertAssetData(*assetID, datapoint.Data, time.Now(), api.DataSubtype(datapoint.Subtype)); err != nil {
+				return fmt.Errorf("upserting asset data %v for asset ID %v subtype %v: %v", datapoint.Data, *assetID, datapoint.Subtype, err)
+			}
 		}
 	}
-
-	for _, child := range node.getFunctionalAssetChildren() {
-		if err := upsertDataRecursively(child, projectId); err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 
