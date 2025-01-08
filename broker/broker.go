@@ -378,6 +378,7 @@ func buildAssetHierarchy(asset *eliona.Asset, assets *[]eliona.Asset, spaces map
 			TemplateID:          childSpace.TemplateID,
 			Config:              &config,
 			LocationalParentGAI: asset.GetGAI(),
+			FunctionalParentGAI: asset.GetGAI(),
 			Datapoints:          dps,
 		}
 		if adheres, err := childAsset.AdheresToFilter(config.AssetFilter); err != nil {
@@ -470,6 +471,7 @@ func buildAssetHierarchy(asset *eliona.Asset, assets *[]eliona.Asset, spaces map
 			Config:              &config,
 			Datapoints:          dps,
 			LocationalParentGAI: asset.GetGAI(),
+			FunctionalParentGAI: asset.GetGAI(),
 
 			IsMaster: isMaster,
 		}
