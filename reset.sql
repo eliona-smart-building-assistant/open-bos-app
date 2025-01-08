@@ -71,7 +71,25 @@ WHERE name LIKE 'OpenBOS%';
 
 -- Dev reset (without configuration and installation):
 SET SCHEMA 'public';
-DELETE FROM open_bos.asset;
+
+DO $$
+BEGIN
+	-- Ignore errors if 'open_bos.asset' doesn't exist
+	BEGIN
+		DELETE FROM open_bos.asset;
+	EXCEPTION WHEN undefined_table THEN
+		-- Do nothing
+	END;
+
+	-- Ignore errors if 'open_bos.configuration' doesn't exist
+	BEGIN
+		UPDATE open_bos."configuration" 
+		SET "ontology_version" = '0' 
+		WHERE "id" = '1';
+	EXCEPTION WHEN undefined_table THEN
+		-- Do nothing
+	END;
+END $$;
 
 DELETE FROM public.heap
 WHERE asset_id IN (
@@ -88,5 +106,3 @@ WHERE asset_type LIKE E'open\\_bos\\_%';
 
 DELETE FROM public.asset_type
 WHERE asset_type LIKE E'open\\_bos\\_%';
-
-UPDATE open_bos."configuration" SET "ontology_version" = '0' WHERE "id" = '1';
