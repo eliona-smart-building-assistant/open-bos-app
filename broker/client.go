@@ -324,65 +324,6 @@ func (c *openBOSClient) deleteDataSubscription(del subscriptionDeleteDTO) error 
 	return nil
 }
 
-type ontologyFullLiveAlarmDTO struct {
-	DataPointInstanceID string      `json:"dataPointInstanceId"`
-	SessionID           string      `json:"sessionId"`
-	Name                string      `json:"name"`
-	Description         string      `json:"description"`
-	Trigger             string      `json:"trigger"`
-	Active              bool        `json:"active"`
-	Acked               bool        `json:"acked"`
-	Closed              bool        `json:"closed"`
-	TimeStamp           string      `json:"timeStamp"`
-	Quality             string      `json:"quality"`
-	Value               interface{} `json:"value"`
-	AckedBy             string      `json:"ackedBy"`
-	Comment             string      `json:"comment"`
-	NeedAcknowledge     bool        `json:"needAcknowledge"`
-	Severity            string      `json:"severity"`
-	AssetID             string      `json:"assetId"`
-	SpaceID             string      `json:"spaceId"`
-	AssetName           string      `json:"assetName"`
-	SpaceName           string      `json:"spaceName"`
-	DatapointName       string      `json:"datapointName"`
-	UnitSymbol          string      `json:"unitSymbol"`
-	Tags                []string    `json:"tags,omitempty"`
-}
-
-// getLiveAlarms retrieves live alarms since the given timestamp.
-func (c *openBOSClient) getLiveAlarms(timestamp string) ([]ontologyFullLiveAlarmDTO, error) {
-	endpoint := "core/application/livealarm"
-
-	params := url.Values{}
-	if timestamp != "" {
-		params.Add("timestamp", timestamp)
-	}
-
-	var alarms []ontologyFullLiveAlarmDTO
-	if err := c.doRequest("GET", endpoint, params, nil, &alarms); err != nil {
-		return nil, err
-	}
-
-	return alarms, nil
-}
-
-type ontologyAlarmAckDTO struct {
-	SessionID string `json:"sessionId,omitempty"`
-	AckedBy   string `json:"ackedBy,omitempty"`
-	AckedByID string `json:"ackedById,omitempty"`
-	Comment   string `json:"comment,omitempty"`
-}
-
-func (c *openBOSClient) ackAlarm(ack ontologyAlarmAckDTO) error {
-	endpoint := "core/application/livealarm/ack"
-
-	if err := c.doRequest("POST", endpoint, nil, ack, nil); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 type datapointTemplateInfo struct {
 	ID         string
 	Name       string
@@ -589,6 +530,65 @@ func (c *openBOSClient) putData(attributesData []AttributeData) error {
 	if len(errs) != 0 {
 		return fmt.Errorf("received following error(s) while posting data: %v", errors.Join(errs...))
 	}
+	return nil
+}
+
+type ontologyFullLiveAlarmDTO struct {
+	DataPointInstanceID string      `json:"dataPointInstanceId"`
+	SessionID           string      `json:"sessionId"`
+	Name                string      `json:"name"`
+	Description         string      `json:"description"`
+	Trigger             string      `json:"trigger"`
+	Active              bool        `json:"active"`
+	Acked               bool        `json:"acked"`
+	Closed              bool        `json:"closed"`
+	TimeStamp           string      `json:"timeStamp"`
+	Quality             string      `json:"quality"`
+	Value               interface{} `json:"value"`
+	AckedBy             string      `json:"ackedBy"`
+	Comment             string      `json:"comment"`
+	NeedAcknowledge     bool        `json:"needAcknowledge"`
+	Severity            string      `json:"severity"`
+	AssetID             string      `json:"assetId"`
+	SpaceID             string      `json:"spaceId"`
+	AssetName           string      `json:"assetName"`
+	SpaceName           string      `json:"spaceName"`
+	DatapointName       string      `json:"datapointName"`
+	UnitSymbol          string      `json:"unitSymbol"`
+	Tags                []string    `json:"tags,omitempty"`
+}
+
+// getLiveAlarms retrieves live alarms since the given timestamp.
+func (c *openBOSClient) getLiveAlarms(timestamp string) ([]ontologyFullLiveAlarmDTO, error) {
+	endpoint := "core/application/livealarm"
+
+	params := url.Values{}
+	if timestamp != "" {
+		params.Add("timestamp", timestamp)
+	}
+
+	var alarms []ontologyFullLiveAlarmDTO
+	if err := c.doRequest("GET", endpoint, params, nil, &alarms); err != nil {
+		return nil, err
+	}
+
+	return alarms, nil
+}
+
+type ontologyAlarmAckDTO struct {
+	SessionID string `json:"sessionId,omitempty"`
+	AckedBy   string `json:"ackedBy,omitempty"`
+	AckedByID string `json:"ackedById,omitempty"`
+	Comment   string `json:"comment,omitempty"`
+}
+
+func (c *openBOSClient) ackAlarm(ack ontologyAlarmAckDTO) error {
+	endpoint := "core/application/livealarm/ack"
+
+	if err := c.doRequest("POST", endpoint, nil, ack, nil); err != nil {
+		return err
+	}
+
 	return nil
 }
 
