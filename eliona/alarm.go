@@ -26,19 +26,19 @@ import (
 
 var CHECK_TYPE_EXTERNAL = "external"
 
-func CreateAlarm(assetID int32, subtype, attribute string, needsAck bool, priority int, message map[string]any) (int32, error) {
+func CreateAlarm(assetID int32, subtype, attribute string, priority api.AlarmPriority, subject string, message map[string]any) (int32, error) {
 	alarmRule, _, err := client.NewClient().AlarmRulesAPI.
 		PostAlarmRule(client.AuthenticationContext()).
 		AlarmRule(api.AlarmRule{
-			AssetId:             assetID,
-			Subtype:             api.DataSubtype(subtype),
-			Attribute:           attribute,
-			Priority:            api.AlarmPriority(priority),
-			RequiresAcknowledge: &needsAck,
-			Message:             message,
-			Tags:                []string{}, // todo
-			Enable:              api.PtrBool(true),
-			CheckType:           *api.NewNullableString(&CHECK_TYPE_EXTERNAL),
+			AssetId:   assetID,
+			Subtype:   api.DataSubtype(subtype),
+			Attribute: attribute,
+			Priority:  api.AlarmPriority(priority),
+			Subject:   *api.NewNullableString(api.PtrString(subject)),
+			Message:   message,
+			Tags:      []string{}, // will be selected by user
+			Enable:    api.PtrBool(true),
+			CheckType: *api.NewNullableString(&CHECK_TYPE_EXTERNAL),
 		}).
 		Execute()
 	if err != nil {

@@ -98,6 +98,10 @@ func CollectData() {
 			}
 			log.Info("main", "Collecting %d finished.", config.Id)
 
+			log.Info("main", "Collecting alarms %d started.", config.Id)
+			fetchAlarmRules(&config)
+			log.Info("main", "Collecting alarms %d finished.", config.Id)
+
 			if err := broker.SubscribeToOntologyChanges(config); err != nil {
 				log.Error("broker", "subscribing to ontology changes: %v", err)
 				return
@@ -226,6 +230,96 @@ func UpdateDataPointInEliona(update AttributeDataUpdate) {
 	}
 }
 
+func fetchAlarmRules(config *appmodel.Configuration) {
+	bosAlarms, err := broker.FetchAlarmRules(*config)
+	if err != nil {
+		log.Error("broker", "fetching alarm rules: %v", err)
+		return
+	}
+
+	for _, bosAlarm := range bosAlarms {
+		fmt.Println(bosAlarm.Datapoint.Identifier.DataPointInstanceID)
+		datapoint, err := dbhelper.GetDatapointById(bosAlarm.Datapoint.Identifier.DataPointInstanceID, config.Id)
+		if errors.Is(err, dbhelper.ErrNotFound) {
+			log.Info("dbhelper", "datapoint %v for alarm not found (this may be caused by asset filter): %v", bosAlarm.Datapoint.Identifier.DataPointInstanceID, err)
+			continue
+		}
+		if err != nil {
+			log.Error("dbhelper", "getting datapoint by ID %v for config %v: %v", bosAlarm.Datapoint.Identifier.DataPointInstanceID, config.Id, err)
+			return
+		}
+		prio, err := translateSeverity(bosAlarm.Template.Trigger.Severity)
+		if err != nil {
+			log.Error("broker", "translating severity: %v", err)
+			prio = api.ALARM_PRIORITY_HEIGHT
+		}
+		for _, attribute := range datapoint.Attributes {
+			elionaAlarmID, err := eliona.CreateAlarm(datapoint.Asset.AssetID, datapoint.Subtype, attribute.Name, prio, bosAlarm.Template.Name, buildAlarmMessage(bosAlarm))
+			if err != nil {
+				log.Error("eliona", "creating alarm: %v", err)
+				return
+			}
+			fmt.Println(elionaAlarmID)
+			if err := dbhelper.CreateAlarm(attribute.ID, elionaAlarmID, bosAlarm.ID); err != nil {
+				log.Error("dbhelper", "creating alarm: %v", err)
+				return
+			}
+		}
+	}
+}
+
+func translateSeverity(bosSeverity string) (api.AlarmPriority, error) {
+	var priority api.AlarmPriority
+	switch bosSeverity {
+	case "Log":
+		priority = api.ALARM_PRIORITY_INFO
+	case "Low":
+		priority = api.ALARM_PRIORITY_LOW
+	case "High":
+		priority = api.ALARM_PRIORITY_HEIGHT // todo: Or should it be "medium"?
+	case "Urgent", "Critical":
+		priority = api.ALARM_PRIORITY_HEIGHT
+	default:
+		return 0, fmt.Errorf("unknown severity '%s'", bosSeverity)
+	}
+	return priority, nil
+}
+
+// buildAlarmMessage builds alarm message to Eliona format.
+func buildAlarmMessage(alarm broker.AlarmRule) map[string]interface{} {
+	message := make(map[string]interface{})
+
+	languageCodes := []string{"de", "en", "fr", "it"}
+
+	var descriptionPart string
+	if alarm.Template.Trigger.Description != "" {
+		descriptionPart = fmt.Sprintf(": %s", alarm.Template.Trigger.Description)
+	}
+	templateCome := fmt.Sprintf("%s%s {{asset.name}} ({{alarm.val}})", alarm.Template.Name, descriptionPart)
+
+	come := make(map[string]string)
+	for _, lang := range languageCodes {
+		come[lang] = templateCome
+	}
+
+	goneTranslations := map[string]string{
+		"de": fmt.Sprintf("%s behoben", alarm.Template.Name),
+		"en": fmt.Sprintf("%s resolved", alarm.Template.Name),
+		"fr": fmt.Sprintf("%s résolu", alarm.Template.Name),
+		"it": fmt.Sprintf("%s risolto", alarm.Template.Name),
+	}
+
+	gone := make(map[string]string)
+	for _, lang := range languageCodes {
+		gone[lang] = goneTranslations[lang]
+	}
+
+	message["come"] = come
+	message["gone"] = gone
+
+	return message
+}
+
 type AlarmUpdate struct {
 	ConfigID            int64
 	DatapointInstanceId string
@@ -253,56 +347,6 @@ type AlarmUpdate struct {
 	Tags                []string
 }
 
-func (alarm AlarmUpdate) getPriority() int {
-	switch alarm.Severity {
-	case "Critical", "Urgent":
-		return 1 // High priority
-	case "High":
-		return 2 // Medium priority
-	case "Low":
-		return 3 // Low priority
-	case "Log":
-		return 10 // Info
-	default:
-		return 10 // Default to lowest priority if severity is unknown
-	}
-}
-
-// buildAlarmMessage builds alarm message to Eliona format.
-func (alarm AlarmUpdate) buildAlarmMessage() map[string]interface{} {
-	message := make(map[string]interface{})
-
-	languageCodes := []string{"de", "en", "fr", "it"}
-
-	var descriptionPart string
-	if alarm.Description != "" {
-		descriptionPart = fmt.Sprintf(": %s", alarm.Description)
-	}
-	templateCome := fmt.Sprintf("%s%s {{asset.name}} ({{alarm.val}})", alarm.Name, descriptionPart)
-
-	come := make(map[string]string)
-	for _, lang := range languageCodes {
-		come[lang] = templateCome
-	}
-
-	goneTranslations := map[string]string{
-		"de": fmt.Sprintf("%s behoben", alarm.Name),
-		"en": fmt.Sprintf("%s resolved", alarm.Name),
-		"fr": fmt.Sprintf("%s résolu", alarm.Name),
-		"it": fmt.Sprintf("%s risolto", alarm.Name),
-	}
-
-	gone := make(map[string]string)
-	for _, lang := range languageCodes {
-		gone[lang] = goneTranslations[lang]
-	}
-
-	message["come"] = come
-	message["gone"] = gone
-
-	return message
-}
-
 func (alarm AlarmUpdate) getAckMessage() string {
 	return fmt.Sprintf("%s: %s", alarm.AckedBy, alarm.Comment)
 }
@@ -321,28 +365,6 @@ func UpdateAlarmInEliona(update AlarmUpdate) {
 	}
 	if !config.Active {
 		dbhelper.SetConfigActiveState(context.Background(), config, true)
-	}
-	datapoint, err := dbhelper.GetDatapointById(update.DatapointInstanceId, config.Id)
-	if errors.Is(err, dbhelper.ErrNotFound) {
-		log.Info("dbhelper", "datapoint not found (this may be caused by asset filter): %v", err)
-		return
-	}
-	if err != nil {
-		log.Error("dbhelper", "getting datapoint by ID %v for config %v: %v", update.DatapointInstanceId, config.Id, err)
-		return
-	}
-
-	// Alarm rule creation. This might be eventually moved to ontology sync.
-	for i := range datapoint.Attributes {
-		elionaAlarmID, err := eliona.CreateAlarm(datapoint.Asset.AssetID, datapoint.Subtype, datapoint.Attributes[i].Name, update.NeedAcknowledge, update.getPriority(), update.buildAlarmMessage())
-		if err != nil {
-			log.Error("eliona", "creating alarm: %v", err)
-			return
-		}
-		if err := dbhelper.CreateAlarm(datapoint.Attributes[i].ID, elionaAlarmID, update.AlarmID); err != nil {
-			log.Error("dbhelper", "creating alarm: %v", err)
-			return
-		}
 	}
 
 	alarms, err := dbhelper.GetAlarmsByOpenbosID(update.AlarmID)

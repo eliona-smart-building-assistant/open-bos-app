@@ -629,3 +629,98 @@ func (c *openBOSClient) deleteAlarmSubscription(del subscriptionDeleteDTO) error
 
 	return nil
 }
+
+// input structs
+type AlarmTemplate struct {
+	ID               string    `json:"id"`
+	Name             string    `json:"name"`
+	Triggers         []Trigger `json:"triggers"`
+	AssetTemplateIDs []string  `json:"assetTemplateIds"`
+	PublicID         string    `json:"publicId"`
+}
+
+// Didn't find any use for the selector yet, but leaving it here for reference.
+// type DatapointSelector struct {
+// 	AssetTemplateIDs []string `json:"functionalBlockTemplateIds"`
+// 	Type             string   `json:"type"`
+// 	SelectionMode    string   `json:"selectionMode"`
+// }
+
+type Trigger struct {
+	ID          string  `json:"id"`
+	Description string  `json:"description"`
+	Threshold   float64 `json:"threshold"`
+	Severity    string  `json:"severity"`
+}
+
+type Alarm struct {
+	ID              string    `json:"id"`
+	AlarmTemplateID string    `json:"alarmTemplateId"`
+	Datapoint       Datapoint `json:"datapoint"`
+}
+
+type Datapoint struct {
+	DisplayName string     `json:"displayName"`
+	Identifier  Identifier `json:"identifier"`
+}
+
+type Identifier struct {
+	DataPointInstanceID string `json:"datapointInstanceId"`
+}
+
+// output structs
+type AlarmRule struct {
+	ID        string
+	Datapoint Datapoint
+	Template  alarmTemplate
+}
+
+type alarmTemplate struct {
+	Name             string
+	Trigger          Trigger
+	AssetTemplateIDs []string
+}
+
+func (c *openBOSClient) getAlarmRules() ([]AlarmRule, error) {
+	templateEndpoint := "core/alarmtemplate"
+	var templates []AlarmTemplate
+	if err := c.doRequest("GET", templateEndpoint, nil, nil, &templates); err != nil {
+		return nil, fmt.Errorf("failed to fetch alarm templates: %w", err)
+	}
+
+	// Map of templates for quick lookup
+	templateMap := make(map[string]AlarmTemplate)
+	for _, template := range templates {
+		templateMap[template.ID] = template
+	}
+
+	alarmEndpoint := "core/alarm"
+	var alarms []Alarm
+	if err := c.doRequest("GET", alarmEndpoint, nil, nil, &alarms); err != nil {
+		return nil, fmt.Errorf("failed to fetch alarms: %w", err)
+	}
+
+	// Unwind the triggers
+	var unwoundAlarms []AlarmRule
+	for _, alarm := range alarms {
+		if template, exists := templateMap[alarm.AlarmTemplateID]; exists {
+			for _, trigger := range template.Triggers {
+				// Create an unwound alarm with a single trigger
+				unwoundAlarm := AlarmRule{
+					ID:        alarm.ID,
+					Datapoint: alarm.Datapoint,
+					Template: alarmTemplate{
+						Name:             template.Name,
+						Trigger:          trigger,
+						AssetTemplateIDs: template.AssetTemplateIDs,
+					},
+				}
+				unwoundAlarms = append(unwoundAlarms, unwoundAlarm)
+			}
+		} else {
+			log.Warn("client", "alarm template not found for alarm with ID %s\n", alarm.ID)
+		}
+	}
+
+	return unwoundAlarms, nil
+}

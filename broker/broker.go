@@ -508,6 +508,20 @@ func SubscribeToDataChanges(config appmodel.Configuration) error {
 	return nil
 }
 
+func FetchAlarmRules(config appmodel.Configuration) ([]AlarmRule, error) {
+	client, err := newOpenBOSClient(config.Gwid, config.ClientID, config.ClientSecret, config.AppPublicAPIURL, baseURL, tokenURL)
+	if err != nil {
+		return nil, fmt.Errorf("creating instance of client: %v", err)
+	}
+
+	bosAlarms, err := client.getAlarmRules()
+	if err != nil {
+		return nil, fmt.Errorf("getting alarm rules: %v", err)
+	}
+
+	return bosAlarms, nil
+}
+
 func SubscribeToAlarms(config appmodel.Configuration) error {
 	client, err := newOpenBOSClient(config.Gwid, config.ClientID, config.ClientSecret, config.AppPublicAPIURL, baseURL, tokenURL)
 	if err != nil {
