@@ -238,7 +238,6 @@ func fetchAlarmRules(config *appmodel.Configuration) {
 	}
 
 	for _, bosAlarm := range bosAlarms {
-		fmt.Println(bosAlarm.Datapoint.Identifier.DataPointInstanceID)
 		datapoint, err := dbhelper.GetDatapointById(bosAlarm.Datapoint.Identifier.DataPointInstanceID, config.Id)
 		if errors.Is(err, dbhelper.ErrNotFound) {
 			log.Info("dbhelper", "datapoint %v for alarm not found (this may be caused by asset filter): %v", bosAlarm.Datapoint.Identifier.DataPointInstanceID, err)
@@ -253,17 +252,39 @@ func fetchAlarmRules(config *appmodel.Configuration) {
 			log.Error("broker", "translating severity: %v", err)
 			prio = api.ALARM_PRIORITY_HEIGHT
 		}
+		presentAlarmRules, err := dbhelper.GetAlarmsByOpenbosID(bosAlarm.ID)
+		if err != nil {
+			log.Error("dbhelper", "getting alarms for alarmID %s: %v", bosAlarm.ID, err)
+			return
+		}
 		for _, attribute := range datapoint.Attributes {
+			ruleExists := false
+			for _, presentAlarmRule := range presentAlarmRules {
+				if presentAlarmRule.OpenBOSAlarmID == bosAlarm.ID && presentAlarmRule.ElionaAttributeID == attribute.ID {
+					// Rule already exists. Just update it.
+					elionaAlarmID, err := eliona.UpdateAlarm(presentAlarmRule.ElionaAlarmID, datapoint.Asset.AssetID, datapoint.Subtype, attribute.Name, prio, bosAlarm.Template.Name, buildAlarmMessage(bosAlarm))
+					if err != nil {
+						log.Error("eliona", "creating alarm: %v", err)
+						return
+					}
+					log.Debug("app", "updated alarm %v != %v", presentAlarmRule.ElionaAlarmID, elionaAlarmID)
+					ruleExists = true
+					break
+				}
+			}
+			if ruleExists {
+				continue
+			}
 			elionaAlarmID, err := eliona.CreateAlarm(datapoint.Asset.AssetID, datapoint.Subtype, attribute.Name, prio, bosAlarm.Template.Name, buildAlarmMessage(bosAlarm))
 			if err != nil {
 				log.Error("eliona", "creating alarm: %v", err)
 				return
 			}
-			fmt.Println(elionaAlarmID)
 			if err := dbhelper.CreateAlarm(attribute.ID, elionaAlarmID, bosAlarm.ID); err != nil {
 				log.Error("dbhelper", "creating alarm: %v", err)
 				return
 			}
+			log.Debug("app", "created alarm %v", elionaAlarmID)
 		}
 	}
 }

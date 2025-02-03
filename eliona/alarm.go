@@ -26,25 +26,34 @@ import (
 
 var CHECK_TYPE_EXTERNAL = "external"
 
-func CreateAlarm(assetID int32, subtype, attribute string, priority api.AlarmPriority, subject string, message map[string]any) (int32, error) {
+func submitAlarm(alarmID *int32, assetID int32, subtype, attribute string, priority api.AlarmPriority, subject string, message map[string]any) (int32, error) {
 	alarmRule, _, err := client.NewClient().AlarmRulesAPI.
-		PostAlarmRule(client.AuthenticationContext()).
+		PutAlarmRule(client.AuthenticationContext()).
 		AlarmRule(api.AlarmRule{
+			Id:        *api.NewNullableInt32(alarmID),
 			AssetId:   assetID,
 			Subtype:   api.DataSubtype(subtype),
 			Attribute: attribute,
 			Priority:  api.AlarmPriority(priority),
 			Subject:   *api.NewNullableString(api.PtrString(subject)),
 			Message:   message,
-			Tags:      []string{}, // will be selected by user
+			Tags:      []string{},
 			Enable:    api.PtrBool(true),
 			CheckType: *api.NewNullableString(&CHECK_TYPE_EXTERNAL),
 		}).
 		Execute()
 	if err != nil {
-		return 0, fmt.Errorf("creating alarm: %v", err)
+		return 0, err
 	}
 	return alarmRule.GetId(), nil
+}
+
+func CreateAlarm(assetID int32, subtype, attribute string, priority api.AlarmPriority, subject string, message map[string]any) (int32, error) {
+	return submitAlarm(nil, assetID, subtype, attribute, priority, subject, message)
+}
+
+func UpdateAlarm(alarmID int32, assetID int32, subtype, attribute string, priority api.AlarmPriority, subject string, message map[string]any) (int32, error) {
+	return submitAlarm(&alarmID, assetID, subtype, attribute, priority, subject, message)
 }
 
 func UpdateAlarmStatus(alarmID int32, appeared time.Time, ack bool, ackText string, closed bool) error {

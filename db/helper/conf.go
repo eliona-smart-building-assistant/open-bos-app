@@ -444,8 +444,9 @@ func GetAlarmsByOpenbosID(openbosID string) ([]appmodel.Alarm, error) {
 	var appAlarms []appmodel.Alarm
 	for _, alarm := range alarms {
 		appAlarms = append(appAlarms, appmodel.Alarm{
-			ElionaAlarmID:  alarm.ElionaAlarmID,
-			OpenBOSAlarmID: alarm.OpenbosAlarmID,
+			ElionaAlarmID:     alarm.ElionaAlarmID,
+			ElionaAttributeID: alarm.ElionaAttributeID,
+			OpenBOSAlarmID:    alarm.OpenbosAlarmID,
 		})
 	}
 	return appAlarms, nil

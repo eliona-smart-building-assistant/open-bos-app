@@ -61,6 +61,7 @@ type Attribute struct {
 }
 
 type Alarm struct {
-	ElionaAlarmID  int32
-	OpenBOSAlarmID string
+	ElionaAlarmID     int32
+	ElionaAttributeID int64
+	OpenBOSAlarmID    string
 }
