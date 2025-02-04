@@ -218,13 +218,14 @@ func (c *openBOSClient) getOntologyVersion() (int32, error) {
 }
 
 type subscriptionCreateDTO struct {
-	MinSendTime       int32    `json:"minSendTime"`                // Minimum time between two events. To avoid events flushing. Highly recommended. If zero, events will be sent on the fly (NOT recommended). Min value: 1 mn
-	MaxSendTime       int32    `json:"maxSendTime"`                // Maximum time between two events. Can be used to ensure the client application that the connection is alive. If nothing must be sent, the edge will send an empty event. Min value: 1 mn
+	MinSendTime       int32    `json:"minSendTime"`                // [ms]Minimum time between two events. To avoid events flushing. Highly recommended. If zero, events will be sent on the fly (NOT recommended). Min value: 1 mn (60 000)
+	MaxSendTime       int32    `json:"maxSendTime"`                // [ms]Maximum time between two events. Can be used to ensure the client application that the connection is alive. If nothing must be sent, the edge will send an empty event. Min value: 1 mn
+	AlignSendTime     int32    `json:"alignSendTime"`              // [ms]Align time between two events. Min value: 1 mn
 	Timestamp         *string  `json:"timestamp,omitempty"`        // UTC date. To receive only datapoints or properties that change since the timestamp.
 	WebHookURL        *string  `json:"webhookURL,omitempty"`       // URL of the webhook.
-	WebHookRetries    int32    `json:"webhookRetries"`             // Interval of retries (in seconds) when an error occurs while sending an event.
+	WebHookRetries    int32    `json:"webhookRetryCount"`          // Interval of retries (in seconds) when an error occurs while sending an event.
 	WebHookRetryDelay int32    `json:"webhookRetryDelay"`          // Number of retries when an error occurs while sending an event.
-	WebHookLeaseTime  int32    `json:"webhookLeaseTime,omitempty"` // Life span of the webhook if the webhook connection is down. If not present, the webhook will never be destroyed. CAUTION server error 500 if too big (i.e. 60 minutes).
+	WebHookLeaseTime  int32    `json:"webhookLeaseTime,omitempty"` // [s]Life span of the webhook if the webhook connection is down. If not present, the webhook will never be destroyed. CAUTION server error 500 if too big (i.e. 60 000 minutes).
 	WebhookPersist    *bool    `json:"webhookPersist,omitempty"`   // If true, the subscription will be kept alive when the edge restarts in the middle of the subscription. If false, the subscription is lost when the edge restarts.
 	ContentType       *string  `json:"contentType,omitempty"`      // application/json for json (the default) or octet for base64.
 	DesiredUnits      []string `json:"desiredUnits,omitempty"`     // List of units you want for certain datapoints.
@@ -601,15 +602,13 @@ func (c *openBOSClient) subscribeToAlarmChanges(configID int64) error {
 		return fmt.Errorf("joining URL for subscription: %v", err)
 	}
 
-	second := int32(1000)
-	minute := 60 * second
 	sub := subscriptionCreateDTO{
 		WebHookURL:        common.Ptr(webhookURL),
 		WebHookRetries:    3,
-		WebHookRetryDelay: 5 * second,
-		WebHookLeaseTime:  5 * minute,
+		WebHookRetryDelay: 2,
 		WebhookPersist:    common.Ptr(true),
-		ContentType:       common.Ptr("application/json"),
+		MaxSendTime:       60000,
+		AlignSendTime:     60000,
 	}
 
 	if err := c.doRequest("POST", endpoint, nil, sub, nil); err != nil {
