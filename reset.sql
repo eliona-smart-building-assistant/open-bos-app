@@ -39,6 +39,20 @@ WHERE asset_id IN (
 	WHERE asset_type LIKE E'open\\_bos\\_%'
 );
 
+DELETE FROM alarm
+WHERE asset_id IN (
+	SELECT asset_id
+	FROM asset
+	WHERE asset_type LIKE E'open\\_bos\\_%'
+);
+
+DELETE FROM alarm_cfg
+WHERE asset_id IN (
+	SELECT asset_id
+	FROM asset
+	WHERE asset_type LIKE E'open\\_bos\\_%'
+);
+
 DELETE FROM attribute_schema
 WHERE asset_type LIKE E'open\\_bos\\_%';
 
