@@ -73,7 +73,7 @@ func convertAssetTemplateToAssetType(template assetTemplate) api.AssetType {
 			}
 
 			attribute := api.AssetTypeAttribute{
-				Name:    dp.Name,
+				Name:    attrib.Name,
 				Subtype: subtype,
 				Min:     min,
 				Max:     max,
@@ -82,7 +82,7 @@ func convertAssetTemplateToAssetType(template assetTemplate) api.AssetType {
 			}
 			apiAsset.Attributes = append(apiAsset.Attributes, attribute)
 			attributes = append(attributes, attributeTemplateInfo{
-				name: dp.Name,
+				name: attrib.Name,
 			})
 		}
 		// [datapoint-attribution]
@@ -115,7 +115,7 @@ func convertAssetTemplateToAssetType(template assetTemplate) api.AssetType {
 			}
 
 			attribute := api.AssetTypeAttribute{
-				Name:    prop.Name,
+				Name:    attrib.Name,
 				Subtype: subtype,
 				Min:     min,
 				Max:     max,
@@ -124,7 +124,7 @@ func convertAssetTemplateToAssetType(template assetTemplate) api.AssetType {
 			}
 			apiAsset.Attributes = append(apiAsset.Attributes, attribute)
 			attributes = append(attributes, attributeTemplateInfo{
-				name: prop.Name,
+				name: attrib.Name,
 			})
 		}
 		// [datapoint-attribution]

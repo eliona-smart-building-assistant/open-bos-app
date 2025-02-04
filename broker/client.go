@@ -339,6 +339,7 @@ type propertyTemplateInfo struct {
 }
 
 type templateAttributeInfo struct {
+	Name          string
 	DisplayUnitID *string
 	Min           *float64
 	Max           *float64
@@ -443,6 +444,7 @@ func (ontology ontologyDTO) getAssetTemplates(orphanDatapoints []ontologyDatapoi
 			}
 			for _, dataType := range getDataTypes(datapointTemplate.TypeID, dataTypeMap) {
 				a := templateAttributeInfo{
+					Name:          dataType.Name,
 					Min:           dataType.Min,
 					Max:           dataType.Max,
 					Enums:         dataType.Enums,
@@ -460,6 +462,7 @@ func (ontology ontologyDTO) getAssetTemplates(orphanDatapoints []ontologyDatapoi
 			}
 			for _, dataType := range getDataTypes(propertyTemplate.TypeID, dataTypeMap) {
 				a := templateAttributeInfo{
+					Name:          dataType.Name,
 					Min:           dataType.Min,
 					Max:           dataType.Max,
 					Enums:         dataType.Enums,
