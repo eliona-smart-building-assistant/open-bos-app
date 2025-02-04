@@ -24,15 +24,15 @@ RUN go mod download
 
 RUN DATE=$(date) && \
     GIT_COMMIT=$(git rev-list -1 HEAD) && \
-    go build -ldflags "-X 'open-bos/apiservices.BuildTimestamp=$DATE' -X 'open-bos/apiservices.GitCommit=$GIT_COMMIT'" -o ../app
+    go build -ldflags "-X 'open-bos/apiservices.BuildTimestamp=$DATE' -X 'open-bos/apiservices.GitCommit=$GIT_COMMIT'" -o ../app-build
 
 FROM eliona/base-alpine:latest AS target
 
-COPY --from=build /app ./
+COPY --from=build /app-build ./
 COPY db/*.sql ./db/
 COPY resources/ ./resources/
 COPY openapi.yaml ./
 COPY metadata.json ./
 
 ENV TZ=Europe/Zurich
-CMD [ "/app" ]
+CMD [ "/app-build" ]
