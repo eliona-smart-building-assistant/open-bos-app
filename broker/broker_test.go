@@ -75,7 +75,7 @@ func TestFetchOntology(t *testing.T) {
 	defer func() { newOpenBOSClient = originalNewOpenBOSClient }()
 
 	// Call FetchOntology
-	ontologyVersion, assetTypes, rootAsset, err := FetchOntology(config)
+	ontologyVersion, assetTypes, assets, err := FetchOntology(config)
 	if err != nil {
 		t.Fatalf("FetchOntology returned error: %v", err)
 	}
@@ -124,19 +124,22 @@ func TestFetchOntology(t *testing.T) {
 	// For simplicity, we'll check the first one.
 	assert.Equal(t, expectedAssetType, assetTypes[0])
 
-	// Check that root asset is correctly built
+	// Check that at least one asset exists
+	if len(assets) != 2 {
+		t.Fatalf("Expected 2 assets, got %v", len(assets))
+	}
+
+	rootAsset := assets[0] // Root should be the first asset in the slice
 	if rootAsset.Name != "OpenBOS" {
 		t.Errorf("Expected root asset name 'OpenBOS', got '%s'", rootAsset.Name)
 	}
 
-	// Check that the asset hierarchy is correctly built
-	if len(rootAsset.FunctionalChildrenSlice) != 1 {
-		t.Errorf("Expected 1 child asset, got %d", len(rootAsset.FunctionalChildrenSlice))
-	}
-
-	childAsset := rootAsset.FunctionalChildrenSlice[0]
+	childAsset := assets[1]
 	if childAsset.Name != "Sensor 1" {
 		t.Errorf("Expected child asset name 'Sensor 1', got '%s'", childAsset.Name)
+	}
+	if childAsset.LocationalParentGAI != rootAsset.GetGAI() {
+		t.Errorf("childAsset LocationalParentGAI = %v, expected %v", childAsset.LocationalParentGAI, rootAsset.GetGAI())
 	}
 }
 
@@ -475,26 +478,31 @@ func TestFetchOntologyWithSpaces(t *testing.T) {
 	defer func() { newOpenBOSClient = originalNewOpenBOSClient }()
 
 	// Call the function under test
-	_, _, rootAsset, err := FetchOntology(config)
+	_, _, assets, err := FetchOntology(config)
 	if err != nil {
 		t.Fatalf("FetchOntology returned error: %v", err)
 	}
 
-	// Check that root asset's LocationalChildrenMap contains "Building 1"
-	assert.Equal(t, 1, len(rootAsset.LocationalChildrenMap), "Root asset should have 1 locational child")
-	building1, ok := rootAsset.LocationalChildrenMap["space-1"]
-	assert.True(t, ok, "Root asset should contain 'Building 1' in LocationalChildrenMap")
-	assert.Equal(t, "Building 1", building1.Name, "Building 1 name mismatch")
+	assert.Equal(t, 4, len(assets), "There should be all assets")
+
+	rootAsset := assets[0]
+	assert.Equal(t, "OpenBOS", rootAsset.Name, "Root asset name mismatch")
+
+	// Check that "Building 1" has root asset as a parent
+	building1 := assets[1]
+	assert.Equal(t, rootAsset.GetGAI(), building1.FunctionalParentGAI, "Building 1 Functional parent")
+	assert.Equal(t, rootAsset.GetGAI(), building1.LocationalParentGAI, "Building 1 Locational parent")
+	assert.Equal(t, "Building 1", building1.Name, "Building should come first")
 
 	// Check that 'Building 1' has 'Floor 1' as a locational child
-	assert.Equal(t, 1, len(building1.LocationalChildrenMap), "'Building 1' should have 1 locational child")
-	floor1, ok := building1.LocationalChildrenMap["space-2"]
-	assert.True(t, ok, "'Building 1' should contain 'Floor 1' in LocationalChildrenMap")
-	assert.Equal(t, "Floor 1", floor1.Name, "Floor 1 name mismatch")
+	floor1 := assets[2]
+	assert.Equal(t, building1.GetGAI(), floor1.FunctionalParentGAI, "Floor 1 Functional parent")
+	assert.Equal(t, building1.GetGAI(), floor1.LocationalParentGAI, "Floor 1 Locational parent")
+	assert.Equal(t, "Floor 1", floor1.Name, "Floor should come second")
 
 	// Check that 'Floor 1' has 'Sensor 1'
-	assert.Equal(t, 1, len(floor1.LocationalChildrenMap), "'Floor 1' should have 1 locational child")
-	sensor1, ok := floor1.LocationalChildrenMap["asset-1"]
-	assert.True(t, ok, "'Floor 1' should contain 'Sensor 1' in LocationalChildrenMap")
-	assert.Equal(t, "Sensor 1", sensor1.Name, "Sensor 1 name mismatch")
+	sensor1 := assets[3]
+	assert.Equal(t, floor1.GetGAI(), sensor1.FunctionalParentGAI, "Sensor 1 Functional parent")
+	assert.Equal(t, floor1.GetGAI(), sensor1.LocationalParentGAI, "Sensor 1 Locational parent")
+	assert.Equal(t, "Sensor 1", sensor1.Name, "Sensor should come last")
 }
