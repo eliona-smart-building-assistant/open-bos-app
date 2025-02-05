@@ -70,26 +70,28 @@ type ontologyDataTypeDTO struct {
 }
 
 type dataTypeUncomplexified struct {
-	Format string
-	Name   string
-	UnitID string
-	Min    *float64
-	Max    *float64
-	Enums  map[string]string
+	Format          string
+	Name            string
+	UnitID          string
+	Min             *float64
+	Max             *float64
+	Enums           map[string]string
+	IsPartOfComplex bool
 }
 
 // unwrapComplexType recursively flattens complex datatypes into a slice of simple ones.
-func (dt ontologyDataTypeDTO) unwrapComplexType(datatypeComplexMap map[string]ontologyDataTypeDTO, parentName string) []dataTypeUncomplexified {
+func (dt ontologyDataTypeDTO) unwrapComplexType(partOfComplex bool, datatypeComplexMap map[string]ontologyDataTypeDTO, parentName string) []dataTypeUncomplexified {
 	// If no fields, this is a primitive type; set its full path and return as a single-element slice.
 	if len(dt.Fields) == 0 {
 		dt.Name = parentName
 		return []dataTypeUncomplexified{{
-			Format: dt.Format,
-			Name:   dt.Name,
-			UnitID: dt.UnitID,
-			Min:    dt.Min,
-			Max:    dt.Max,
-			Enums:  dt.Enums,
+			Format:          dt.Format,
+			Name:            dt.Name,
+			UnitID:          dt.UnitID,
+			Min:             dt.Min,
+			Max:             dt.Max,
+			Enums:           dt.Enums,
+			IsPartOfComplex: partOfComplex,
 		}}
 	}
 
@@ -103,7 +105,7 @@ func (dt ontologyDataTypeDTO) unwrapComplexType(datatypeComplexMap map[string]on
 		fieldPath += childReference.Name
 
 		// Recursively unwrap child
-		result = append(result, child.unwrapComplexType(datatypeComplexMap, fieldPath)...)
+		result = append(result, child.unwrapComplexType(true, datatypeComplexMap, fieldPath)...)
 	}
 
 	return result
@@ -339,11 +341,12 @@ type propertyTemplateInfo struct {
 }
 
 type dataTypeInfo struct {
-	Name          string
-	DisplayUnitID *string
-	Min           *float64
-	Max           *float64
-	Enums         map[string]string
+	Name            string
+	DisplayUnitID   *string
+	Min             *float64
+	Max             *float64
+	Enums           map[string]string
+	IsPartOfComplex bool
 }
 
 type assetTemplate struct {
@@ -417,7 +420,7 @@ func (ontology ontologyDTO) getAssetTemplates(orphanDatapoints []ontologyDatapoi
 				// Name might be null, in that case let's use ID as a fallback.
 				name = dt.ID
 			}
-			dataTypeMap[dt.ID] = dt.unwrapComplexType(dataTypeComplexMap, name)
+			dataTypeMap[dt.ID] = dt.unwrapComplexType(false, dataTypeComplexMap, name)
 		}
 	}
 
@@ -444,11 +447,12 @@ func (ontology ontologyDTO) getAssetTemplates(orphanDatapoints []ontologyDatapoi
 			}
 			for _, dataType := range getDataTypes(datapointTemplate.TypeID, dataTypeMap) {
 				a := dataTypeInfo{
-					Name:          dataType.Name,
-					Min:           dataType.Min,
-					Max:           dataType.Max,
-					Enums:         dataType.Enums,
-					DisplayUnitID: getDisplayUnitID(dataType, unitMap),
+					Name:            dataType.Name,
+					Min:             dataType.Min,
+					Max:             dataType.Max,
+					Enums:           dataType.Enums,
+					DisplayUnitID:   getDisplayUnitID(dataType, unitMap),
+					IsPartOfComplex: dataType.IsPartOfComplex,
 				}
 				dataPoint.DataTypes = append(dataPoint.DataTypes, a)
 			}
@@ -462,11 +466,12 @@ func (ontology ontologyDTO) getAssetTemplates(orphanDatapoints []ontologyDatapoi
 			}
 			for _, dataType := range getDataTypes(propertyTemplate.TypeID, dataTypeMap) {
 				a := dataTypeInfo{
-					Name:          dataType.Name,
-					Min:           dataType.Min,
-					Max:           dataType.Max,
-					Enums:         dataType.Enums,
-					DisplayUnitID: getDisplayUnitID(dataType, unitMap),
+					Name:            dataType.Name,
+					Min:             dataType.Min,
+					Max:             dataType.Max,
+					Enums:           dataType.Enums,
+					DisplayUnitID:   getDisplayUnitID(dataType, unitMap),
+					IsPartOfComplex: dataType.IsPartOfComplex,
 				}
 				property.DataTypes = append(property.DataTypes, a)
 			}

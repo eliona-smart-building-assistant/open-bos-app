@@ -72,8 +72,16 @@ func convertAssetTemplateToAssetType(template assetTemplate) api.AssetType {
 				unit = *api.NewNullableString(dataType.DisplayUnitID)
 			}
 
+			attributeName := dp.Name
+			if dataType.IsPartOfComplex {
+				// Due to duplication, we cannot use the datapoint name. The dataType name allows this.
+				// TODO: Improve the attribute name by using first part datapoint name,
+				// second part datatype name.
+				attributeName = dataType.Name
+			}
+
 			attribute := api.AssetTypeAttribute{
-				Name:    dataType.Name,
+				Name:    attributeName,
 				Subtype: subtype,
 				Min:     min,
 				Max:     max,
@@ -82,7 +90,7 @@ func convertAssetTemplateToAssetType(template assetTemplate) api.AssetType {
 			}
 			apiAsset.Attributes = append(apiAsset.Attributes, attribute)
 			attributes = append(attributes, attributeTemplateInfo{
-				name: dataType.Name,
+				name: attributeName,
 			})
 		}
 		// [datapoint-attribution]
@@ -114,8 +122,16 @@ func convertAssetTemplateToAssetType(template assetTemplate) api.AssetType {
 				unit = *api.NewNullableString(dataType.DisplayUnitID)
 			}
 
+			attributeName := prop.Name
+			if dataType.IsPartOfComplex {
+				// Due to duplication, we cannot use the datapoint name. The dataType name allows this.
+				// TODO: Improve the attribute name by using first part datapoint name,
+				// second part datatype name.
+				attributeName = dataType.Name
+			}
+
 			attribute := api.AssetTypeAttribute{
-				Name:    dataType.Name,
+				Name:    attributeName,
 				Subtype: subtype,
 				Min:     min,
 				Max:     max,
@@ -124,7 +140,7 @@ func convertAssetTemplateToAssetType(template assetTemplate) api.AssetType {
 			}
 			apiAsset.Attributes = append(apiAsset.Attributes, attribute)
 			attributes = append(attributes, attributeTemplateInfo{
-				name: dataType.Name,
+				name: attributeName,
 			})
 		}
 		// [datapoint-attribution]
