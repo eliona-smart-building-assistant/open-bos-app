@@ -327,14 +327,14 @@ func TestFetchOntologyWithComplexDataTypes(t *testing.T) {
 			},
 		},
 		{
-			Name:    "33333333-3333-3333-3333-333333333333.complexInComplex.myFirstField",
+			Name:    "Complex DataPoint.complexInComplex.myFirstField",
 			Subtype: api.SUBTYPE_INPUT,
 			Unit:    *api.NewNullableString(common.Ptr("°C")),
 			Min:     *api.NewNullableFloat64(common.Ptr(-999999.0)),
 			Max:     *api.NewNullableFloat64(common.Ptr(99999.99)),
 		},
 		{
-			Name:    "33333333-3333-3333-3333-333333333333.complexInComplex.mySecondField",
+			Name:    "Complex DataPoint.complexInComplex.mySecondField",
 			Subtype: api.SUBTYPE_INPUT,
 			Map: []map[string]interface{}{
 				{"value": "0", "map": "Auto"},
@@ -345,7 +345,7 @@ func TestFetchOntologyWithComplexDataTypes(t *testing.T) {
 			},
 		},
 		{
-			Name:    "33333333-3333-3333-3333-333333333333.mySecondField",
+			Name:    "Complex DataPoint.mySecondField",
 			Subtype: api.SUBTYPE_INPUT,
 			Map: []map[string]interface{}{
 				{"value": "0", "map": "Auto"},

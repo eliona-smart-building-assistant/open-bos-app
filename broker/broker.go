@@ -75,9 +75,14 @@ func convertAssetTemplateToAssetType(template assetTemplate) api.AssetType {
 			attributeName := dp.Name
 			if dataType.IsPartOfComplex {
 				// Due to duplication, we cannot use the datapoint name. The dataType name allows this.
-				// TODO: Improve the attribute name by using first part datapoint name,
-				// second part datatype name.
-				attributeName = dataType.Name
+				// Append the sub-datatype names to the attribute name.
+				parts := strings.SplitN(dataType.Name, ".", 2)
+				if len(parts) > 1 {
+					attributeName = dp.Name + "." + parts[1]
+				} else {
+					log.Error("broker", "should not happen: datatype %v is part of complex type, yet does not have more name parts", dataType.Name)
+					attributeName = dp.Name
+				}
 			}
 
 			attribute := api.AssetTypeAttribute{
@@ -125,11 +130,15 @@ func convertAssetTemplateToAssetType(template assetTemplate) api.AssetType {
 			attributeName := prop.Name
 			if dataType.IsPartOfComplex {
 				// Due to duplication, we cannot use the datapoint name. The dataType name allows this.
-				// TODO: Improve the attribute name by using first part datapoint name,
-				// second part datatype name.
-				attributeName = dataType.Name
+				// Append the sub-datatype names to the attribute name.
+				parts := strings.SplitN(dataType.Name, ".", 2)
+				if len(parts) > 1 {
+					attributeName = prop.Name + "." + parts[1]
+				} else {
+					log.Error("broker", "should not happen: datatype %v is part of complex type, yet does not have more name parts", dataType.Name)
+					attributeName = prop.Name
+				}
 			}
-
 			attribute := api.AssetTypeAttribute{
 				Name:    attributeName,
 				Subtype: subtype,
