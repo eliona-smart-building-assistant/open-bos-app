@@ -182,7 +182,7 @@ func TestFetchOntologyWithComplexDataTypes(t *testing.T) {
 					},
 					{
 						"id": "22222222-2222-2222-2222-222222222222",
-						"name": "HVAC_Status",
+						"name": "string",
 						"tag": "bos:standardtype:hvacstatus",
 						"format": "enumeration",
 						"enums": {
@@ -246,7 +246,7 @@ func TestFetchOntologyWithComplexDataTypes(t *testing.T) {
 					},
 					{
 						"id": "datapoint-template-simple-with-name",
-						"name": "Complex DataPoint",
+						"name": "HVAC_Status",
 						"assetTemplateId": "asset-template-1",
 						"typeId": "22222222-2222-2222-2222-222222222222",
 						"direction": "feedback"
@@ -266,7 +266,7 @@ func TestFetchOntologyWithComplexDataTypes(t *testing.T) {
 						"assetId": "asset-1"
 					},
 					{
-						"id": "datapoint-1",
+						"id": "datapoint-2",
 						"templateId": "datapoint-template-simple-with-name",
 						"assetId": "asset-1"
 					}

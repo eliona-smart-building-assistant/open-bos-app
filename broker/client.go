@@ -326,19 +326,19 @@ func (c *openBOSClient) deleteDataSubscription(del subscriptionDeleteDTO) error 
 }
 
 type datapointTemplateInfo struct {
-	ID         string
-	Name       string
-	Direction  string
-	Attributes []templateAttributeInfo
+	ID        string
+	Name      string
+	Direction string
+	DataTypes []dataTypeInfo
 }
 
 type propertyTemplateInfo struct {
-	ID         string
-	Name       string
-	Attributes []templateAttributeInfo
+	ID        string
+	Name      string
+	DataTypes []dataTypeInfo
 }
 
-type templateAttributeInfo struct {
+type dataTypeInfo struct {
 	Name          string
 	DisplayUnitID *string
 	Min           *float64
@@ -443,14 +443,14 @@ func (ontology ontologyDTO) getAssetTemplates(orphanDatapoints []ontologyDatapoi
 				Direction: datapointTemplate.Direction,
 			}
 			for _, dataType := range getDataTypes(datapointTemplate.TypeID, dataTypeMap) {
-				a := templateAttributeInfo{
+				a := dataTypeInfo{
 					Name:          dataType.Name,
 					Min:           dataType.Min,
 					Max:           dataType.Max,
 					Enums:         dataType.Enums,
 					DisplayUnitID: getDisplayUnitID(dataType, unitMap),
 				}
-				dataPoint.Attributes = append(dataPoint.Attributes, a)
+				dataPoint.DataTypes = append(dataPoint.DataTypes, a)
 			}
 			assetTemplate.Datapoints = append(assetTemplate.Datapoints, dataPoint)
 		}
@@ -461,14 +461,14 @@ func (ontology ontologyDTO) getAssetTemplates(orphanDatapoints []ontologyDatapoi
 				Name: propertyTemplate.Name,
 			}
 			for _, dataType := range getDataTypes(propertyTemplate.TypeID, dataTypeMap) {
-				a := templateAttributeInfo{
+				a := dataTypeInfo{
 					Name:          dataType.Name,
 					Min:           dataType.Min,
 					Max:           dataType.Max,
 					Enums:         dataType.Enums,
 					DisplayUnitID: getDisplayUnitID(dataType, unitMap),
 				}
-				property.Attributes = append(property.Attributes, a)
+				property.DataTypes = append(property.DataTypes, a)
 			}
 			assetTemplate.Properties = append(assetTemplate.Properties, property)
 		}

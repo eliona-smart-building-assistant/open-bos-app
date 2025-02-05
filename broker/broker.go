@@ -55,25 +55,25 @@ func convertAssetTemplateToAssetType(template assetTemplate) api.AssetType {
 	for _, dp := range template.Datapoints {
 		subtype := determineSubtype(dp.Direction)
 		var attributes []attributeTemplateInfo
-		for _, attrib := range dp.Attributes {
-			mapping := convertMapping(attrib.Enums)
+		for _, dataType := range dp.DataTypes {
+			mapping := convertMapping(dataType.Enums)
 
 			// Only set nillables if they are not nil
 			var min api.NullableFloat64
-			if attrib.Min != nil {
-				min = *api.NewNullableFloat64(attrib.Min)
+			if dataType.Min != nil {
+				min = *api.NewNullableFloat64(dataType.Min)
 			}
 			var max api.NullableFloat64
-			if attrib.Max != nil {
-				max = *api.NewNullableFloat64(attrib.Max)
+			if dataType.Max != nil {
+				max = *api.NewNullableFloat64(dataType.Max)
 			}
 			var unit api.NullableString
-			if attrib.DisplayUnitID != nil {
-				unit = *api.NewNullableString(attrib.DisplayUnitID)
+			if dataType.DisplayUnitID != nil {
+				unit = *api.NewNullableString(dataType.DisplayUnitID)
 			}
 
 			attribute := api.AssetTypeAttribute{
-				Name:    attrib.Name,
+				Name:    dataType.Name,
 				Subtype: subtype,
 				Min:     min,
 				Max:     max,
@@ -82,7 +82,7 @@ func convertAssetTemplateToAssetType(template assetTemplate) api.AssetType {
 			}
 			apiAsset.Attributes = append(apiAsset.Attributes, attribute)
 			attributes = append(attributes, attributeTemplateInfo{
-				name: attrib.Name,
+				name: dataType.Name,
 			})
 		}
 		// [datapoint-attribution]
@@ -97,25 +97,25 @@ func convertAssetTemplateToAssetType(template assetTemplate) api.AssetType {
 	for _, prop := range template.Properties {
 		subtype := api.SUBTYPE_STATUS
 		var attributes []attributeTemplateInfo
-		for _, attrib := range prop.Attributes {
-			mapping := convertMapping(attrib.Enums)
+		for _, dataType := range prop.DataTypes {
+			mapping := convertMapping(dataType.Enums)
 
 			// Only set nillables if they are not nil
 			var min api.NullableFloat64
-			if attrib.Min != nil {
-				min = *api.NewNullableFloat64(attrib.Min)
+			if dataType.Min != nil {
+				min = *api.NewNullableFloat64(dataType.Min)
 			}
 			var max api.NullableFloat64
-			if attrib.Max != nil {
-				max = *api.NewNullableFloat64(attrib.Max)
+			if dataType.Max != nil {
+				max = *api.NewNullableFloat64(dataType.Max)
 			}
 			var unit api.NullableString
-			if attrib.DisplayUnitID != nil {
-				unit = *api.NewNullableString(attrib.DisplayUnitID)
+			if dataType.DisplayUnitID != nil {
+				unit = *api.NewNullableString(dataType.DisplayUnitID)
 			}
 
 			attribute := api.AssetTypeAttribute{
-				Name:    attrib.Name,
+				Name:    dataType.Name,
 				Subtype: subtype,
 				Min:     min,
 				Max:     max,
@@ -124,7 +124,7 @@ func convertAssetTemplateToAssetType(template assetTemplate) api.AssetType {
 			}
 			apiAsset.Attributes = append(apiAsset.Attributes, attribute)
 			attributes = append(attributes, attributeTemplateInfo{
-				name: attrib.Name,
+				name: dataType.Name,
 			})
 		}
 		// [datapoint-attribution]
