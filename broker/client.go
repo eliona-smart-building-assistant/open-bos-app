@@ -226,7 +226,7 @@ type subscriptionCreateDTO struct {
 	Timestamp         *string  `json:"timestamp,omitempty"`        // UTC date. To receive only datapoints or properties that change since the timestamp.
 	WebHookURL        *string  `json:"webhookURL,omitempty"`       // URL of the webhook.
 	WebHookRetries    int32    `json:"webhookRetryCount"`          // Interval of retries (in seconds) when an error occurs while sending an event.
-	WebHookRetryDelay int32    `json:"webhookRetryDelay"`          // Number of retries when an error occurs while sending an event.
+	WebHookRetryDelay int32    `json:"webhookRetryDelay"`          // [s]Number of retries when an error occurs while sending an event.
 	WebHookLeaseTime  int32    `json:"webhookLeaseTime,omitempty"` // [s]Life span of the webhook if the webhook connection is down. If not present, the webhook will never be destroyed. CAUTION server error 500 if too big (i.e. 60 000 minutes).
 	WebhookPersist    *bool    `json:"webhookPersist,omitempty"`   // If true, the subscription will be kept alive when the edge restarts in the middle of the subscription. If false, the subscription is lost when the edge restarts.
 	ContentType       *string  `json:"contentType,omitempty"`      // application/json for json (the default) or octet for base64.
@@ -246,11 +246,10 @@ func (c *openBOSClient) subscribeToOntologyChanges(configID int64) (*subscriptio
 		return nil, fmt.Errorf("joining URL for subscription: %v", err)
 	}
 
-	second := int32(1000)
 	sub := subscriptionCreateDTO{
 		WebHookURL:        common.Ptr(webhookURL),
-		WebHookRetries:    3,
-		WebHookRetryDelay: 5 * second,
+		WebHookRetries:    15,
+		WebHookRetryDelay: 2,
 		WebhookPersist:    common.Ptr(true),
 	}
 
@@ -285,13 +284,10 @@ func (c *openBOSClient) subscribeToDataChanges(configID int64) error {
 		return fmt.Errorf("joining URL for subscription: %v", err)
 	}
 
-	second := int32(1000)
-	minute := 60 * second
 	sub := subscriptionCreateDTO{
 		WebHookURL:        common.Ptr(webhookURL),
-		WebHookRetries:    3,
-		WebHookRetryDelay: 5 * second,
-		WebHookLeaseTime:  5 * minute,
+		WebHookRetries:    15,
+		WebHookRetryDelay: 2,
 		WebhookPersist:    common.Ptr(true),
 		ContentType:       common.Ptr("application/json"),
 		// Info: There is also a parameter "desiredUnits" available. Implement if there is a use case.
@@ -612,7 +608,7 @@ func (c *openBOSClient) subscribeToAlarmChanges(configID int64) error {
 
 	sub := subscriptionCreateDTO{
 		WebHookURL:        common.Ptr(webhookURL),
-		WebHookRetries:    3,
+		WebHookRetries:    15,
 		WebHookRetryDelay: 2,
 		WebhookPersist:    common.Ptr(true),
 		MaxSendTime:       60000,
