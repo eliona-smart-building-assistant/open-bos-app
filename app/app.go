@@ -267,7 +267,7 @@ func fetchAlarmRules(config *appmodel.Configuration) {
 						log.Error("eliona", "creating alarm: %v", err)
 						return
 					}
-					log.Debug("app", "updated alarm %v != %v", presentAlarmRule.ElionaAlarmID, elionaAlarmID)
+					log.Debug("app", "updated alarm %v", elionaAlarmID)
 					ruleExists = true
 					break
 				}
