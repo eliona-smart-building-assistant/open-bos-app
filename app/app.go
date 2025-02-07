@@ -541,3 +541,18 @@ func ListenApi() {
 				))))
 	log.Fatal("main", "API server: %v", err)
 }
+
+func Teardown() {
+	configs, err := dbhelper.GetConfigs(context.Background())
+	if err != nil {
+		log.Fatal("dbhelper", "Couldn't read configs from DB: %v", err)
+		return
+	}
+
+	for _, config := range configs {
+		if err := broker.CancelSubscriptions(config); err != nil {
+			log.Error("broker", "cancelling all subscriptions: %v", err)
+			return
+		}
+	}
+}

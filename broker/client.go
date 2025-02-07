@@ -263,7 +263,6 @@ func (c *openBOSClient) subscribeToOntologyChanges(configID int64) (*subscriptio
 
 type subscriptionDeleteDTO struct {
 	WebHookURL *string `json:"webhookURL,omitempty"`
-	ID         *string `json:"id,omitempty"`
 }
 
 func (c *openBOSClient) deleteOntologySubscription(del subscriptionDeleteDTO) error {
@@ -726,4 +725,39 @@ func (c *openBOSClient) getAlarmRules() ([]AlarmRule, error) {
 	}
 
 	return unwoundAlarms, nil
+}
+
+func (c *openBOSClient) unsubscribeEverything(configID int64) error {
+	webhookOntology, err := url.JoinPath(c.webhookURL, fmt.Sprint(configID), "ontology-version")
+	if err != nil {
+		return fmt.Errorf("joining URL for ontology unsubscription: %v", err)
+	}
+
+	webhookAlarm, err := url.JoinPath(c.webhookURL, fmt.Sprint(configID), "ontology-livealarm")
+	if err != nil {
+		return fmt.Errorf("joining URL for alarm unsubscription: %v", err)
+	}
+
+	webhookData, err := url.JoinPath(c.webhookURL, fmt.Sprint(configID), "ontology-livedata")
+	if err != nil {
+		return fmt.Errorf("joining URL for data unsubscription: %v", err)
+	}
+
+	delOntology := subscriptionDeleteDTO{WebHookURL: common.Ptr(webhookOntology)}
+	delAlarm := subscriptionDeleteDTO{WebHookURL: common.Ptr(webhookAlarm)}
+	delData := subscriptionDeleteDTO{WebHookURL: common.Ptr(webhookData)}
+
+	if err := c.deleteOntologySubscription(delOntology); err != nil {
+		log.Error("client", "failed to unsubscribe from ontology changes: %v", err)
+	}
+
+	if err := c.deleteAlarmSubscription(delAlarm); err != nil {
+		log.Error("client", "failed to unsubscribe from alarm changes: %v", err)
+	}
+
+	if err := c.deleteDataSubscription(delData); err != nil {
+		log.Error("client", "failed to unsubscribe from data changes: %v", err)
+	}
+
+	return nil
 }

@@ -58,5 +58,7 @@ func main() {
 		webhook.StartWebhookListener,
 	)
 
-	log.Info("main", "Terminate the app.")
+	log.Info("main", "Cancelling subscriptions...")
+	app.Teardown()
+	log.Info("main", "Terminating the app.")
 }

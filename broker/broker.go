@@ -593,3 +593,14 @@ func AcknowledgeAlarm(config appmodel.Configuration, sessionID, ackedBy, comment
 	log.Debug("client", "Successfully acknowledged alarm with session ID: %s", sessionID)
 	return nil
 }
+
+func CancelSubscriptions(config appmodel.Configuration) error {
+	client, err := newOpenBOSClient(config.Gwid, config.ClientID, config.ClientSecret, config.AppPublicAPIURL, baseURL, tokenURL)
+	if err != nil {
+		return fmt.Errorf("creating instance of client: %v", err)
+	}
+	if err := client.unsubscribeEverything(config.Id); err != nil {
+		return fmt.Errorf("unsubscribing: %v", err)
+	}
+	return nil
+}
