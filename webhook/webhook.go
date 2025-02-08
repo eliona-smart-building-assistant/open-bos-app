@@ -189,17 +189,17 @@ func (s *webhookServer) handleLiveAlarm(w http.ResponseWriter, r *http.Request) 
 		SessionId           string    `json:"sessionId"`           // SessionId: Id of the alarm. Called sessionId and not id because for a single alarm you can receive several events. Nullable.
 		Name                string    `json:"name"`                // Name: Name of the alarm. Nullable.
 		Description         string    `json:"description"`         // Description: Description of the alarm. Nullable.
-		Trigger             int       `json:"trigger"`             // Trigger: Trigger type of the alarm. Can be: Analognotvalue, analogvalue, digitaloff, digitalon, analogoutband2, analogoutband1, analoginband2, analoginband1, analoglo, analoglolo, analoghi, analoghihi, networkerror. Nullable.
+		Trigger             string    `json:"trigger"`             // Trigger: Trigger type of the alarm. Can be: Analognotvalue, analogvalue, digitaloff, digitalon, analogoutband2, analogoutband1, analoginband2, analoginband1, analoglo, analoglolo, analoghi, analoghihi, networkerror. Nullable.
 		Active              bool      `json:"active"`              // Active: True if still active on the bus.
 		Acked               bool      `json:"acked"`               // Acked: True if already acked.
 		Closed              bool      `json:"closed"`              // Closed: True if alarm is closed. This is true ONLY for an event during a subscription to notify the alarm disappears.
 		TimeStamp           time.Time `json:"timeStamp"`           // TimeStamp: UTC timestamp of the apparition of the alarm. Nullable.
-		Quality             int       `json:"quality"`             // Quality: Quality of the value that caused the alarm. "Good" for a valid value, "bad..." for a bad quality. Nullable.
+		Quality             string    `json:"quality"`             // Quality: Quality of the value that caused the alarm. "good" for a valid value, "bad..." for a bad quality. Nullable.
 		Value               any       `json:"value"`               // Value: Value that caused the alarm. Value format depends on the DataType of the datapoint instance. Nullable.
 		AckedBy             string    `json:"ackedBy"`             // AckedBy: The user who acknowledged the alarm. Nullable.
 		Comment             string    `json:"comment"`             // Comment: Comment added when acknowledging the alarm. Nullable.
 		NeedAcknowledge     bool      `json:"needAcknowledge"`     // NeedAcknowledge: True if alarm requires an ack.
-		Severity            int       `json:"severity"`            // Severity: Severity of the alarm. Can be: Log, Low, High, Urgent, Critical. Nullable.
+		Severity            string    `json:"severity"`            // Severity: Severity of the alarm. Can be: Log, Low, High, Urgent, Critical. Nullable.
 		AssetId             string    `json:"assetId"`             // AssetId: Id of the asset the alarm is attached to. Relevant especially for alarm attached to an orphan datapoint. Nullable.
 		SpaceId             string    `json:"spaceId"`             // SpaceId: Id of the space the alarm is attached to. Relevant especially for alarm attached to an orphan datapoint. Nullable.
 		AssetName           string    `json:"assetName"`           // AssetName: Name of the asset the alarm is attached to. Only if datapoint belongs to an asset. Nullable.
@@ -223,7 +223,7 @@ func (s *webhookServer) handleLiveAlarm(w http.ResponseWriter, r *http.Request) 
 	}
 
 	for _, alarm := range notification.Items {
-		if alarm.Quality != 2 {
+		if alarm.Quality != "good" {
 			log.Debug("webhook", "Received alarm with bad quality for SessionId %s: Quality=%v", alarm.SessionId, alarm.Quality)
 			continue
 		}
@@ -233,7 +233,7 @@ func (s *webhookServer) handleLiveAlarm(w http.ResponseWriter, r *http.Request) 
 			AlarmID:             alarm.SessionId,
 			DatapointInstanceId: alarm.DataPointInstanceId,
 			Timestamp:           alarm.TimeStamp,
-			Severity:            severityToString(alarm.Severity),
+			Severity:            alarm.Severity,
 			Active:              alarm.Active,
 			Acked:               alarm.Acked,
 			Closed:              alarm.Closed,
@@ -256,24 +256,6 @@ func (s *webhookServer) handleLiveAlarm(w http.ResponseWriter, r *http.Request) 
 	}
 
 	w.WriteHeader(http.StatusOK)
-}
-
-func severityToString(severity int) string {
-	switch severity {
-	case 1:
-		return "Info"
-	case 2:
-		return "Low"
-	case 3:
-		return "High"
-	case 4:
-		return "Urgent"
-	case 5:
-		return "Critical"
-	default:
-		log.Error("webhook", "alarm with unknown severity %v received", severity)
-		return "Unknown"
-	}
 }
 
 func parseConfigIDFromPath(path string) (int64, error) {
