@@ -273,7 +273,7 @@ components:
           nullable: true
         projectIDs:
           type: array
-          description: List of Eliona project ids for which this device should collect data. For each project id all smart devices are automatically created as an asset in Eliona. The mapping between Eliona is stored as an asset mapping in the KentixONE app.
+          description: List of Eliona project ids for which this device should collect data. For each project id all smart devices are automatically created as an asset in Eliona. The mapping between Eliona is stored as an asset mapping in the OpenBOS app.
           nullable: true
           items:
             type: string
