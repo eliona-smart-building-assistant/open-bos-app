@@ -45,7 +45,11 @@ func InsertConfig(ctx context.Context, config appmodel.Configuration) (appmodel.
 	if err := dbConfig.InsertG(ctx, boil.Infer()); err != nil {
 		return appmodel.Configuration{}, fmt.Errorf("inserting DB config: %v", err)
 	}
-	return config, nil
+	result, err := toAppConfig(&dbConfig)
+	if err != nil {
+		return appmodel.Configuration{}, fmt.Errorf("converting back to appConfig: %v", err)
+	}
+	return result, nil
 }
 
 func UpsertConfig(ctx context.Context, config appmodel.Configuration) (appmodel.Configuration, error) {
@@ -56,7 +60,11 @@ func UpsertConfig(ctx context.Context, config appmodel.Configuration) (appmodel.
 	if err := dbConfig.UpsertG(ctx, true, []string{"id"}, boil.Blacklist("id"), boil.Infer()); err != nil {
 		return appmodel.Configuration{}, fmt.Errorf("inserting DB config: %v", err)
 	}
-	return config, nil
+	result, err := toAppConfig(&dbConfig)
+	if err != nil {
+		return appmodel.Configuration{}, fmt.Errorf("converting back to appConfig: %v", err)
+	}
+	return result, nil
 }
 
 func UpdateConfigOntologyVersion(ctx context.Context, config appmodel.Configuration) error {
