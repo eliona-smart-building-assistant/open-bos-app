@@ -32,7 +32,7 @@ import (
 // const baseURL = "https://api.buildings.ability.abb/buildings/openbos/apiproxy/v1"
 // todo: change *scope* to prod as well
 // const baseURL = "http://localhost:5000"
-const baseURL = "https://dev.api.buildings.ability.abb/buildings/openbos/apiproxy/v1"
+const baseURL = "https://api.buildings.ability.abb/buildings/openbos/apiproxy/v1"
 
 const tokenURL = "https://login.microsoftonline.com/372ee9e0-9ce0-4033-a64a-c07073a91ecd/oauth2/v2.0/token"
 
