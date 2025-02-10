@@ -71,7 +71,7 @@ func (c *openBOSClient) authenticateWithClientCredentials() error {
 	data.Set("grant_type", "client_credentials")
 	data.Set("client_id", c.clientID)
 	data.Set("client_secret", c.clientSecret)
-	data.Set("scope", "api://dev.openbos/.default")
+	data.Set("scope", "api://openbos/.default")
 
 	req, err := http.NewRequest("POST", c.tokenURL, bytes.NewBufferString(data.Encode()))
 	if err != nil {
