@@ -21,7 +21,7 @@ info:
   description: API to access and configure the OpenBOS app
 externalDocs:
   description: Find out more about the OpenBOS app
-  url: https://github.com/eliona-smart-building-assistant/open-bos-app
+  url: https://doc.eliona.io/collection/eliona-english/eliona-apps/apps/openbos
 servers:
   - url: "https://{server}/v1"
     variables:
@@ -36,17 +36,17 @@ tags:
   - name: Configuration
     description: Configure the app
     externalDocs:
-      url: https://github.com/eliona-smart-building-assistant/open-bos-app
+      url: https://doc.eliona.io/collection/eliona-english/eliona-apps/apps/openbos
 
   - name: Version
     description: API version
     externalDocs:
-      url: https://github.com/eliona-smart-building-assistant/open-bos-app
+      url: https://doc.eliona.io/collection/eliona-english/eliona-apps/apps/openbos
 
   - name: Customization
     description: Help to customize Eliona environment
     externalDocs:
-      url: https://github.com/eliona-smart-building-assistant/open-bos-app
+      url: https://doc.eliona.io/collection/eliona-english/eliona-apps/apps/openbos
 
 paths:
   /configs:

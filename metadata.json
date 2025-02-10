@@ -6,15 +6,15 @@
     "de": "OpenBOS"
   },
   "description": {
-    "en": "The OpenBOS app is used to access OpenBOS.",
-    "de": "Die OpenBOS App ermöglicht den Zugriff auf OpenBOS."
+    "en": "The OpenBOS app is used to access ABB OpenBOS.",
+    "de": "Die OpenBOS App ermöglicht den Zugriff auf ABB OpenBOS."
   },
   "dashboardTemplateNames": [
     "OpenBOS"
   ],
   "apiUrl": "v1",
   "apiSpecificationPath": "/version/openapi.json",
-  "documentationUrl": "https://doc.eliona.io/eliona/referenzen/app-entwicklung",
+  "documentationUrl": "https://doc.eliona.io/collection/eliona-english/eliona-apps/apps/openbos",
   "useEnvironment": [
     "CONNECTION_STRING",
     "INIT_CONNECTION_STRING",
