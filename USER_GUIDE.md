@@ -24,7 +24,7 @@ Eliona needs the gateway ID, client ID and client secret for authentication.
 
 ### Configure the OpenBOS app
 
-Configurations can be created in Eliona under `Settings > Apps > OpenBOS` which opens the app's [Generic Frontend](https://doc.eliona.io/collection/v/eliona-english/manuals/settings/apps). Here you can use the appropriate endpoint with the POST method. Each configuration requires the following data:
+Configurations can be created in Eliona under `Settings > Apps > OpenBOS` which opens the app's [Generic Frontend](https://doc.eliona.io/collection/v/eliona-english/manuals/settings/apps). Here you can use the `\configs` with the POST method. Each configuration requires the following data:
 
 | Attribute         | Description                                               |
 |-------------------|-----------------------------------------------------------|
