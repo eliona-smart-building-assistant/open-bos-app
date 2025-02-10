@@ -31,6 +31,16 @@ const masterPropertyAttribute = "is_master"
 
 var ErrNoUpdate = errors.New("no new version available")
 
+func TestAuthentication(config appmodel.Configuration) error {
+	client, err := newOpenBOSClient(config.Gwid, config.ClientID, config.ClientSecret, config.AppPublicAPIURL, baseURL, tokenURL)
+	if err != nil {
+		return fmt.Errorf("creating instance of client: %v", err)
+	}
+
+	_, err = client.getOntologyVersion()
+	return err
+}
+
 // [datapoint-attribution]
 var datapointBelongingToAssetTemplate = make(map[string]datapointTemplatePreprocessedInfo) // map[datapointTemplateID]datapoints
 type datapointTemplatePreprocessedInfo struct {

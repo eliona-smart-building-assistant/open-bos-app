@@ -18,9 +18,11 @@ package apiservices
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	apiserver "open-bos/api/generated"
 	appmodel "open-bos/app/model"
+	"open-bos/broker"
 	dbhelper "open-bos/db/helper"
 )
 
@@ -49,6 +51,9 @@ func (s *ConfigurationAPIService) GetConfigurations(ctx context.Context) (apiser
 
 func (s *ConfigurationAPIService) PostConfiguration(ctx context.Context, config apiserver.Configuration) (apiserver.ImplResponse, error) {
 	appConfig := toAppConfig(config)
+	if err := broker.TestAuthentication(appConfig); err != nil {
+		return apiserver.ImplResponse{Code: http.StatusBadRequest}, fmt.Errorf("testing authentication: %v", err)
+	}
 	insertedConfig, err := dbhelper.InsertConfig(ctx, appConfig)
 	if err != nil {
 		return apiserver.ImplResponse{Code: http.StatusInternalServerError}, err
@@ -70,6 +75,9 @@ func (s *ConfigurationAPIService) GetConfigurationById(ctx context.Context, conf
 func (s *ConfigurationAPIService) PutConfigurationById(ctx context.Context, configId int64, config apiserver.Configuration) (apiserver.ImplResponse, error) {
 	config.Id = &configId
 	appConfig := toAppConfig(config)
+	if err := broker.TestAuthentication(appConfig); err != nil {
+		return apiserver.ImplResponse{Code: http.StatusBadRequest}, fmt.Errorf("testing authentication: %v", err)
+	}
 	upsertedConfig, err := dbhelper.UpsertConfig(ctx, appConfig)
 	if err != nil {
 		return apiserver.ImplResponse{Code: http.StatusInternalServerError}, err
