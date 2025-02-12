@@ -331,7 +331,7 @@ func FetchOntology(config appmodel.Configuration) (ontologyVersion int32, assetT
 		}
 	}
 
-	return version, assetTypes, assets, nil
+	return ontology.Settings.OntologyVersion, assetTypes, assets, nil
 }
 
 func buildAssetHierarchy(asset *eliona.Asset, assets *[]eliona.Asset, spaces map[string]*ontologySpaceDTO, assetsMap map[string]ontologyAssetDTO, config appmodel.Configuration) {
