@@ -234,6 +234,28 @@ func InsertAssetAttributes(ctx context.Context, assetId int64, datapoints []appm
 			Name:       datapoint.AttributeNamePrefix,
 		}
 
+		var existing dbgen.OpenbosDatapoint
+
+		err := dbgen.OpenbosDatapoints(
+			dbgen.OpenbosDatapointWhere.ProviderID.EQ(datapoint.ProviderID),
+		).BindG(ctx, &existing)
+
+		if err != nil && err != sql.ErrNoRows {
+			return fmt.Errorf("checking existing datapoint: %v", err)
+		}
+
+		// If a record exists, compare other fields
+		if existing.ID != 0 {
+			if existing.Subtype == datapoint.Subtype && existing.Name == datapoint.AttributeNamePrefix {
+				// Fields are identical, so ignore insertion
+				continue
+			} else {
+				// Fields are different, return an error
+				return fmt.Errorf("conflict: datapoint with provider_id %s exists but has different values: %+v", datapoint.ProviderID, existing)
+			}
+		}
+
+		// Insert if no existing record
 		if err := dbDatapoint.InsertG(ctx, boil.Infer()); err != nil {
 			return fmt.Errorf("inserting datapoint %+v: %v", datapoint, err)
 		}
