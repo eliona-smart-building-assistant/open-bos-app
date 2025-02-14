@@ -97,9 +97,30 @@ BEGIN
 
 	-- Ignore errors if 'open_bos.configuration' doesn't exist
 	BEGIN
-		UPDATE open_bos."configuration" 
-		SET "ontology_version" = '0' 
-		WHERE "id" = '1';
+		UPDATE open_bos.configuration 
+		SET ontology_version = '0' 
+		WHERE id = '1';
+	EXCEPTION WHEN undefined_table THEN
+		-- Do nothing
+	END;
+
+	-- Ignore errors if 'open_bos.openbos_datapoint' doesn't exist
+	BEGIN
+		DELETE FROM open_bos.openbos_datapoint;
+	EXCEPTION WHEN undefined_table THEN
+		-- Do nothing
+	END;
+
+	-- Ignore errors if 'open_bos.eliona_attribute' doesn't exist
+	BEGIN
+		DELETE FROM open_bos.eliona_attribute;
+	EXCEPTION WHEN undefined_table THEN
+		-- Do nothing
+	END;
+
+	-- Ignore errors if 'open_bos.alarm' doesn't exist
+	BEGIN
+		DELETE FROM open_bos.alarm;
 	EXCEPTION WHEN undefined_table THEN
 		-- Do nothing
 	END;
