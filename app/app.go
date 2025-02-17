@@ -150,7 +150,7 @@ func CollectConfigData(configID int64) {
 }
 
 func collectResources(config *appmodel.Configuration) error {
-	version, assetTypes, root, err := broker.FetchOntology(*config)
+	version, assetTypes, assets, err := broker.FetchOntology(*config)
 	if errors.Is(err, broker.ErrNoUpdate) {
 		log.Debug("broker", "ontology is up-to-date")
 		return nil
@@ -165,7 +165,7 @@ func collectResources(config *appmodel.Configuration) error {
 			return err
 		}
 	}
-	if err := eliona.CreateAssets(*config, root); err != nil {
+	if err := eliona.CreateAssets(*config, assets); err != nil {
 		log.Error("eliona", "creating assets: %v", err)
 		return err
 	}
