@@ -82,8 +82,8 @@ func notifyUser(userId string, projectId string, assetsCreated int) error {
 				User:      userId,
 				ProjectId: *api.NewNullableString(&projectId),
 				Message: *api.NewNullableTranslation(&api.Translation{
-					De: api.PtrString(fmt.Sprintf("OpenBOS App hat %d neue Assets angelegt. Diese sind nun im Asset-Management verfügbar.", assetsCreated)),
-					En: api.PtrString(fmt.Sprintf("OpenBOS app added %v new assets. They are now available in Asset Management.", assetsCreated)),
+					De: api.PtrString(fmt.Sprintf("OpenBOS-Ontologie wurde synchronisiert. %v Assets werden synchron gehalten.", assetsCreated)),
+					En: api.PtrString(fmt.Sprintf("OpenBOS ontology was synchronized. %v assets are kept in sync.", assetsCreated)),
 				}),
 			}).
 		Execute()
