@@ -17,6 +17,7 @@ package eliona
 
 import (
 	"fmt"
+	"net/http"
 	appmodel "open-bos/app/model"
 	"time"
 
@@ -32,10 +33,23 @@ func CreateAssets(config appmodel.Configuration, assets []Asset) error {
 		elionaAssets = append(elionaAssets, asset.AssetWithParentReferences(&a))
 	}
 	for _, projectId := range config.ProjectIDs {
+		root, err := fetchRootFromEliona(assets[0], projectId)
+		if err != nil {
+			return fmt.Errorf("fetching root: %v", err)
+		}
 		log.Debug("eliona", "started creating assets for projectID %v", projectId)
+		// todo: this does not return assets created anymore, but total number of assets!
 		assetsCreated, err := asset.CreateAssetsBulk(elionaAssets, projectId)
 		if err != nil {
 			return err
+		}
+
+		if root != nil {
+			// Restore root to allow moving the whole structure to subdirectories in Eliona.
+			_, err := asset.UpsertAsset(*root)
+			if err != nil {
+				return fmt.Errorf("returning root asset to its original state")
+			}
 		}
 		log.Debug("eliona", "finished creating %v assets", assetsCreated)
 		if assetsCreated != 0 {
@@ -43,13 +57,40 @@ func CreateAssets(config appmodel.Configuration, assets []Asset) error {
 				return fmt.Errorf("notifying user about CAC: %v", err)
 			}
 		}
+
 		log.Debug("eliona", "started upserting properties data for assets")
 		if err := upsertData(assets, projectId); err != nil {
 			return fmt.Errorf("upserting data: %v", err)
 		}
 		log.Debug("eliona", "finished upserting properties data for assets")
+
 	}
 	return nil
+}
+
+func fetchRootFromEliona(rootAsset Asset, projectId string) (*api.Asset, error) {
+	rootID, err := rootAsset.GetAssetID(projectId)
+	if err != nil {
+		return nil, fmt.Errorf("getting root asset ID: %v", err)
+	}
+	if rootID == nil {
+		return nil, nil
+	}
+	root, err := getAsset(*rootID)
+	if err != nil {
+		return nil, fmt.Errorf("getting root asset from API: %v", err)
+	}
+	return root, nil
+}
+
+func getAsset(assetId int32) (*api.Asset, error) {
+	asset, res, err := client.NewClient().AssetsAPI.
+		GetAssetById(client.AuthenticationContext(), assetId).
+		Execute()
+	if res.StatusCode == http.StatusNotFound {
+		return nil, nil
+	}
+	return asset, err
 }
 
 func upsertData(assets []Asset, projectId string) error {
