@@ -75,6 +75,14 @@ Some fields have defaults, so the minimal configuration JSON can be simplified:
 
 Once configured, the app starts Continuous Asset Creation (CAC). Discovered resources are automatically created as assets in Eliona, and user who configured the app is notified via Eliona’s notification system.
 
+### Structuring assets
+
+After creation of assets, the assets are organized in Eliona the same way they are organized in OpenBOS. This structure is kept synchronized, and any movements in Eliona (e.g. renaming asset or moving a room to a different building) will be overwritten with next ontology update.
+
+Only exception is the asset "OpenBOS root" asset. You can rename or move this asset wherever you want, and the whole ontology will be moved with it.
+
+It is not possible to change GAIs in Eliona for any of assets.
+
 ### Asset filtering
 
 In case it's not desired to import all assets from OpenBOS to Eliona, it's possible to write an asset filter that would include only matching assets. This app is able to filter the assets by: ID, Name and Template ID (for both assets and spaces).
@@ -104,5 +112,7 @@ In case an asset is deleted from OpenBOS and there is still an alarm linked to t
 ## Alarms
 
 Alarms triggered in OpenBOS are synchronized to Eliona. These are created in Eliona as alarm rules of type "External", and are managed by updates received from OpenBOS -> if an alarm is triggered in OpenBOS, it will be triggered in Eliona as well. Similarly if the alarm is gone.
+
+> *External alarms* are alarms not managed by Eliona. Alarm rules are shown so users can tag and categorize them, but Eliona is not responsible for checking whether the alarm should be raised or not. An external system (in this case OpenBOS) is responsible for triggering the alarms.
 
 If the alarm needs to be acknowledged, users can acknowledge it in Eliona, and this acknowledgement will get synchronized to OpenBOS.
