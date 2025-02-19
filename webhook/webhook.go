@@ -41,7 +41,7 @@ func newWebhookServer() *webhookServer {
 }
 
 func (s *webhookServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	log.Debug("webhook", "Received request for URL: %s, Method: %s", r.URL.Path, r.Method)
+	log.Info("webhook", "Received request for URL: %s, Method: %s", r.URL.Path, r.Method)
 
 	configID, err := parseConfigIDFromPath(r.URL.Path)
 	if err != nil {
