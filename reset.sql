@@ -34,23 +34,23 @@ DROP SCHEMA IF EXISTS open_bos CASCADE;
 
 DELETE FROM heap
 WHERE asset_id IN (
-    SELECT asset_id
-    FROM asset
-    WHERE asset_type LIKE E'open\\_bos\\_%'
+	SELECT asset_id
+	FROM asset
+	WHERE asset_type LIKE E'open\\_bos\\_%'
 );
 
 DELETE FROM alarm
 WHERE asset_id IN (
-    SELECT asset_id
-    FROM asset
-    WHERE asset_type LIKE E'open\\_bos\\_%'
+	SELECT asset_id
+	FROM asset
+	WHERE asset_type LIKE E'open\\_bos\\_%'
 );
 
 DELETE FROM alarm_cfg
 WHERE asset_id IN (
-    SELECT asset_id
-    FROM asset
-    WHERE asset_type LIKE E'open\\_bos\\_%'
+	SELECT asset_id
+	FROM asset
+	WHERE asset_type LIKE E'open\\_bos\\_%'
 );
 
 DELETE FROM attribute_schema
@@ -64,17 +64,17 @@ WHERE asset_type LIKE E'open\\_bos\\_%';
 
 DELETE FROM public.widget_data
 WHERE widget_id IN (
-    SELECT public.widget.id
-    FROM public.widget
-        JOIN public.dashboard USING (dashboard_id)
-    WHERE public.dashboard.name LIKE 'OpenBOS%'
+	SELECT public.widget.id
+	FROM public.widget
+		JOIN public.dashboard USING (dashboard_id)
+	WHERE public.dashboard.name LIKE 'OpenBOS%'
 );
 
 DELETE FROM public.widget
 WHERE dashboard_id IN (
-    SELECT dashboard_id
-    FROM public.dashboard
-    WHERE name LIKE 'OpenBOS%'
+	SELECT dashboard_id
+	FROM public.dashboard
+	WHERE name LIKE 'OpenBOS%'
 );
 
 DELETE FROM public.dashboard
@@ -88,49 +88,49 @@ SET SCHEMA 'public';
 
 DO $$
 BEGIN
-    -- Ignore errors if 'open_bos.asset' doesn't exist
-    BEGIN
-        DELETE FROM open_bos.asset;
-    EXCEPTION WHEN undefined_table THEN
-        -- Do nothing
-    END;
+	-- Ignore errors if 'open_bos.asset' doesn't exist
+	BEGIN
+		DELETE FROM open_bos.asset;
+	EXCEPTION WHEN undefined_table THEN
+		-- Do nothing
+	END;
 
-    -- Ignore errors if 'open_bos.configuration' doesn't exist
-    BEGIN
-        UPDATE open_bos.configuration 
-        SET ontology_version = '0' 
-        WHERE id = '1';
-    EXCEPTION WHEN undefined_table THEN
-        -- Do nothing
-    END;
+	-- Ignore errors if 'open_bos.configuration' doesn't exist
+	BEGIN
+		UPDATE open_bos.configuration 
+		SET ontology_version = '0' 
+		WHERE id = '1';
+	EXCEPTION WHEN undefined_table THEN
+		-- Do nothing
+	END;
 
-    -- Ignore errors if 'open_bos.openbos_datapoint' doesn't exist
-    BEGIN
-        DELETE FROM open_bos.openbos_datapoint;
-    EXCEPTION WHEN undefined_table THEN
-        -- Do nothing
-    END;
+	-- Ignore errors if 'open_bos.openbos_datapoint' doesn't exist
+	BEGIN
+		DELETE FROM open_bos.openbos_datapoint;
+	EXCEPTION WHEN undefined_table THEN
+		-- Do nothing
+	END;
 
-    -- Ignore errors if 'open_bos.eliona_attribute' doesn't exist
-    BEGIN
-        DELETE FROM open_bos.eliona_attribute;
-    EXCEPTION WHEN undefined_table THEN
-        -- Do nothing
-    END;
+	-- Ignore errors if 'open_bos.eliona_attribute' doesn't exist
+	BEGIN
+		DELETE FROM open_bos.eliona_attribute;
+	EXCEPTION WHEN undefined_table THEN
+		-- Do nothing
+	END;
 
-    -- Ignore errors if 'open_bos.alarm' doesn't exist
-    BEGIN
-        DELETE FROM open_bos.alarm;
-    EXCEPTION WHEN undefined_table THEN
-        -- Do nothing
-    END;
+	-- Ignore errors if 'open_bos.alarm' doesn't exist
+	BEGIN
+		DELETE FROM open_bos.alarm;
+	EXCEPTION WHEN undefined_table THEN
+		-- Do nothing
+	END;
 END $$;
 
 DELETE FROM public.heap
 WHERE asset_id IN (
-    SELECT asset_id
-    FROM public.asset
-    WHERE asset_type LIKE E'open\\_bos\\_%'
+	SELECT asset_id
+	FROM public.asset
+	WHERE asset_type LIKE E'open\\_bos\\_%'
 );
 
 DELETE FROM public.attribute_schema

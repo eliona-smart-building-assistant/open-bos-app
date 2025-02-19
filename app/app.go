@@ -388,15 +388,10 @@ func UpdateAlarmInEliona(update AlarmUpdate) {
 		dbhelper.SetConfigActiveState(context.Background(), config, true)
 	}
 
-	log.Debug("app", "Updating alarm in Eliona: %+v", update)
-
 	alarms, err := dbhelper.GetAlarmsByOpenbosID(update.AlarmID)
 	if err != nil {
 		log.Error("dbhelper", "getting alarms for alarmID %s: %v", update.AlarmID, err)
 		return
-	}
-	if len(alarms) == 0 {
-		log.Error("app", "did not find any rule for openBOS alarm %v", update.AlarmID)
 	}
 	for _, alarm := range alarms {
 		if err := eliona.UpdateAlarmStatus(alarm.ElionaAlarmID, update.Timestamp, update.Acked, update.getAckMessage(), update.Closed); err != nil {
