@@ -247,7 +247,7 @@ func (c *openBOSClient) subscribeToOntologyChanges(configID int64) (*subscriptio
 	}
 
 	sub := subscriptionCreateDTO{
-		MinSendTime:       10000,
+		MinSendTime:       60000,
 		MaxSendTime:       60000,
 		AlignSendTime:     60000,
 		WebHookURL:        common.Ptr(webhookURL),
@@ -287,7 +287,6 @@ func (c *openBOSClient) subscribeToDataChanges(configID int64) error {
 	}
 
 	sub := subscriptionCreateDTO{
-		MinSendTime:       10000,
 		MaxSendTime:       60000,
 		AlignSendTime:     60000,
 		WebHookURL:        common.Ptr(webhookURL),
@@ -612,7 +611,7 @@ func (c *openBOSClient) subscribeToAlarmChanges(configID int64) error {
 	}
 
 	sub := subscriptionCreateDTO{
-		MinSendTime:       10000,
+		MinSendTime:       60000,
 		MaxSendTime:       60000,
 		AlignSendTime:     60000,
 		WebHookURL:        common.Ptr(webhookURL),
