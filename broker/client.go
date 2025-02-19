@@ -557,7 +557,7 @@ type ontologyFullLiveAlarmDTO struct {
 	SpaceID             string      `json:"spaceId"`
 	AssetName           string      `json:"assetName"`
 	SpaceName           string      `json:"spaceName"`
-	DatapointName       string      `json:"datapointName"`
+	DatapointName       string      `json:"dataPointName"`
 	UnitSymbol          string      `json:"unitSymbol"`
 	Tags                []string    `json:"tags,omitempty"`
 }

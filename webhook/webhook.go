@@ -180,11 +180,12 @@ func (s *webhookServer) handleLiveAlarm(w http.ResponseWriter, r *http.Request) 
 	defer r.Body.Close()
 
 	log.Debug("webhook", "Received alarm request headers: %+v", r.Header)
-	log.Debug("webhook", "Request body: %s", body)
-	log.Debug("webhook", "Method: %s", r.Method)
-	log.Debug("webhook", "Config ID: %d", configID)
+	log.Trace("webhook", "Request body: %s", body)
+	log.Trace("webhook", "Method: %s", r.Method)
+	log.Trace("webhook", "Config ID: %d", configID)
 
 	type Item struct {
+		AlarmInstanceId     string    `json:"alarmInstanceId"`     // Unique ID of the alarm instance.
 		DataPointInstanceId string    `json:"dataPointInstanceId"` // DataPointInstanceId: Id of datapoint that caused the alarm. Nullable.
 		SessionId           string    `json:"sessionId"`           // SessionId: Id of the alarm. Called sessionId and not id because for a single alarm you can receive several events. Nullable.
 		Name                string    `json:"name"`                // Name: Name of the alarm. Nullable.
@@ -204,7 +205,7 @@ func (s *webhookServer) handleLiveAlarm(w http.ResponseWriter, r *http.Request) 
 		SpaceId             string    `json:"spaceId"`             // SpaceId: Id of the space the alarm is attached to. Relevant especially for alarm attached to an orphan datapoint. Nullable.
 		AssetName           string    `json:"assetName"`           // AssetName: Name of the asset the alarm is attached to. Only if datapoint belongs to an asset. Nullable.
 		SpaceName           string    `json:"spaceName"`           // SpaceName: Name of the space the alarm is attached to. Only if datapoint belongs to a space. Nullable.
-		DatapointName       string    `json:"datapointName"`       // DatapointName: Name of the datapoint the alarm is attached to. Nullable.
+		DatapointName       string    `json:"dataPointName"`       // DatapointName: Name of the datapoint the alarm is attached to. Nullable.
 		UnitSymbol          string    `json:"unitSymbol"`          // UnitSymbol: Unit symbol of the value. Nullable.
 		Tags                []string  `json:"tags"`                // Tags: Tags of the datapoint plus space/asset. Nullable.
 	}
@@ -230,7 +231,7 @@ func (s *webhookServer) handleLiveAlarm(w http.ResponseWriter, r *http.Request) 
 
 		alarmUpdate := app.AlarmUpdate{
 			ConfigID:            configID,
-			AlarmID:             alarm.SessionId,
+			AlarmID:             alarm.AlarmInstanceId,
 			DatapointInstanceId: alarm.DataPointInstanceId,
 			Timestamp:           alarm.TimeStamp,
 			Severity:            alarm.Severity,
