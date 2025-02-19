@@ -144,6 +144,7 @@ func (s *webhookServer) handleLivedataUpdate(w http.ResponseWriter, r *http.Requ
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
+	log.Info("tmp", "received data update %+v", liveDataUpdate) // todo: rm
 
 	for _, item := range liveDataUpdate.Items {
 		timestamp, err := time.Parse(time.RFC3339, item.TimeStamp)
