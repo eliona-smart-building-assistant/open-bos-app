@@ -87,6 +87,9 @@ func TestFetchOntology(t *testing.T) {
 		Name: "open_bos_asset-template-1",
 		Translation: *api.NewNullableTranslation(&api.Translation{
 			En: common.Ptr("OpenBOS Temperature Sensor"),
+			De: common.Ptr("OpenBOS Temperature Sensor"),
+			Fr: common.Ptr("OpenBOS Temperature Sensor"),
+			It: common.Ptr("OpenBOS Temperature Sensor"),
 		}),
 		Attributes: []api.AssetTypeAttribute{
 			{

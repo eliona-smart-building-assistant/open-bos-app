@@ -58,6 +58,9 @@ func convertAssetTemplateToAssetType(template assetTemplate) api.AssetType {
 		Name: "open_bos_" + template.ID,
 		Translation: *api.NewNullableTranslation(&api.Translation{
 			En: &translatedName,
+			De: &translatedName,
+			Fr: &translatedName,
+			It: &translatedName,
 		}),
 		Attributes: []api.AssetTypeAttribute{},
 	}
