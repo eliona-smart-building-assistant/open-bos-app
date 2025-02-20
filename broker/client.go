@@ -220,9 +220,14 @@ func (c *openBOSClient) getOntologyVersion() (int32, error) {
 }
 
 type subscriptionCreateDTO struct {
-	MinSendTime       int32    `json:"minSendTime"`                // [ms]Minimum time between two events. To avoid events flushing. Highly recommended. If zero, events will be sent on the fly (NOT recommended). Min value: 1 mn (60 000)
+	// MinSendTime : 5 mn. You have event with minimum 5 mn between events.
+	// If you do not have an event for the last 10 mn, then if an event occur it will be send immediately
+	// AlignSendTime. Same. But two differences.
+	// First event will be send on align time. That is 10h 10h5, 10h10 etc ...
+	// If you do not have an event for the last 10 mn, then if an event occur it will be send on the next rounded 5mn hour
+	MinSendTime       int32    `json:"minSendTime"`                // [ms]Minimum time between two events. To avoid events flushing. Highly recommended. If zero, events will be sent on the fly (NOT recommended). Min value: 1 mn (60 000). Set either this or AlignSendTime
+	AlignSendTime     int32    `json:"alignSendTime"`              // [ms]Align time between two events. Min value: 1 mn. Set either this or MinSendTime
 	MaxSendTime       int32    `json:"maxSendTime"`                // [ms]Maximum time between two events. Can be used to ensure the client application that the connection is alive. If nothing must be sent, the edge will send an empty event. Min value: 1 mn
-	AlignSendTime     int32    `json:"alignSendTime"`              // [ms]Align time between two events. Min value: 1 mn
 	Timestamp         *string  `json:"timestamp,omitempty"`        // UTC date. To receive only datapoints or properties that change since the timestamp.
 	WebHookURL        *string  `json:"webhookURL,omitempty"`       // URL of the webhook.
 	WebHookRetries    int32    `json:"webhookRetryCount"`          // Interval of retries (in seconds) when an error occurs while sending an event.
@@ -249,7 +254,6 @@ func (c *openBOSClient) subscribeToOntologyChanges(configID int64) (*subscriptio
 	sub := subscriptionCreateDTO{
 		MinSendTime:       60000,
 		MaxSendTime:       240000,
-		AlignSendTime:     120000,
 		WebHookURL:        common.Ptr(webhookURL),
 		WebHookRetries:    15,
 		WebHookRetryDelay: 2,
@@ -287,8 +291,8 @@ func (c *openBOSClient) subscribeToDataChanges(configID int64) error {
 	}
 
 	sub := subscriptionCreateDTO{
+		// MinSendTime:       60000,
 		MaxSendTime:       240000,
-		AlignSendTime:     60000,
 		WebHookURL:        common.Ptr(webhookURL),
 		WebHookRetries:    15,
 		WebHookRetryDelay: 2,
@@ -611,9 +615,8 @@ func (c *openBOSClient) subscribeToAlarmChanges(configID int64) error {
 	}
 
 	sub := subscriptionCreateDTO{
-		MinSendTime:       60000,
+		// MinSendTime:       60000,
 		MaxSendTime:       240000,
-		AlignSendTime:     120000,
 		WebHookURL:        common.Ptr(webhookURL),
 		WebHookRetries:    15,
 		WebHookRetryDelay: 2,
