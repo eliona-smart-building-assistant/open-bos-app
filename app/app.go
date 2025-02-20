@@ -394,12 +394,47 @@ func UpdateAlarmInEliona(update AlarmUpdate) {
 		log.Error("dbhelper", "getting alarms for alarmID %s: %v", update.AlarmID, err)
 		return
 	}
+	message := buildAlarmUpdateMessage(update)
 	for _, alarm := range alarms {
-		if err := eliona.UpdateAlarmStatus(alarm.ElionaAlarmID, update.Timestamp, update.Acked, update.getAckMessage(), update.Closed); err != nil {
+		if err := eliona.UpdateAlarmStatus(alarm.ElionaAlarmID, message, update.Timestamp, update.Acked, update.getAckMessage(), update.Closed); err != nil {
 			log.Error("eliona", "triggering alarm: %v", err)
 			return
 		}
 	}
+}
+
+func buildAlarmUpdateMessage(alarm AlarmUpdate) map[string]interface{} {
+	message := make(map[string]interface{})
+
+	languageCodes := []string{"de", "en", "fr", "it"}
+
+	var descriptionPart string
+	if alarm.Description != "" {
+		descriptionPart = fmt.Sprintf(": %s", alarm.Description)
+	}
+	templateCome := fmt.Sprintf("%s%s {{asset.name}} ({{alarm.val}})", alarm.Name, descriptionPart)
+
+	come := make(map[string]string)
+	for _, lang := range languageCodes {
+		come[lang] = templateCome
+	}
+
+	goneTranslations := map[string]string{
+		"de": fmt.Sprintf("%s behoben", alarm.Name),
+		"en": fmt.Sprintf("%s resolved", alarm.Name),
+		"fr": fmt.Sprintf("%s résolu", alarm.Name),
+		"it": fmt.Sprintf("%s risolto", alarm.Name),
+	}
+
+	gone := make(map[string]string)
+	for _, lang := range languageCodes {
+		gone[lang] = goneTranslations[lang]
+	}
+
+	message["come"] = come
+	message["gone"] = gone
+
+	return message
 }
 
 // ListenForOutputChanges listens to output attribute changes from Eliona.

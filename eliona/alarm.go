@@ -56,10 +56,12 @@ func UpdateAlarm(alarmID int32, assetID int32, subtype, attribute string, priori
 	return submitAlarm(&alarmID, assetID, subtype, attribute, priority, subject, message)
 }
 
-func UpdateAlarmStatus(alarmID int32, appeared time.Time, ack bool, ackText string, closed bool) error {
+func UpdateAlarmStatus(alarmID int32, message map[string]interface{}, appeared time.Time, ack bool, ackText string, closed bool) error {
 	now := time.Now()
+
 	alarm := api.Alarm{
 		RuleId:    alarmID,
+		Message:   message,
 		Timestamp: *api.NewNullableTime(&appeared),
 	}
 
@@ -75,7 +77,7 @@ func UpdateAlarmStatus(alarmID int32, appeared time.Time, ack bool, ackText stri
 		Alarm(alarm).
 		Execute()
 	if err != nil {
-		return fmt.Errorf("updating alarm: %v", err)
+		return fmt.Errorf("updating alarm (%+v): %v", alarm, err)
 	}
 	return nil
 }
