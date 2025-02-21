@@ -83,6 +83,9 @@ func fetchRootsFromEliona(assets []Asset, projectId string) ([]*api.Asset, error
 			if err != nil {
 				return nil, fmt.Errorf("getting root asset from API: %v", err)
 			}
+			if root == nil {
+				continue
+			}
 
 			apiRoots = append(apiRoots, root)
 		}
