@@ -278,29 +278,22 @@ func FetchOntology(config appmodel.Configuration) (ontologyVersion int32, assetT
 		assetTypes = append(assetTypes, assetType)
 	}
 
-	root := eliona.Asset{
-		ID:                  "",
-		TemplateID:          "root",
-		Name:                "OpenBOS",
-		Config:              &config,
-		LocationalParentGAI: "",
-		FunctionalParentGAI: "",
-	}
-
-	// Initialize spaces map with root space
 	spaces := make(map[string]*ontologySpaceDTO)
-	spaces[""] = &ontologySpaceDTO{}
 	// Build spaces map
 	for _, space := range ontology.Spaces {
 		spaceCopy := space
 		spaces[space.ID] = &spaceCopy
 	}
 
+	var rootSpaces []ontologySpaceDTO
 	// Build parent-child relationships
 	for _, space := range ontology.Spaces {
 		if parentSpace, exists := spaces[space.ParentID]; exists {
 			parentSpace.children = append(parentSpace.children, *spaces[space.ID])
 			// No need to reassign parentSpace back to the map since it's a pointer
+		} else {
+			// This is a Site, serviving as a root
+			rootSpaces = append(rootSpaces, space)
 		}
 	}
 
@@ -310,8 +303,28 @@ func FetchOntology(config appmodel.Configuration) (ontologyVersion int32, assetT
 		assetsMap[asset.ID] = asset
 	}
 
-	// Build the asset hierarchy based on spaces
-	buildAssetHierarchy(&root, &assets, spaces, assetsMap, config)
+	for _, rootSpace := range rootSpaces {
+		asset := eliona.Asset{
+			ID:          rootSpace.ID,
+			Name:        rootSpace.Name,
+			TemplateID:  rootSpace.TemplateID,
+			Config:      &config,
+			IsRootSpace: true,
+		}
+		// Build the asset hierarchy based on spaces
+		buildAssetHierarchy(&asset, &assets, spaces, assetsMap, config)
+	}
+
+	unassigned := eliona.Asset{
+		ID:                  "",
+		TemplateID:          "unassigned",
+		Name:                "OpenBOS unassigned",
+		Config:              &config,
+		LocationalParentGAI: "",
+		FunctionalParentGAI: "",
+		IsRootSpace:         true,
+	}
+	assets = append(assets, unassigned)
 
 	// Handle assets not associated with any space
 	associatedAssetIDs := make(map[string]struct{})
@@ -328,8 +341,8 @@ func FetchOntology(config appmodel.Configuration) (ontologyVersion int32, assetT
 				Name:                asset.Name,
 				TemplateID:          asset.TemplateID,
 				Config:              &config,
-				LocationalParentGAI: root.GetGAI(),
-				FunctionalParentGAI: root.GetGAI(),
+				LocationalParentGAI: unassigned.GetGAI(),
+				FunctionalParentGAI: unassigned.GetGAI(),
 			})
 		}
 	}

@@ -132,17 +132,17 @@ func TestFetchOntology(t *testing.T) {
 		t.Fatalf("Expected 2 assets, got %v", len(assets))
 	}
 
-	rootAsset := assets[0] // Root should be the first asset in the slice
-	if rootAsset.Name != "OpenBOS" {
-		t.Errorf("Expected root asset name 'OpenBOS', got '%s'", rootAsset.Name)
+	unassignedCatcherAsset := assets[0] // unassignedCatcher should be the first asset in the slice
+	if unassignedCatcherAsset.Name != "OpenBOS unassigned" {
+		t.Errorf("Expected unassignedCatcher asset name 'OpenBOS unassigned', got '%s'", unassignedCatcherAsset.Name)
 	}
 
 	childAsset := assets[1]
 	if childAsset.Name != "Sensor 1" {
 		t.Errorf("Expected child asset name 'Sensor 1', got '%s'", childAsset.Name)
 	}
-	if childAsset.LocationalParentGAI != rootAsset.GetGAI() {
-		t.Errorf("childAsset LocationalParentGAI = %v, expected %v", childAsset.LocationalParentGAI, rootAsset.GetGAI())
+	if childAsset.LocationalParentGAI != unassignedCatcherAsset.GetGAI() {
+		t.Errorf("childAsset LocationalParentGAI = %v, expected %v", childAsset.LocationalParentGAI, unassignedCatcherAsset.GetGAI())
 	}
 }
 
@@ -488,24 +488,24 @@ func TestFetchOntologyWithSpaces(t *testing.T) {
 
 	assert.Equal(t, 4, len(assets), "There should be all assets")
 
-	rootAsset := assets[0]
-	assert.Equal(t, "OpenBOS", rootAsset.Name, "Root asset name mismatch")
-
-	// Check that "Building 1" has root asset as a parent
-	building1 := assets[1]
-	assert.Equal(t, rootAsset.GetGAI(), building1.FunctionalParentGAI, "Building 1 Functional parent")
-	assert.Equal(t, rootAsset.GetGAI(), building1.LocationalParentGAI, "Building 1 Locational parent")
+	// Check that "Building 1" is a root (typically it would be a "site")
+	building1 := assets[0]
+	assert.Equal(t, "", building1.FunctionalParentGAI, "Building 1 Functional parent")
+	assert.Equal(t, "", building1.LocationalParentGAI, "Building 1 Locational parent")
 	assert.Equal(t, "Building 1", building1.Name, "Building should come first")
 
 	// Check that 'Building 1' has 'Floor 1' as a locational child
-	floor1 := assets[2]
+	floor1 := assets[1]
 	assert.Equal(t, building1.GetGAI(), floor1.FunctionalParentGAI, "Floor 1 Functional parent")
 	assert.Equal(t, building1.GetGAI(), floor1.LocationalParentGAI, "Floor 1 Locational parent")
 	assert.Equal(t, "Floor 1", floor1.Name, "Floor should come second")
 
 	// Check that 'Floor 1' has 'Sensor 1'
-	sensor1 := assets[3]
+	sensor1 := assets[2]
 	assert.Equal(t, floor1.GetGAI(), sensor1.FunctionalParentGAI, "Sensor 1 Functional parent")
 	assert.Equal(t, floor1.GetGAI(), sensor1.LocationalParentGAI, "Sensor 1 Locational parent")
 	assert.Equal(t, "Sensor 1", sensor1.Name, "Sensor should come last")
+
+	rootAsset := assets[3]
+	assert.Equal(t, "OpenBOS unassigned", rootAsset.Name, "Root asset name mismatch")
 }

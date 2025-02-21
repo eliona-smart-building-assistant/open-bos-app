@@ -79,7 +79,9 @@ Once configured, the app starts Continuous Asset Creation (CAC). Discovered reso
 
 After creation of assets, the assets are organized in Eliona the same way they are organized in OpenBOS. This structure is kept synchronized, and any movements in Eliona (e.g. renaming asset or moving a room to a different building) will be overwritten with next ontology update.
 
-Only exception is the asset "OpenBOS root" asset. You can rename or move this asset wherever you want, and the whole ontology will be moved with it.
+Only exception are the root assets. Root assets are created in the top-level directory, and correspond to the root of OpenBOS places structure. Typically, there is one Site in this role. Another root asset is the "OpenBOS unassigned" asset, containing unassigned assets and datapoints.
+
+You can rename or move the root assets wherever you want, and the whole ontology will be moved with it.
 
 It is not possible to change GAIs in Eliona for any of assets.
 
@@ -107,7 +109,7 @@ Complex data types from OpenBOS are split into separate attributes in Eliona.
 
 ### Orphan datapoints
 
-In case an asset is deleted from OpenBOS and there is still an alarm linked to that datapoint, OpenBOS leaves that datapoint in the ontology. Eliona respects that behaviour, and assigns those datapoints to a root asset.
+In case an asset is deleted from OpenBOS and there is still an alarm linked to that datapoint, OpenBOS leaves that datapoint in the ontology. Eliona respects that behaviour, and assigns those datapoints to an "OpenBOS unassigned" asset.
 
 ## Alarms
 

@@ -198,13 +198,14 @@ func SetAllConfigsInactive(ctx context.Context) (int64, error) {
 	})
 }
 
-func InsertAsset(ctx context.Context, config appmodel.Configuration, projId string, globalAssetID string, assetId int32, providerId string) (assetID int64, err error) {
+func InsertAsset(ctx context.Context, config appmodel.Configuration, projId string, globalAssetID string, assetId int32, providerId string, isRootSpace bool) (assetID int64, err error) {
 	var dbAsset dbgen.Asset
 	dbAsset.ConfigurationID = config.Id
 	dbAsset.ProjectID = projId
 	dbAsset.GlobalAssetID = globalAssetID
 	dbAsset.AssetID = null.Int32From(assetId)
 	dbAsset.ProviderID = providerId
+	dbAsset.IsRootSpace = isRootSpace
 	if err := dbAsset.InsertG(ctx, boil.Infer()); err != nil {
 		return 0, fmt.Errorf("inserting asset: %v", err)
 	}

@@ -33,7 +33,7 @@ func CreateAssets(config appmodel.Configuration, assets []Asset) error {
 		elionaAssets = append(elionaAssets, asset.AssetWithParentReferences(&a))
 	}
 	for _, projectId := range config.ProjectIDs {
-		root, err := fetchRootFromEliona(assets[0], projectId)
+		roots, err := fetchRootsFromEliona(assets, projectId)
 		if err != nil {
 			return fmt.Errorf("fetching root: %v", err)
 		}
@@ -44,7 +44,7 @@ func CreateAssets(config appmodel.Configuration, assets []Asset) error {
 			return err
 		}
 
-		if root != nil {
+		for _, root := range roots {
 			// Restore root to allow moving the whole structure to subdirectories in Eliona.
 			_, err := asset.UpsertAsset(*root)
 			if err != nil {
@@ -68,19 +68,27 @@ func CreateAssets(config appmodel.Configuration, assets []Asset) error {
 	return nil
 }
 
-func fetchRootFromEliona(rootAsset Asset, projectId string) (*api.Asset, error) {
-	rootID, err := rootAsset.GetAssetID(projectId)
-	if err != nil {
-		return nil, fmt.Errorf("getting root asset ID: %v", err)
+func fetchRootsFromEliona(assets []Asset, projectId string) ([]*api.Asset, error) {
+	var apiRoots []*api.Asset
+	for _, asset := range assets {
+		if asset.IsRootSpace {
+			rootID, err := asset.GetAssetID(projectId)
+			if err != nil {
+				return nil, fmt.Errorf("getting root asset ID: %v", err)
+			}
+			if rootID == nil {
+				return nil, nil
+			}
+			root, err := getAsset(*rootID)
+			if err != nil {
+				return nil, fmt.Errorf("getting root asset from API: %v", err)
+			}
+
+			apiRoots = append(apiRoots, root)
+		}
 	}
-	if rootID == nil {
-		return nil, nil
-	}
-	root, err := getAsset(*rootID)
-	if err != nil {
-		return nil, fmt.Errorf("getting root asset from API: %v", err)
-	}
-	return root, nil
+
+	return apiRoots, nil
 }
 
 func getAsset(assetId int32) (*api.Asset, error) {

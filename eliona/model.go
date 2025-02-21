@@ -33,6 +33,8 @@ type Asset struct {
 
 	IsMaster int8 `eliona:"is_master" subtype:"property"`
 
+	IsRootSpace bool // Used for sites that are roots of the structure (Only these are allowed to be moved within Eliona asset structure)
+
 	LocationalParentGAI string
 	FunctionalParentGAI string
 
@@ -76,7 +78,7 @@ func (d *Asset) GetAssetID(projectID string) (*int32, error) {
 
 func (d *Asset) SetAssetID(elionaAssetID int32, projectID string) error {
 	ctx := context.Background()
-	assetID, err := conf.InsertAsset(ctx, *d.Config, projectID, d.GetGAI(), elionaAssetID, d.ID)
+	assetID, err := conf.InsertAsset(ctx, *d.Config, projectID, d.GetGAI(), elionaAssetID, d.ID, d.IsRootSpace)
 	if err != nil {
 		return fmt.Errorf("inserting asset to config db: %v", err)
 	}

@@ -40,7 +40,8 @@ create table if not exists open_bos.asset
 	project_id       text      not null,
 	global_asset_id  text      not null,
 	provider_id      text      not null,
-	asset_id         integer
+	asset_id         integer,
+	is_root_space    boolean not null default false
 );
 
 create table if not exists open_bos.openbos_datapoint

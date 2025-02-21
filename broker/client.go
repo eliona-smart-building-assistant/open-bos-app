@@ -378,16 +378,16 @@ func (ontology ontologyDTO) getAssetTemplates(orphanDatapoints []ontologyDatapoi
 		}
 	}
 
-	// Root asset containing orphan datapoints
-	rootAsset := ontologyAssetOrSpaceTemplateDTO{
-		ID:   "root",
-		Name: "root",
+	// Asset containing orphan datapoints
+	unassignedAsset := ontologyAssetOrSpaceTemplateDTO{
+		ID:   "unassigned",
+		Name: "unassigned",
 	}
-	ontology.SpaceTemplates = append(ontology.SpaceTemplates, rootAsset)
+	ontology.SpaceTemplates = append(ontology.SpaceTemplates, unassignedAsset)
 	for _, orphanDatapoint := range orphanDatapoints {
 		for _, dt := range ontology.DatapointTemplates {
 			if orphanDatapoint.TemplateID == dt.ID {
-				datapointTemplateMap["root"] = append(datapointTemplateMap["root"], dt)
+				datapointTemplateMap["unassigned"] = append(datapointTemplateMap["unassigned"], dt)
 			}
 		}
 	}
