@@ -41,7 +41,8 @@ type ontologyDTO struct {
 }
 
 type ontologySettingsDTO struct {
-	OntologyVersion int32 `json:"version"`
+	StructureVersion int32 `json:"version"`
+	OntologyVersion  int32 `json:"structureVersion"` // Yes, really.
 }
 
 type ontologyAssetOrSpaceTemplateDTO struct {
