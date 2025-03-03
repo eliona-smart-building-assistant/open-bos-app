@@ -87,9 +87,7 @@ It is not possible to change GAIs in Eliona for any of assets.
 
 ### Asset filtering
 
-In case it's not desired to import all assets from OpenBOS to Eliona, it's possible to write an asset filter that would include only matching assets. This app is able to filter the assets by: ID, Name and Template ID (for both assets and spaces).
-
-If you want to filter out just a few assets, you can as well let the app create all the assets in Eliona and then archive the unwanted ones. The app will not create them again.
+In case it's not desired to import all assets from OpenBOS to Eliona, it's possible to write an asset filter that would include only matching assets. This app is able to filter the assets by: id, name and templateID (for both assets and spaces). See [Asset Filter documentation](https://doc.eliona.io/collection/eliona-english/manuals/settings/apps/asset-filter) for instructions on writing asset filters.
 
 ### Asset types
 
