@@ -125,7 +125,7 @@ type ontologyDatapointTemplateDTO struct {
 	Tags            []string `json:"tags,omitempty"`
 	TypeID          string   `json:"typeId,omitempty"`
 	Direction       string   `json:"direction"`
-	Perpetual       bool     `json:"perpetual"`
+	Perpetual       bool     `json:"perpetual,omitempty"`
 }
 
 type ontologyPropertyTemplateDTO struct {

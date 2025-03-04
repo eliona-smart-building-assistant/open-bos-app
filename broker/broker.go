@@ -356,72 +356,78 @@ func buildAssetHierarchy(asset *eliona.Asset, assets *[]eliona.Asset, spaces map
 		log.Error("broker", "Should not happen: space %s not found.", asset.ID)
 		return
 	}
+	// [datapoint-attribution]
+	// We need to merge attribute template information (name, subtype) with attribute instance information (instanceID, asset ID)
+	var dps []appmodel.Datapoint
+	for _, dp := range space.datapoints {
+		datapoint, ok := datapointBelongingToAssetTemplate[dp.TemplateID]
+		if !ok {
+			log.Warn("broker", "datapoint not found for datapoint template %s", dp.TemplateID)
+			continue
+		}
+		var attributes []appmodel.Attribute
+		for _, attributeInfo := range datapoint.attributes {
+			attributes = append(attributes, appmodel.Attribute{
+				Name: attributeInfo.name,
+			})
+		}
+		dps = append(dps, appmodel.Datapoint{
+			Subtype:             datapoint.subtype,
+			ProviderID:          dp.ID,
+			AttributeNamePrefix: datapoint.name,
+			Attributes:          attributes,
+		})
+	}
+	for _, prop := range space.properties {
+		datapoint, ok := datapointBelongingToAssetTemplate[prop.TemplateID]
+		if !ok {
+			log.Warn("broker", "datapoint not found for property template %s", prop.TemplateID)
+			continue
+		}
+		var attributes []appmodel.Attribute
+		for _, attributeInfo := range datapoint.attributes {
+			attributes = append(attributes, appmodel.Attribute{
+				Name: attributeInfo.name,
+			})
+		}
+		dp := appmodel.Datapoint{
+			Subtype:             datapoint.subtype,
+			ProviderID:          prop.ID,
+			AttributeNamePrefix: datapoint.name,
+			Attributes:          attributes,
+		}
+		if space.ID == "b99ec124-ad68-48dc-8ff5-434fe576601e" {
+			fmt.Println(prop.Value)
+		}
+
+		if space.ID == "bdda97f7-da87-4df8-9d53-d83412ff726c" {
+			fmt.Println("Anbau: ", prop.Value)
+		}
+		if prop.Value != nil {
+			assetData := make(map[string]any)
+			// Complex decode support
+			if complexData, ok := prop.Value.(map[string]any); ok {
+				decodedData := complexdata.DecodeComplexData(complexData, dp.AttributeNamePrefix)
+				for k, v := range decodedData {
+					assetData[k] = v
+				}
+			} else {
+				// If not complex, find the attribute name and map directly
+				if len(dp.Attributes) != 1 {
+					log.Error("inconsistency", "received non-complex data %+v for property %v of datapoint %v, but found datapoint providerID %v with %v != 1 attributes", prop.Value, prop.ID, datapoint.name, dp.ProviderID, len(dp.Attributes))
+					continue
+				}
+				assetData[dp.Attributes[0].Name] = prop.Value
+			}
+			dp.Data = assetData
+		}
+
+		dps = append(dps, dp)
+	}
+	asset.Datapoints = dps
 	*assets = append(*assets, *asset)
 	// Process child spaces
 	for _, childSpace := range space.children {
-
-		// [datapoint-attribution]
-		// We need to merge attribute template information (name, subtype) with attribute instance information (instanceID, asset ID)
-		var dps []appmodel.Datapoint
-		for _, dp := range childSpace.datapoints {
-			datapoint, ok := datapointBelongingToAssetTemplate[dp.TemplateID]
-			if !ok {
-				log.Warn("broker", "datapoint not found for datapoint template %s", dp.TemplateID)
-				continue
-			}
-			var attributes []appmodel.Attribute
-			for _, attributeInfo := range datapoint.attributes {
-				attributes = append(attributes, appmodel.Attribute{
-					Name: attributeInfo.name,
-				})
-			}
-			dps = append(dps, appmodel.Datapoint{
-				Subtype:             datapoint.subtype,
-				ProviderID:          dp.ID,
-				AttributeNamePrefix: datapoint.name,
-				Attributes:          attributes,
-			})
-		}
-		for _, prop := range childSpace.properties {
-			datapoint, ok := datapointBelongingToAssetTemplate[prop.TemplateID]
-			if !ok {
-				log.Warn("broker", "datapoint not found for property template %s", prop.TemplateID)
-				continue
-			}
-			var attributes []appmodel.Attribute
-			for _, attributeInfo := range datapoint.attributes {
-				attributes = append(attributes, appmodel.Attribute{
-					Name: attributeInfo.name,
-				})
-			}
-			dp := appmodel.Datapoint{
-				Subtype:             datapoint.subtype,
-				ProviderID:          prop.ID,
-				AttributeNamePrefix: datapoint.name,
-				Attributes:          attributes,
-			}
-
-			if prop.Value != nil {
-				assetData := make(map[string]any)
-				// Complex decode support
-				if complexData, ok := prop.Value.(map[string]any); ok {
-					decodedData := complexdata.DecodeComplexData(complexData, dp.AttributeNamePrefix)
-					for k, v := range decodedData {
-						assetData[k] = v
-					}
-				} else {
-					// If not complex, find the attribute name and map directly
-					if len(dp.Attributes) != 1 {
-						log.Error("inconsistency", "received non-complex data %+v for property %v of datapoint %v, but found datapoint providerID %v with %v != 1 attributes", prop.Value, prop.ID, datapoint.name, dp.ProviderID, len(dp.Attributes))
-						continue
-					}
-					assetData[dp.Attributes[0].Name] = prop.Value
-				}
-				dp.Data = assetData
-			}
-
-			dps = append(dps, dp)
-		}
 
 		childAsset := eliona.Asset{
 			ID:                  childSpace.ID,
@@ -430,7 +436,6 @@ func buildAssetHierarchy(asset *eliona.Asset, assets *[]eliona.Asset, spaces map
 			Config:              &config,
 			LocationalParentGAI: asset.GetGAI(),
 			FunctionalParentGAI: asset.GetGAI(),
-			Datapoints:          dps,
 		}
 		if adheres, err := childAsset.AdheresToFilter(config.AssetFilter); err != nil {
 			log.Error("broker", "checking if space adheres to filter: %v", err)
