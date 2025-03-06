@@ -2,11 +2,70 @@
 
 ### Introduction
 
-> The OpenBOS app provides integration and synchronization between Eliona and ABB Ability™ Buildings (OpenBOS).
+> The OpenBOS app provides integration and synchronization between Eliona and [ABB Ability™ Building Edge](https://new.abb.com/low-voltage/products/building-automation/building-edge) (using OpenBOS software).
 
 ## Overview
 
 This guide provides instructions on configuring, installing, and using the OpenBOS app to manage resources and synchronize data between Eliona and OpenBOS edge.
+
+## Steps needed to be taken in OpenBOS Building Edge
+
+The complete documentation for using Edge Editor, embedded tool of the Building Edge allowing its configuration can be found [here](https://library.abb.com/d/9AKK108467A9325). Here we will refer it as **Edge Editor Doc** and the content corresponds to revision G of English version.
+
+### Topology and Services
+
+Field data is read by the Building Edge, mapped to assets, and sent to the ABB Ability Cloud. From there, the assets are retrieved via the Eliona app and automatically created.
+
+![Building edge schema example](https://raw.githubusercontent.com/eliona-smart-building-assistant/open-bos-app/refs/heads/develop/user_guide/building_edge_schema.png "Building Edge schema example")
+
+### Initial Installation
+The following configurations need to be done during the initial installation:
+
+#### Local Configuration
+Once the Building Edge is powered, it can be accessed via a browser through LAN Port 1 or 2.
+
+Complete the remaining steps according to the **Edge Editor Doc** (Pages 23-32).
+
+#### Cloud Configuration
+For the Edge to connect to the cloud, it must be within a network with internet access. Adjust the IP accordingly (see **Edge Editor Doc**, Page 43).
+
+To access the ABB Cloud, a personalized login must be created. After that, follow the steps in **Edge Editor Doc** (Pages 33-40).
+
+#### General Setup
+Next, verify and, if necessary, adjust or complete the general settings according to **Edge Editor Doc**, Pages 42-81.
+
+### Integrating Field Data
+To retrieve data points from a bus system, a new network must be created under "Field Network" for the corresponding protocol.
+
+The **Ability Cloud** is accessible at: [https://buildings.ability.abb](https://buildings.ability.abb)
+
+Complete the steps as described in **Edge Editor Doc** (Pages 112-123).
+
+### Adding Devices and Data Points
+To add devices and data points, the **CSV import** can be used. It is recommended to first export an (empty) CSV file and fill it with data.
+
+### Allowing access via API
+To allow Eliona to receive updates from datapoints, every datapoint has to be configured to allow API subscriptions:
+
+1. In Library/Asset Template
+
+2. Select your Asset
+
+3. Click the Edit pen
+
+4. Go to API subscription
+
+5. Enable the one you want.
+
+6. Don't forget to click on Save (Top/Right in the bar Next to API Subscription)
+
+![Allowing API subscription](https://raw.githubusercontent.com/eliona-smart-building-assistant/open-bos-app/refs/heads/develop/user_guide/api_subscription.png "Allowing API subscription")
+
+### Registering the app in OpenBOS
+
+To connect Eliona to your OpenBOS edge, the edge has to be configured to allow API connections. Contact ABB support for more information. You will need to provide them with Eliona's public API URL, which is `https://{your-eliona-domain.io}/apps-public/open-bos`.
+
+Eliona needs the gateway ID, client ID and client secret for authentication.
 
 ## Installation
 
@@ -15,12 +74,6 @@ Install the OpenBOS app via the Eliona App Store.
 ## Configuration
 
 The OpenBOS app requires configuration through Eliona’s settings interface. Below are the steps needed to configure the app.
-
-### Registering the app in OpenBOS
-
-To connect Eliona to your OpenBOS edge, the edge has to be configured to allow API connections. Contact ABB support for more information. You will need to provide them with Eliona's public API URL, which is `https://{your-eliona-domain.io}/apps-public/open-bos`.
-
-Eliona needs the gateway ID, client ID and client secret for authentication.
 
 ### Configure the OpenBOS app
 
@@ -87,7 +140,7 @@ It is not possible to change GAIs in Eliona for any of assets.
 
 ### Asset filtering
 
-In case it's not desired to import all assets from OpenBOS to Eliona, it's possible to write an asset filter that would include only matching assets. This app is able to filter the assets by: id, name and templateID (for both assets and spaces). See [Asset Filter documentation](https://doc.eliona.io/collection/eliona-english/manuals/settings/apps/asset-filter) for instructions on writing asset filters.
+In case it's not desired to import all assets from OpenBOS to Eliona, it's possible to write an asset filter that would include only matching assets. This app is able to filter the assets by: id, name and templateID (for both assets and spaces). See [Asset Filter documentation](https://doc.eliona.io/collection/dokumentation/einstellungen/apps/asset-filter) for instructions on writing asset filters.
 
 ### Asset types
 
