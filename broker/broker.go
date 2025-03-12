@@ -100,6 +100,7 @@ func convertAssetTemplateToAssetType(template assetTemplate) api.AssetType {
 
 			attribute := api.AssetTypeAttribute{
 				Name:    attributeName,
+				Enable:  api.PtrBool(true),
 				Subtype: subtype,
 				Min:     min,
 				Max:     max,
@@ -154,6 +155,7 @@ func convertAssetTemplateToAssetType(template assetTemplate) api.AssetType {
 			}
 			attribute := api.AssetTypeAttribute{
 				Name:    attributeName,
+				Enable:  api.PtrBool(true),
 				Subtype: subtype,
 				Min:     min,
 				Max:     max,
@@ -177,6 +179,7 @@ func convertAssetTemplateToAssetType(template assetTemplate) api.AssetType {
 	apiAsset.Attributes = append(apiAsset.Attributes, api.AssetTypeAttribute{
 		Name:      masterPropertyAttribute,
 		Subtype:   api.SUBTYPE_PROPERTY,
+		Enable:    api.PtrBool(true),
 		IsDigital: *api.NewNullableBool(api.PtrBool(true)),
 		Map: []map[string]any{
 			{
