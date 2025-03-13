@@ -223,7 +223,6 @@ func UpdateDataPointInEliona(update AttributeDataUpdate) {
 		}
 		assetData[datapoint.Attributes[0].Name] = update.Value
 	}
-	log.Info("tmp", "upserting asset data: assetID %v, subtype %v, data %+v", datapoint.Asset.AssetID, datapoint.Subtype, assetData)
 
 	if err := eliona.UpsertAssetData(datapoint.Asset.AssetID, assetData, update.Timestamp, api.DataSubtype(datapoint.Subtype)); err != nil {
 		log.Error("eliona", "upserting data: %v", err)

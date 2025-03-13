@@ -17,6 +17,7 @@ package webhook
 
 import (
 	"open-bos/app"
+	"strings"
 
 	"context"
 	"encoding/json"
@@ -144,8 +145,9 @@ func (s *webhookServer) handleLivedataUpdate(w http.ResponseWriter, r *http.Requ
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
-	log.Info("tmp", "received data update %+v", liveDataUpdate) // todo: rm
 
+	var goodQualityItems []string
+	var badQualityItems []string
 	for _, item := range liveDataUpdate.Items {
 		timestamp, err := time.Parse(time.RFC3339, item.TimeStamp)
 		if err != nil {
@@ -154,6 +156,11 @@ func (s *webhookServer) handleLivedataUpdate(w http.ResponseWriter, r *http.Requ
 		}
 
 		if item.Quality == "good" {
+			goodQualityItems = append(goodQualityItems, fmt.Sprintf(
+				"ID=%s, TimeStamp=%v, Value=%v",
+				item.DatapointID, timestamp, item.Value,
+			))
+
 			app.UpdateDataPointInEliona(app.AttributeDataUpdate{
 				ConfigID:            configID,
 				DatapointProviderID: item.DatapointID,
@@ -161,8 +168,17 @@ func (s *webhookServer) handleLivedataUpdate(w http.ResponseWriter, r *http.Requ
 				Value:               item.Value,
 			})
 		} else {
-			log.Info("webhook", "Received bad quality data for ID %s: IsProperty=%v, TimeStamp=%v, Quality=%s, Value=%v", item.DatapointID, item.IsProperty, timestamp, item.Quality, item.Value)
+			badQualityItems = append(badQualityItems, fmt.Sprintf(
+				"ID=%s, IsProperty=%v, TimeStamp=%v, Quality=%s, Value=%v",
+				item.DatapointID, item.IsProperty, timestamp, item.Quality, item.Value,
+			))
 		}
+	}
+	if len(goodQualityItems) > 0 {
+		log.Info("webhook", "Updated good quality data points:\n%s", strings.Join(goodQualityItems, "\n"))
+	}
+	if len(badQualityItems) > 0 {
+		log.Info("webhook", "Received bad quality data points:\n%s", strings.Join(badQualityItems, "\n"))
 	}
 
 	log.Debug("webhook", "Processed live data update. NotificationIdentifier: %s, Id: %s, Tags: %v", liveDataUpdate.NotificationIdentifier, liveDataUpdate.Id, liveDataUpdate.Tags)
