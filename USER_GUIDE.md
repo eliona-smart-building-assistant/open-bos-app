@@ -86,10 +86,10 @@ Configurations can be created in Eliona under `Settings > Apps > OpenBOS` which 
 | `clientSecret`    | The client secret used for OAuth 2.0 authentication. |
 | `appPublicAPIURL` | URL of this app's public API. Inferred automatically from request. Example: "https://{your-eliona-instance.io}/apps-public/open-bos". |
 | `enable`          | Flag to enable or disable fetching from this API. Default: `true`.|
-| `refreshInterval` | Interval in seconds for collecting data from API. Default: `60`. |
+| `refreshInterval` | Interval in hours for resubscribing to OpenBOS. Default: `24`. |
 | `requestTimeout`  | API query timeout in seconds. Default: `120`.|
 | `active`          | Set to `true` by the app when running and to `false` when app is stopped. Read-only. |
-| `projectIDs`      | List of Eliona project IDs for data collection. For each project ID, all smart devices are automatically created as assets in Eliona, with mappings stored in the KentixONE app. Example: `["42", "99"]`. |
+| `projectIDs`      | List of Eliona project IDs for data collection. For each project ID, all smart devices are automatically created as assets in Eliona, with mappings stored in the OpenBOS app. Example: `["42", "99"]`. |
 
 Example full configuration JSON:
 
@@ -100,7 +100,7 @@ Example full configuration JSON:
   "clientSecret": "your-client-secret",
   "appPublicAPIURL": "https://{your-eliona-instance.io}/apps-public/open-bos",
   "enable": true,
-  "refreshInterval": 60,
+  "refreshInterval": 24,
   "requestTimeout": 120,
   "projectIDs": [
     "42",

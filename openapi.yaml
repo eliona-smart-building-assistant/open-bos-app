@@ -250,8 +250,8 @@ components:
           nullable: true
         refreshInterval:
           type: integer
-          description: Interval in seconds for collecting data from API
-          default: 60
+          description: Interval in hours for resubscribing to OpenBOS
+          default: 24
         requestTimeout:
           type: integer
           description: Timeout in seconds

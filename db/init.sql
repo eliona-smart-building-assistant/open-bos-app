@@ -24,7 +24,7 @@ create table if not exists open_bos.configuration
 	client_secret        text not null,
 	ontology_version     integer not null,
 	app_public_api_url   text not null,
-	refresh_interval     integer not null default 60,
+	refresh_interval     integer not null default 24,
 	request_timeout      integer not null default 120,
 	asset_filter         json not null,
 	active               boolean not null default false,
