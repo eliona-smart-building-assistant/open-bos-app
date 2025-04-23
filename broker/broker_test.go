@@ -30,7 +30,7 @@ func TestFetchOntology(t *testing.T) {
 		case strings.Contains(r.URL.Path, "/api/v1/core/application/data"):
 			w.Header().Set("Content-Type", "application/json")
 			fmt.Fprintln(w, `{
-				"settings": {"version": 2},
+				"settings": {"structureVersion": 2},
 				"assetTemplates": [{"id": "asset-template-1", "name": "Temperature Sensor"}],
 				"dataTypes": [{"id": "datatype-1", "format": "float", "name": "Temperature", "unitId": "unit-1"}],
 				"units": [{"id": "unit-1", "symbol": "°C"}],
@@ -96,11 +96,13 @@ func TestFetchOntology(t *testing.T) {
 				Name:    "Temperature",
 				Subtype: api.SUBTYPE_INPUT,
 				Unit:    *api.NewNullableString(common.Ptr("°C")),
+				Enable:  api.PtrBool(true),
 			},
 			{
 				Name:      masterPropertyAttribute,
 				Subtype:   api.SUBTYPE_PROPERTY,
 				IsDigital: *api.NewNullableBool(common.Ptr(true)),
+				Enable:    api.PtrBool(true),
 				Map: []map[string]interface{}{
 					{
 						"value": -1,
@@ -173,7 +175,7 @@ func TestFetchOntologyWithComplexDataTypes(t *testing.T) {
 		case strings.Contains(r.URL.Path, "/api/v1/core/application/data"):
 			w.Header().Set("Content-Type", "application/json")
 			fmt.Fprintln(w, `{
-				"settings": {"version": 2},
+				"settings": {"structureVersion": 2},
 				"dataTypes": [
 					{
 						"id": "11111111-1111-1111-1111-111111111111",
@@ -423,7 +425,7 @@ func TestFetchOntologyWithSpaces(t *testing.T) {
 		case strings.Contains(r.URL.Path, "/api/v1/core/application/data"):
 			w.Header().Set("Content-Type", "application/json")
 			fmt.Fprintln(w, `{
-                "settings": {"version": 2},
+                "settings": {"structureVersion": 2},
                 "assetTemplates": [
                     {"id": "asset-template-1", "name": "Temperature Sensor"}
                 ],
