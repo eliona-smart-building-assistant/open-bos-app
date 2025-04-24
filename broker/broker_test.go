@@ -121,8 +121,8 @@ func TestFetchOntology(t *testing.T) {
 		},
 	}
 
-	if len(assetTypes) != 2 {
-		t.Fatalf("Expected 2 asset types, got %d", len(assetTypes))
+	if len(assetTypes) != 3 {
+		t.Fatalf("Expected 3 asset types, got %d", len(assetTypes))
 	}
 
 	// The second asset type is the root asset type.
@@ -130,8 +130,8 @@ func TestFetchOntology(t *testing.T) {
 	assert.Equal(t, expectedAssetType, assetTypes[0])
 
 	// Check that at least one asset exists
-	if len(assets) != 2 {
-		t.Fatalf("Expected 2 assets, got %v", len(assets))
+	if len(assets) != 3 {
+		t.Fatalf("Expected 3 assets, got %v", len(assets))
 	}
 
 	unassignedCatcherAsset := assets[0] // unassignedCatcher should be the first asset in the slice
@@ -488,7 +488,7 @@ func TestFetchOntologyWithSpaces(t *testing.T) {
 		t.Fatalf("FetchOntology returned error: %v", err)
 	}
 
-	assert.Equal(t, 4, len(assets), "There should be all assets")
+	assert.Equal(t, 5, len(assets), "There should be all assets")
 
 	// Check that "Building 1" is a root (typically it would be a "site")
 	building1 := assets[0]

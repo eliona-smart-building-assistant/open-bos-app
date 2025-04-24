@@ -169,3 +169,7 @@ Alarms triggered in OpenBOS are synchronized to Eliona. These are created in Eli
 > *External alarms* are alarms not managed by Eliona. Alarm rules are shown so users can tag and categorize them, but Eliona is not responsible for checking whether the alarm should be raised or not. An external system (in this case OpenBOS) is responsible for triggering the alarms.
 
 If the alarm needs to be acknowledged, users can acknowledge it in Eliona, and this acknowledgement will get synchronized to OpenBOS.
+
+## App status monitoring
+
+Along with asset creation, an asset called "OpenBOS app" is also created. It's purpose is to inform users of the app status -- It signalizes whether the app is running (Asset status -> Active/Inactive) and it's status - the Status attribute. If the app status is not "OK", it signifies that the app might not be functioning properly. If the error state persists, let us know by submitting a bug report.

@@ -41,6 +41,19 @@ import (
 	"github.com/eliona-smart-building-assistant/go-utils/log"
 )
 
+var appStatus = 0
+
+const (
+	statusOK = iota
+	statusError
+	statusFatal
+)
+
+func changeAppStatus(status int) {
+	appStatus = status
+	Heartbeat()
+}
+
 func Initialize() {
 	ctx := context.Background()
 
@@ -60,6 +73,7 @@ func CollectData() {
 	configs, err := dbhelper.GetConfigs(context.Background())
 	if err != nil {
 		log.Fatal("dbhelper", "Couldn't read configs from DB: %v", err)
+		changeAppStatus(statusFatal)
 		return
 	}
 	if len(configs) == 0 {
@@ -94,6 +108,7 @@ func CollectData() {
 		common.RunOnceWithParam(func(config appmodel.Configuration) {
 			log.Info("main", "Collecting %d started.", config.Id)
 			if err := collectResources(&config); err != nil {
+				changeAppStatus(statusError)
 				return // Error is handled in the method itself.
 			}
 			log.Info("main", "Collecting %d finished.", config.Id)
@@ -104,22 +119,25 @@ func CollectData() {
 
 			if err := broker.SubscribeToOntologyChanges(config); err != nil {
 				log.Error("broker", "subscribing to ontology changes: %v", err)
+				changeAppStatus(statusError)
 				return
 			}
 			log.Info("main", "Subscribed to ontology updates of config %d", config.Id)
 
 			if err := broker.SubscribeToDataChanges(config); err != nil {
 				log.Error("broker", "subscribing to data changes: %v", err)
+				changeAppStatus(statusError)
 				return
 			}
 			log.Info("main", "Subscribed to data updates of config %d", config.Id)
 
 			if err := broker.SubscribeToAlarms(config); err != nil {
 				log.Error("broker", "subscribing to alarm changes: %v", err)
+				changeAppStatus(statusError)
 				return
 			}
 			log.Info("main", "Subscribed to alarm updates of config %d", config.Id)
-
+			changeAppStatus(statusOK)
 			time.Sleep(time.Hour * time.Duration(config.RefreshInterval))
 		}, config, config.Id)
 	}
@@ -564,6 +582,19 @@ func ListenForAlarmChanges() {
 	}
 }
 
+func Heartbeat() {
+	root, err := dbhelper.GetRootAsset()
+	if err != nil {
+		log.Error("dbhelper", "getting root assets: %v", err)
+		return
+	}
+
+	if err := eliona.UpsertData(root.AssetID, map[string]any{"status": appStatus}, time.Now(), api.SUBTYPE_STATUS); err != nil {
+		log.Error("eliona", "upserting data as heartbeat: %v", err)
+		return
+	}
+}
+
 // ListenApi starts the API server and listen for requests
 func ListenApi() {
 	err := http.ListenAndServe(":"+common.Getenv("API_SERVER_PORT", "3000"),
@@ -575,12 +606,14 @@ func ListenApi() {
 					apiserver.NewCustomizationAPIController(apiservices.NewCustomizationAPIService()),
 				))))
 	log.Fatal("main", "API server: %v", err)
+	changeAppStatus(statusFatal)
 }
 
 func Teardown() {
 	configs, err := dbhelper.GetConfigs(context.Background())
 	if err != nil {
 		log.Fatal("dbhelper", "Couldn't read configs from DB: %v", err)
+		changeAppStatus(statusFatal)
 		return
 	}
 

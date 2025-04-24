@@ -54,3 +54,20 @@ func GetAssetData(assetID int32, subtype string) (api.Data, error) {
 	}
 	return datas[0], nil
 }
+
+func UpsertData(assetID int32, assetData map[string]any, timestamp time.Time, subtype api.DataSubtype) error {
+	cr := ClientReference
+
+	data := api.Data{
+		AssetId:         assetID,
+		Subtype:         subtype,
+		Timestamp:       *api.NewNullableTime(&timestamp),
+		Data:            assetData,
+		ClientReference: *api.NewNullableString(&cr),
+		// AssetTypeName: api.NullableString{}, No need to fill, it's only for selection
+	}
+	if err := asset.UpsertDataIfAssetExists(data); err != nil {
+		return fmt.Errorf("upserting data: %v", err)
+	}
+	return nil
+}

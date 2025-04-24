@@ -313,6 +313,28 @@ func GetAssetById(assetId int32) (appmodel.Asset, error) {
 	return toAppAsset(*asset, config), nil
 }
 
+func GetRootAsset() (appmodel.Asset, error) {
+	asset, err := dbgen.Assets(
+		dbgen.AssetWhere.ProviderID.EQ("root"),
+	).OneG(context.Background())
+	if err != nil {
+		return appmodel.Asset{}, fmt.Errorf("fetching root assets: %v", err)
+	}
+
+	c, err := asset.Configuration().OneG(context.Background())
+	if errors.Is(err, sql.ErrNoRows) {
+		return appmodel.Asset{}, ErrNotFound
+	}
+	if err != nil {
+		return appmodel.Asset{}, fmt.Errorf("fetching configuration: %v", err)
+	}
+	config, err := toAppConfig(c)
+	if err != nil {
+		return appmodel.Asset{}, fmt.Errorf("translating configuration: %v", err)
+	}
+	return toAppAsset(*asset, config), nil
+}
+
 func GetDatapointById(providerDatapointID string, configID int64) (appmodel.Datapoint, error) {
 	ctx := context.Background()
 

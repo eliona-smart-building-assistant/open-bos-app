@@ -56,6 +56,7 @@ func main() {
 		app.ListenForOutputChanges,
 		app.ListenForAlarmChanges,
 		webhook.StartWebhookListener,
+		common.Loop(app.Heartbeat, 2*time.Minute),
 	)
 
 	log.Info("main", "Cancelling subscriptions...")

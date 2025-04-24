@@ -295,7 +295,7 @@ func FetchOntology(config appmodel.Configuration) (ontologyVersion int32, assetT
 			parentSpace.children = append(parentSpace.children, *spaces[space.ID])
 			// No need to reassign parentSpace back to the map since it's a pointer
 		} else {
-			// This is a Site, serviving as a root
+			// This is a Site, serving as a root
 			rootSpaces = append(rootSpaces, space)
 		}
 	}
@@ -350,6 +350,53 @@ func FetchOntology(config appmodel.Configuration) (ontologyVersion int32, assetT
 		}
 	}
 
+	assetTypes = append(assetTypes, api.AssetType{
+		Name:   "open_bos_root",
+		Custom: api.PtrBool(false),
+		Translation: *api.NewNullableTranslation(&api.Translation{
+			En: api.PtrString("OpenBOS root"),
+			De: api.PtrString("OpenBOS root"),
+		}),
+		Attributes: []api.AssetTypeAttribute{
+			{
+				Name:    "status",
+				Subtype: api.SUBTYPE_STATUS,
+				Enable:  api.PtrBool(true),
+				Translation: *api.NewNullableTranslation(&api.Translation{
+					En: api.PtrString("Status"),
+					De: api.PtrString("Status"),
+				}),
+				IsDigital: *api.NewNullableBool(api.PtrBool(true)),
+				Min:       *api.NewNullableFloat64(api.PtrFloat64(0)),
+				Max:       *api.NewNullableFloat64(api.PtrFloat64(2)),
+				Map: []map[string]any{
+					{
+						"value": 0,
+						"map":   "OK",
+					},
+					{
+						"value": 1,
+						"map":   "Error",
+					},
+					{
+						"value": 2,
+						"map":   "Fatal",
+					},
+				},
+			},
+		},
+		AllowedInactivity: *api.NewNullableString(api.PtrString("00:05:00")),
+	})
+	assets = append(assets, eliona.Asset{
+		ID:                  "root",
+		TemplateID:          "root",
+		Name:                "OpenBOS app",
+		Config:              &config,
+		LocationalParentGAI: "",
+		FunctionalParentGAI: "",
+		IsRootSpace:         true,
+	})
+
 	return ontology.Settings.OntologyVersion, assetTypes, assets, nil
 }
 
@@ -399,13 +446,7 @@ func buildAssetHierarchy(asset *eliona.Asset, assets *[]eliona.Asset, spaces map
 			AttributeNamePrefix: datapoint.name,
 			Attributes:          attributes,
 		}
-		if space.ID == "b99ec124-ad68-48dc-8ff5-434fe576601e" {
-			fmt.Println(prop.Value)
-		}
 
-		if space.ID == "bdda97f7-da87-4df8-9d53-d83412ff726c" {
-			fmt.Println("Anbau: ", prop.Value)
-		}
 		if prop.Value != nil {
 			assetData := make(map[string]any)
 			// Complex decode support
