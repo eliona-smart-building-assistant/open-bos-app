@@ -317,6 +317,9 @@ func GetRootAsset() (appmodel.Asset, error) {
 	asset, err := dbgen.Assets(
 		dbgen.AssetWhere.ProviderID.EQ("root"),
 	).OneG(context.Background())
+	if errors.Is(err, sql.ErrNoRows) {
+		return appmodel.Asset{}, ErrNotFound
+	}
 	if err != nil {
 		return appmodel.Asset{}, fmt.Errorf("fetching root assets: %v", err)
 	}

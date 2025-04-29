@@ -584,6 +584,10 @@ func ListenForAlarmChanges() {
 
 func Heartbeat() {
 	root, err := dbhelper.GetRootAsset()
+	if errors.Is(err, dbhelper.ErrNotFound) {
+		// No root yet, nothing to do
+		return
+	}
 	if err != nil {
 		log.Error("dbhelper", "getting root assets: %v", err)
 		return
