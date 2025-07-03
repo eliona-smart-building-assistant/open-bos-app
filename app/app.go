@@ -107,7 +107,7 @@ func CollectData() {
 
 		common.RunOnceWithParam(func(config appmodel.Configuration) {
 			log.Info("main", "Collecting %d started.", config.Id)
-			if err := collectResources(&config); err != nil {
+			if err := collectOntology(&config); err != nil {
 				changeAppStatus(statusError)
 				return // Error is handled in the method itself.
 			}
@@ -161,13 +161,13 @@ func CollectConfigData(configID int64) {
 	}
 
 	log.Info("main", "Collecting %d triggered by update.", config.Id)
-	if err := collectResources(&config); err != nil {
+	if err := collectOntology(&config); err != nil {
 		return // Error is handled in the method itself.
 	}
 	log.Info("main", "Collecting %d finished.", config.Id)
 }
 
-func collectResources(config *appmodel.Configuration) error {
+func collectOntology(config *appmodel.Configuration) error {
 	version, assetTypes, assets, err := broker.FetchOntology(*config)
 	if errors.Is(err, broker.ErrNoUpdate) {
 		log.Debug("broker", "ontology is up-to-date")
