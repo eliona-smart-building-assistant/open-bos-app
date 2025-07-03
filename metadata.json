@@ -1,6 +1,6 @@
 {
   "name": "open-bos",
-  "elionaMinVersion": "v13.3.0",
+  "elionaMinVersion": "v14.0.0",
   "displayName": {
     "en": "OpenBOS",
     "de": "OpenBOS"
