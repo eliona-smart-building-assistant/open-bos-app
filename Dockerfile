@@ -24,7 +24,8 @@ RUN go mod download
 
 RUN DATE=$(date) && \
     GIT_COMMIT=$(git rev-list -1 HEAD) && \
-    go build -ldflags "-X 'open-bos/api/services.BuildTimestamp=$DATE' -X 'open-bos/api/services.GitCommit=$GIT_COMMIT'" -o ../app-build
+    GIT_VERSION=$(git describe --tags --always) && \
+    go build -ldflags "-X 'open-bos/api/services.BuildTimestamp=$DATE' -X 'open-bos/api/services.GitCommit=$GIT_COMMIT' -X 'open-bos/api/services.GitCommit=GIT_VERSION'" -o ../app-build
 
 FROM eliona/base-alpine:latest AS target
 

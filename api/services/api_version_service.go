@@ -106,6 +106,7 @@ func checkForUnsupportedTypes(i interface{}, path string) error {
 	return nil
 }
 
+var GitVersion string     // injected during linking, see Dockerfile
 var BuildTimestamp string // injected during linking, see Dockerfile
 var GitCommit string      // injected during linking, see Dockerfile
 
@@ -116,6 +117,7 @@ func (s *VersionAPIService) GetVersion(ctx context.Context) (apiserver.ImplRespo
 
 func version() map[string]any {
 	return map[string]any{
+		"version":   GitVersion,
 		"timestamp": BuildTimestamp,
 		"commit":    GitCommit,
 	}
