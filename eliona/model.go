@@ -38,6 +38,12 @@ type Asset struct {
 	LocationalParentGAI string
 	FunctionalParentGAI string
 
+	// OpenBOSTags read only for filtering
+	OpenBOSTags []string `eliona:"openBOSTags,filterable"`
+
+	// IsSpace read only for filtering
+	IsSpace bool `eliona:"isSpace,filterable"`
+
 	Datapoints []appmodel.Datapoint
 
 	Config *appmodel.Configuration
