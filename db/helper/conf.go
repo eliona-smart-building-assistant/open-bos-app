@@ -21,6 +21,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/eliona-smart-building-assistant/go-utils/db"
+	"log"
 
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 
@@ -28,7 +30,7 @@ import (
 
 	dbgen "open-bos/db/generated"
 
-	"github.com/eliona-smart-building-assistant/go-eliona/frontend"
+	"github.com/eliona-smart-building-assistant/go-eliona/v2/frontend"
 	"github.com/eliona-smart-building-assistant/go-utils/common"
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
@@ -117,11 +119,13 @@ func DeleteConfig(ctx context.Context, configID int64) error {
 }
 
 func toDbConfig(ctx context.Context, appConfig appmodel.Configuration) (dbConfig dbgen.Configuration, err error) {
-	dbConfig.Gwid = appConfig.Gwid
-	dbConfig.ClientID = appConfig.ClientID
+	dbConfig.ElionaTenantID = appConfig.ElionaTenantId
+	dbConfig.ElionaSiteID = appConfig.ElionaSiteId
+	dbConfig.GWID = appConfig.GwId
+	dbConfig.ClientID = appConfig.ClientId
 	dbConfig.ClientSecret = appConfig.ClientSecret
 	dbConfig.OntologyVersion = appConfig.OntologyVersion
-	dbConfig.AppPublicAPIURL = appConfig.AppPublicAPIURL
+	dbConfig.AppPublicAPIURL = appConfig.AppPublicApiUrl
 
 	dbConfig.ID = appConfig.Id
 	dbConfig.RefreshInterval = appConfig.RefreshInterval
@@ -133,12 +137,11 @@ func toDbConfig(ctx context.Context, appConfig appmodel.Configuration) (dbConfig
 	dbConfig.AssetFilter = af
 	dbConfig.Active = appConfig.Active
 	dbConfig.Enable = appConfig.Enable
-	dbConfig.ProjectIds = appConfig.ProjectIDs
 
 	if env := frontend.GetEnvironment(ctx); env != nil {
 		dbConfig.UserID = env.UserId
 
-		if appConfig.AppPublicAPIURL == "" {
+		if appConfig.AppPublicApiUrl == "" {
 			dbConfig.AppPublicAPIURL = fmt.Sprintf("%s/apps-public/open-bos", env.Iss)
 		}
 	}
@@ -147,11 +150,13 @@ func toDbConfig(ctx context.Context, appConfig appmodel.Configuration) (dbConfig
 }
 
 func toAppConfig(dbConfig *dbgen.Configuration) (appConfig appmodel.Configuration, err error) {
-	appConfig.Gwid = dbConfig.Gwid
-	appConfig.ClientID = dbConfig.ClientID
+	appConfig.ElionaTenantId = dbConfig.ElionaTenantID
+	appConfig.ElionaSiteId = dbConfig.ElionaSiteID
+	appConfig.GwId = dbConfig.GWID
+	appConfig.ClientId = dbConfig.ClientID
 	appConfig.ClientSecret = dbConfig.ClientSecret
 	appConfig.OntologyVersion = dbConfig.OntologyVersion
-	appConfig.AppPublicAPIURL = dbConfig.AppPublicAPIURL
+	appConfig.AppPublicApiUrl = dbConfig.AppPublicAPIURL
 
 	appConfig.Id = dbConfig.ID
 	appConfig.Enable = dbConfig.Enable
@@ -163,9 +168,60 @@ func toAppConfig(dbConfig *dbgen.Configuration) (appConfig appmodel.Configuratio
 	}
 	appConfig.AssetFilter = af
 	appConfig.Active = dbConfig.Active
-	appConfig.ProjectIDs = dbConfig.ProjectIds
 	appConfig.UserId = dbConfig.UserID
+
+	// TODO: MUST be replaced by new multi tenancy app concept
+	if apiKey, ok := FetchedApiKeys[dbConfig.ElionaTenantID]; ok {
+		appConfig.ApiKey = apiKey
+	} else {
+		log.Fatal("conf", "api key not found in DB for: ", dbConfig.ElionaTenantID)
+	}
+
 	return appConfig, nil
+}
+
+// FetchedApiKeys TODO: MUST be replaced by new multi tenancy app concept
+// Deprecated
+var FetchedApiKeys map[string]string
+
+// FetchApiKeys TODO: MUST be replaced by new multi tenancy app concept
+// Deprecated
+func FetchApiKeys(appName string) {
+	ctx := context.Background()
+
+	// Necessary to close used init resources
+	conn := db.NewInitConnectionWithContextAndApplicationName(ctx, appName)
+	defer conn.Close(ctx)
+
+	apiKeys := make(map[string]string)
+
+	rows, err := conn.Query(
+		ctx,
+		`SELECT tenant_id, api_key
+		 FROM public.eliona_app
+		 JOIN open_bos.configuration on (tenant_id = eliona_tenant_id::uuid)
+		 WHERE app_name = $1`,
+		appName,
+	)
+	if err != nil {
+		log.Fatal("init", "error during fetching api keys: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var tenantID, apiKey string
+		if err := rows.Scan(&tenantID, &apiKey); err != nil {
+			log.Fatal("init", "error during fetching api keys: %w", err)
+		}
+		apiKeys[tenantID] = apiKey
+	}
+
+	if rows.Err() != nil {
+		log.Fatal("init", "error during fetching api keys: %w", rows.Err())
+	}
+
+	// If no rows, apiKeys will just be empty map
+	FetchedApiKeys = apiKeys
 }
 
 func GetConfigs(ctx context.Context) ([]appmodel.Configuration, error) {
@@ -198,10 +254,9 @@ func SetAllConfigsInactive(ctx context.Context) (int64, error) {
 	})
 }
 
-func InsertAsset(ctx context.Context, config appmodel.Configuration, projId string, globalAssetID string, assetId int32, providerId string, isRootSpace bool) (assetID int64, err error) {
+func InsertAsset(ctx context.Context, config appmodel.Configuration, globalAssetID string, assetId int32, providerId string, isRootSpace bool) (assetID int64, err error) {
 	var dbAsset dbgen.Asset
 	dbAsset.ConfigurationID = config.Id
-	dbAsset.ProjectID = projId
 	dbAsset.GlobalAssetID = globalAssetID
 	dbAsset.AssetID = null.Int32From(assetId)
 	dbAsset.ProviderID = providerId
@@ -213,10 +268,9 @@ func InsertAsset(ctx context.Context, config appmodel.Configuration, projId stri
 	return dbAsset.ID, nil
 }
 
-func GetAssetId(ctx context.Context, config appmodel.Configuration, projId string, globalAssetID string) (*int32, error) {
+func GetAssetId(ctx context.Context, config appmodel.Configuration, globalAssetID string) (*int32, error) {
 	dbAsset, err := dbgen.Assets(
 		dbgen.AssetWhere.ConfigurationID.EQ(config.Id),
-		dbgen.AssetWhere.ProjectID.EQ(projId),
 		dbgen.AssetWhere.GlobalAssetID.EQ(globalAssetID),
 	).AllG(ctx)
 	if err != nil || len(dbAsset) == 0 {
@@ -281,7 +335,6 @@ func toAppAsset(dbAsset dbgen.Asset, config appmodel.Configuration) appmodel.Ass
 	return appmodel.Asset{
 		ID:            dbAsset.ID,
 		Config:        config,
-		ProjectID:     dbAsset.ProjectID,
 		GlobalAssetID: dbAsset.GlobalAssetID,
 		ProviderID:    dbAsset.ProviderID,
 		AssetID:       dbAsset.AssetID.Int32,

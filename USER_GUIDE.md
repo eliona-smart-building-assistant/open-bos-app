@@ -79,49 +79,47 @@ The OpenBOS app requires configuration through Eliona’s settings interface. Be
 
 Configurations can be created in Eliona under `Settings > Apps > OpenBOS` which opens the app's [Generic Frontend](https://doc.eliona.io/collection/v/eliona-english/manuals/settings/apps). Here you can use the `\configs` with the POST method. Each configuration requires the following data:
 
-| Attribute         | Description                                               |
-|-------------------|-----------------------------------------------------------|
-| `gwid`            | The ID of the gateway device used in the API requests. |
-| `clientID`        | The client ID used for OAuth 2.0 authentication.|
-| `clientSecret`    | The client secret used for OAuth 2.0 authentication. |
-| `appPublicAPIURL` | URL of this app's public API. Inferred automatically from request. Example: "https://{your-eliona-instance.io}/apps-public/open-bos". |
-| `enable`          | Flag to enable or disable fetching from this API. Default: `true`.|
-| `refreshInterval` | Interval in hours for resubscribing to OpenBOS. Default: `24`. |
-| `requestTimeout`  | API query timeout in seconds. Default: `120`.|
-| `active`          | Set to `true` by the app when running and to `false` when app is stopped. Read-only. |
-| `projectIDs`      | List of Eliona project IDs for data collection. For each project ID, all smart devices are automatically created as assets in Eliona, with mappings stored in the OpenBOS app. Example: `["42", "99"]`. |
+| Attribute         | Description                                                                                                                           |
+|-------------------|---------------------------------------------------------------------------------------------------------------------------------------|
+| `elionaTenantID ` | The Eliona tenant where the assets are created                                                                                        |
+| `elionaSiteID`    | The Eliona site where the assets are created.                                                                                         |
+| `gwID`            | The ID of the gateway device used in the OpenBOS API requests.                                                                        |
+| `clientID`        | The client ID used for OpenBOS OAuth 2.0 authentication.                                                                              |
+| `clientSecret`    | The client secret used for OpenBOS OAuth 2.0 authentication.                                                                          |
+| `appPublicAPIURL` | URL of this app's public API. Inferred automatically from request. Example: `https://{your-eliona-instance.io}/apps-public/open-bos`. |
+| `enable`          | Flag to enable or disable fetching from this API. Default: `true`.                                                                    |
+| `refreshInterval` | Interval in hours for resubscribing to OpenBOS. Default: `24`.                                                                        |
+| `requestTimeout`  | API query timeout in seconds. Default: `120`.                                                                                         |
+| `assetFilter`     | Filter for asset creation, more details can be found in app's README                                                                  |
+| `active`          | Set to `true` by the app when running and to `false` when app is stopped. Read-only.                                                  |
 
 Example full configuration JSON:
 
 ```json
 {
-  "gwid": "1234acbd-3faa-ab32-ab32-21c3876ba",
+  "elionaTenantID": "68d276c1-5010-8327-8514-344e304da11d",
+  "elionaSiteID": "eb7f1610-782b-453b-84a6-839135aa2625",
+  "gwID": "1234acbd-3faa-ab32-ab32-21c3876ba",
   "clientID": "4321dcba-3faa-ab32-ab32-21c3876ba",
   "clientSecret": "your-client-secret",
-  "appPublicAPIURL": "https://{your-eliona-instance.io}/apps-public/open-bos",
+  "appPublicApiUrl": "https://{your-eliona-instance.io}/apps-public/open-bos",
   "enable": true,
   "refreshInterval": 24,
   "requestTimeout": 120,
-  "projectIDs": [
-    "42",
-    "99"
-  ]
+  "assetFilter": []
 }
-
 ```
 
 Some fields have defaults, so the minimal configuration JSON can be simplified:
 
 ```json
 {
-  "gwid": "1234acbd-3faa-ab32-ab32-21c3876ba",
+  "elionaTenantID": "68d276c1-5010-8327-8514-344e304da11d",
+  "elionaSiteID": "eb7f1610-782b-453b-84a6-839135aa2625",
+  "gwId": "1234acbd-3faa-ab32-ab32-21c3876ba",
   "clientID": "4321dcba-3faa-ab32-ab32-21c3876ba",
-  "clientSecret": "your-client-secret",
-  "projectIDs": [
-    "42"
-  ]
+  "clientSecret": "your-client-secret"
 }
-
 ```
 
 ## Continuous Asset Creation
@@ -142,19 +140,41 @@ It is not possible to change GAIs in Eliona for any of assets.
 
 In case it's not desired to import all assets from OpenBOS to Eliona, it's possible to write an asset filter that would include only matching assets. This app is able to filter the assets by: id, name and templateID (for both assets and spaces). See [Asset Filter documentation](https://doc.eliona.io/collection/dokumentation/einstellungen/apps/asset-filter) for instructions on writing asset filters.
 
+| Filter-Attribute | Value                                                                                                               |
+|------------------|---------------------------------------------------------------------------------------------------------------------|
+| `id`             | ID of the object in OpenBOS, e.g. `8d2d345c-c2bb-4ded-88c5-b01c93c3b1f2`                                            |
+| `name`           | Name of the object in OpenBOS, e.g. `Hochbau Ost`                                                                   |
+| `templateID`     | ID of the object's template in OpenBOS, e.g. `b85654e0-0ff7-49e1-8261-b61d3f6a7003`                                 |
+| `openBOSTags`    | List of the object's tags in OpenBOS, e.g. `[bos:function:meter:gas,dtmi:org:brickschema:schema:Brick:Gas_Meter;1]` |
+| `isSpace`        | Flag if object is used to build asset hierarchy (`true`) or asset with datapoints (`false`)                         |
+
+The following filter imports all structural assets (`isSpace=true`) and all non-structural assets (`isSpace=false`) that are tagged as meters (`openBOSTags` contain `:meter:`).
+
+```json
+[
+    [
+        { "parameter": "openBOSTags", "regex": ".*:meter:.*" },
+        { "parameter": "isSpace", "regex": "false" }
+    ],
+    [
+        { "parameter": "isSpace", "regex": "true" }
+    ]
+]
+```
+
 ### Asset types
 
 Asset types are automatically created and synchronized from OpenBOS asset templates. 
 
-| Eliona             | OpenBOS  |
-|--------------------|----------|
-| Asset type         | Asset template  |
-| Attribute - Input  | Datapoint with direction "Feedback"  |
+| Eliona             | OpenBOS                                                    |
+|--------------------|------------------------------------------------------------|
+| Asset type         | Asset template                                             |
+| Attribute - Input  | Datapoint with direction "Feedback"                        |
 | Attribute - Output | Datapoint with direction "Command" or "CommandAndFeedback" |
-| Attribute - Info   | Property  |
-| Limits             | Min/Max  |
-| Unit               | Unit  |
-| Value mapping      | Enums  |
+| Attribute - Info   | Property                                                   |
+| Limits             | Min/Max                                                    |
+| Unit               | Unit                                                       |
+| Value mapping      | Enums                                                      |
 
 Complex data types from OpenBOS are split into separate attributes in Eliona.
 

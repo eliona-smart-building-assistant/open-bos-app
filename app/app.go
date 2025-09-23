@@ -19,6 +19,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/eliona-smart-building-assistant/go-eliona/v2/client"
+	"github.com/jackc/pgx/v4"
 	"net/http"
 	apiserver "open-bos/api/generated"
 	apiservices "open-bos/api/services"
@@ -31,10 +33,10 @@ import (
 	"sync"
 	"time"
 
-	api "github.com/eliona-smart-building-assistant/go-eliona-api-client/v2"
-	"github.com/eliona-smart-building-assistant/go-eliona/app"
-	"github.com/eliona-smart-building-assistant/go-eliona/asset"
-	"github.com/eliona-smart-building-assistant/go-eliona/frontend"
+	api "github.com/eliona-smart-building-assistant/go-eliona-api-client/v3"
+	"github.com/eliona-smart-building-assistant/go-eliona/v2/app"
+	"github.com/eliona-smart-building-assistant/go-eliona/v2/asset"
+	"github.com/eliona-smart-building-assistant/go-eliona/v2/frontend"
 	"github.com/eliona-smart-building-assistant/go-utils/common"
 	"github.com/eliona-smart-building-assistant/go-utils/db"
 	utilshttp "github.com/eliona-smart-building-assistant/go-utils/http"
@@ -54,6 +56,8 @@ func changeAppStatus(status int) {
 	Heartbeat()
 }
 
+// Initialize TODO: MUST be replaced by new multi tenancy app concept
+// Deprecated
 func Initialize() {
 	ctx := context.Background()
 
@@ -61,10 +65,58 @@ func Initialize() {
 	conn := db.NewInitConnectionWithContextAndApplicationName(ctx, app.AppName())
 	defer conn.Close(ctx)
 
-	// Init the app before the first run.
-	app.Init(conn, app.AppName(),
-		app.ExecSqlFile("db/init.sql"),
+	// TODO: Remove this quick fix later with new multi tenancy app concept (calling endpoint with HTTP encryption)
+	initialized, err := getInitialized(ctx, conn, app.AppName())
+	if err != nil {
+		log.Fatal("init", "error during initialization: %w", err)
+	}
+
+	if !initialized {
+		err := db.ExecFile(conn, "db/init.sql")
+		if err != nil {
+			log.Fatal("init", "error during initialization: %w", err)
+		}
+
+		_, err = conn.Exec(context.Background(), fmt.Sprintf("select fixprivilege('%s','%s')", strings.ReplaceAll(app.AppName(), "-", "_"), db.Username()))
+		if err != nil {
+			log.Fatal("init", "error during initialization: %w", err)
+		}
+
+		err = setInitialized(ctx, conn, app.AppName(), true)
+		if err != nil {
+			log.Fatal("init", "error during initialization: %w", err)
+		}
+	}
+}
+
+// getInitialized TODO: MUST be replaced by new multi tenancy app concept
+// Deprecated
+func getInitialized(ctx context.Context, conn *pgx.Conn, appName string) (bool, error) {
+	var initialized bool
+	err := conn.QueryRow(
+		ctx,
+		`SELECT initialized FROM public.eliona_store WHERE app_name = $1`,
+		appName,
+	).Scan(&initialized)
+
+	if err != nil {
+		return false, err
+	}
+
+	return initialized, nil
+}
+
+// setInitialized TODO: MUST be replaced by new multi tenancy app concept
+// Deprecated
+func setInitialized(ctx context.Context, conn *pgx.Conn, appName string, initialized bool) error {
+	_, err := conn.Exec(
+		ctx,
+		`UPDATE public.eliona_store SET initialized = $1 WHERE app_name = $2`,
+		initialized,
+		appName,
 	)
+
+	return err
 }
 
 var notifyNoConfigsOnce sync.Once
@@ -92,17 +144,20 @@ func CollectData() {
 		}
 
 		if !config.Active {
-			dbhelper.SetConfigActiveState(context.Background(), config, true)
+			_, err := dbhelper.SetConfigActiveState(context.Background(), config, true)
+			if err != nil {
+				return
+			}
 			log.Info("dbhelper", "Collecting initialized with Configuration %d:\n"+
 				"Enable: %t\n"+
 				"Refresh Interval: %d\n"+
 				"Request Timeout: %d\n"+
-				"Project IDs: %v\n",
+				"Site ID: %s\n",
 				config.Id,
 				config.Enable,
 				config.RefreshInterval,
 				config.RequestTimeout,
-				config.ProjectIDs)
+				config.ElionaSiteId)
 		}
 
 		common.RunOnceWithParam(func(config appmodel.Configuration) {
@@ -178,7 +233,7 @@ func collectOntology(config *appmodel.Configuration) error {
 		return err
 	}
 	for _, assetType := range assetTypes {
-		if err := asset.InitAssetType(assetType)(nil); err != nil {
+		if err := asset.InitAssetType(client.ApiEndpointString(), config.ApiKey, assetType)(nil); err != nil {
 			log.Error("eliona", "initializing asset type: %v", err)
 			return err
 		}
@@ -189,7 +244,10 @@ func collectOntology(config *appmodel.Configuration) error {
 	}
 
 	config.OntologyVersion = version
-	dbhelper.UpdateConfigOntologyVersion(context.Background(), *config)
+	err = dbhelper.UpdateConfigOntologyVersion(context.Background(), *config)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -209,12 +267,12 @@ func UpdateDataPointInEliona(update AttributeDataUpdate) {
 	}
 	if !config.Enable {
 		if config.Active {
-			dbhelper.SetConfigActiveState(context.Background(), config, false)
+			_, _ = dbhelper.SetConfigActiveState(context.Background(), config, false)
 		}
 		return
 	}
 	if !config.Active {
-		dbhelper.SetConfigActiveState(context.Background(), config, true)
+		_, _ = dbhelper.SetConfigActiveState(context.Background(), config, true)
 	}
 
 	assetData := make(map[string]any)
@@ -242,7 +300,7 @@ func UpdateDataPointInEliona(update AttributeDataUpdate) {
 		assetData[datapoint.Attributes[0].Name] = update.Value
 	}
 
-	if err := eliona.UpsertAssetData(datapoint.Asset.AssetID, assetData, update.Timestamp, api.DataSubtype(datapoint.Subtype)); err != nil {
+	if err := eliona.UpsertAssetData(client.ApiEndpointString(), config.ApiKey, datapoint.Asset.AssetID, assetData, update.Timestamp, api.DataSubtype(datapoint.Subtype)); err != nil {
 		log.Error("eliona", "upserting data: %v", err)
 		return
 	}
@@ -280,7 +338,7 @@ func fetchAlarmRules(config *appmodel.Configuration) {
 			for _, presentAlarmRule := range presentAlarmRules {
 				if presentAlarmRule.OpenBOSAlarmID == bosAlarm.ID && presentAlarmRule.ElionaAttributeID == attribute.ID {
 					// Rule already exists. Just update it.
-					elionaAlarmID, err := eliona.UpdateAlarm(presentAlarmRule.ElionaAlarmID, datapoint.Asset.AssetID, datapoint.Subtype, attribute.Name, prio, bosAlarm.Template.Name, buildAlarmMessage(bosAlarm))
+					elionaAlarmID, err := eliona.UpdateAlarm(config.ApiKey, presentAlarmRule.ElionaAlarmID, datapoint.Asset.AssetID, datapoint.Subtype, attribute.Name, prio, bosAlarm.Template.Name, buildAlarmMessage(bosAlarm))
 					if err != nil {
 						log.Error("eliona", "creating alarm: %v", err)
 						return
@@ -293,7 +351,7 @@ func fetchAlarmRules(config *appmodel.Configuration) {
 			if ruleExists {
 				continue
 			}
-			elionaAlarmID, err := eliona.CreateAlarm(datapoint.Asset.AssetID, datapoint.Subtype, attribute.Name, prio, bosAlarm.Template.Name, buildAlarmMessage(bosAlarm))
+			elionaAlarmID, err := eliona.CreateAlarm(config.ApiKey, datapoint.Asset.AssetID, datapoint.Subtype, attribute.Name, prio, bosAlarm.Template.Name, buildAlarmMessage(bosAlarm))
 			if err != nil {
 				log.Error("eliona", "creating alarm: %v", err)
 				return
@@ -413,7 +471,7 @@ func UpdateAlarmInEliona(update AlarmUpdate) {
 	}
 	message := buildAlarmUpdateMessage(update)
 	for _, alarm := range alarms {
-		if err := eliona.UpdateAlarmStatus(alarm.ElionaAlarmID, message, update.Timestamp, update.Acked, update.getAckMessage(), update.Closed); err != nil {
+		if err := eliona.UpdateAlarmStatus(config.ApiKey, alarm.ElionaAlarmID, message, update.Timestamp, update.Acked, update.getAckMessage(), update.Closed); err != nil {
 			log.Error("eliona", "triggering alarm: %v", err)
 			return
 		}
@@ -454,12 +512,19 @@ func buildAlarmUpdateMessage(alarm AlarmUpdate) map[string]interface{} {
 	return message
 }
 
-// ListenForOutputChanges listens to output attribute changes from Eliona.
 func ListenForOutputChanges() {
+	for _, apiKey := range dbhelper.FetchedApiKeys {
+		go listenForOutputChanges(apiKey)
+	}
+}
+
+// listenForOutputChanges listens to output attribute changes from Eliona.
+func listenForOutputChanges(apiKey string) {
 	for { // We want to restart listening in case something breaks.
-		outputs, err := eliona.ListenForOutputChanges()
+		outputs, err := eliona.ListenForOutputChanges(apiKey)
 		if err != nil {
-			log.Error("eliona", "listening for output changes: %v", err)
+			log.Error("eliona", "listening for output changes with key %s: %v", apiKey, err)
+			time.Sleep(time.Second * 5) // avoid tight error loop
 			continue
 		}
 		for output := range outputs {
@@ -467,8 +532,9 @@ func ListenForOutputChanges() {
 				// Just an echoed value this app sent.
 				continue
 			}
-			if err := outputData(output.AssetId, output.Data); err != nil {
-				log.Error("dbhelper", "outputting data (%v) for assetId %v: %v", output.Data, output.AssetId, err)
+			if err := outputData(apiKey, output.AssetId, output.Data); err != nil {
+				log.Error("dbhelper", "outputting data (%v) for assetId %v with key %s: %v",
+					output.Data, output.AssetId, apiKey, err)
 				continue
 			}
 		}
@@ -477,7 +543,7 @@ func ListenForOutputChanges() {
 }
 
 // outputData implements passing output data to broker.
-func outputData(assetID int32, data map[string]interface{}) error {
+func outputData(apiKey string, assetID int32, data map[string]interface{}) error {
 	var attributesData []broker.AttributeData
 	for name, value := range data {
 		// Fetch the datapoint associated with the attribute name
@@ -495,7 +561,7 @@ func outputData(assetID int32, data map[string]interface{}) error {
 			latestData = value
 		} else {
 			// Fetch and format the latest data for all attributes of the datapoint
-			latestData, err = formatComplexData(datapoint)
+			latestData, err = formatComplexData(apiKey, datapoint)
 			if err != nil {
 				return fmt.Errorf("formatting complex data for datapoint %v: %v", datapoint.ProviderID, err)
 			}
@@ -518,8 +584,8 @@ func outputData(assetID int32, data map[string]interface{}) error {
 	return nil
 }
 
-func formatComplexData(datapoint appmodel.Datapoint) (interface{}, error) {
-	elionaAssetData, err := eliona.GetAssetData(datapoint.Asset.AssetID, datapoint.Subtype)
+func formatComplexData(apiKey string, datapoint appmodel.Datapoint) (interface{}, error) {
+	elionaAssetData, err := eliona.GetAssetData(client.ApiEndpointString(), apiKey, datapoint.Asset.AssetID, datapoint.Subtype)
 	if err != nil {
 		return nil, fmt.Errorf("getting asset data: %v", err)
 	}
@@ -542,20 +608,27 @@ func formatComplexData(datapoint appmodel.Datapoint) (interface{}, error) {
 	return complexData, nil
 }
 
-// ListenForAlarmChanges listens to output attribute changes from Eliona.
 func ListenForAlarmChanges() {
+	for _, apiKey := range dbhelper.FetchedApiKeys {
+		go listenForAlarmChanges(apiKey)
+	}
+}
+
+// listenForAlarmChanges listens to output attribute changes from Eliona.
+func listenForAlarmChanges(apiKey string) {
 	for { // We want to restart listening in case something breaks.
-		outputs, err := eliona.ListenForAlarmChanges()
+		apiAlarms, err := eliona.ListenForAlarmChanges(apiKey)
 		if err != nil {
-			log.Error("eliona", "listening for output changes: %v", err)
-			return
+			log.Error("eliona", "listening for alarm changes: %v", err)
+			time.Sleep(time.Second * 5) // avoid tight error loop
+			continue
 		}
-		for output := range outputs {
-			if !output.AcknowledgeTimestamp.IsSet() {
+		for apiAlarm := range apiAlarms {
+			if !apiAlarm.AcknowledgeTimestamp.IsSet() {
 				// We are only updating the acknowledges
 				continue
 			}
-			alarm, err := dbhelper.GetAlarmByElionaID(output.RuleId)
+			alarm, err := dbhelper.GetAlarmByElionaID(apiAlarm.RuleId)
 			if errors.Is(err, dbhelper.ErrNotFound) {
 				// Not from OpenBOS
 				continue
@@ -563,18 +636,18 @@ func ListenForAlarmChanges() {
 				log.Error("dbhelper", "getting alarm by alarm ID: %v", err)
 				return
 			}
-			config, err := dbhelper.GetConfigByElionaAlarmID(output.RuleId)
+			config, err := dbhelper.GetConfigByElionaAlarmID(apiAlarm.RuleId)
 			if err != nil {
 				log.Error("dbhelper", "getting config by alarm ID: %v", err)
 				return
 			}
 
-			username, err := eliona.GetUserName(output.GetAcknowledgeUserId())
+			username, err := eliona.GetUserName(apiKey, apiAlarm.GetAcknowledgeUserId())
 			if err != nil {
 				log.Error("eliona", "getting ack username: %v", err)
 				username = ""
 			}
-			if err := broker.AcknowledgeAlarm(config, alarm.OpenBOSAlarmID, username, output.GetAcknowledgeText()); err != nil {
+			if err := broker.AcknowledgeAlarm(config, alarm.OpenBOSAlarmID, username, apiAlarm.GetAcknowledgeText()); err != nil {
 				log.Error("broker", "acknowledging alarm: %v", err)
 			}
 		}
@@ -583,6 +656,12 @@ func ListenForAlarmChanges() {
 }
 
 func Heartbeat() {
+	for _, apiKey := range dbhelper.FetchedApiKeys {
+		go heartbeat(apiKey)
+	}
+}
+
+func heartbeat(apiKey string) {
 	root, err := dbhelper.GetRootAsset()
 	if errors.Is(err, dbhelper.ErrNotFound) {
 		// No root yet, nothing to do
@@ -593,7 +672,7 @@ func Heartbeat() {
 		return
 	}
 
-	if err := eliona.UpsertData(root.AssetID, map[string]any{"status": appStatus}, time.Now(), api.SUBTYPE_STATUS); err != nil {
+	if err := eliona.UpsertData(client.ApiEndpointString(), apiKey, root.AssetID, map[string]any{"status": appStatus}, time.Now(), api.STATUS); err != nil {
 		log.Error("eliona", "upserting data as heartbeat: %v", err)
 		return
 	}

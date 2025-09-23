@@ -23,7 +23,7 @@ import (
 	"open-bos/eliona"
 	"strings"
 
-	api "github.com/eliona-smart-building-assistant/go-eliona-api-client/v2"
+	api "github.com/eliona-smart-building-assistant/go-eliona-api-client/v3"
 	"github.com/eliona-smart-building-assistant/go-utils/log"
 )
 
@@ -32,7 +32,7 @@ const masterPropertyAttribute = "is_master"
 var ErrNoUpdate = errors.New("no new version available")
 
 func TestAuthentication(config appmodel.Configuration) error {
-	client, err := newOpenBOSClient(config.Gwid, config.ClientID, config.ClientSecret, config.AppPublicAPIURL, baseURL, tokenURL)
+	client, err := newOpenBOSClient(config.GwId, config.ClientId, config.ClientSecret, config.AppPublicApiUrl, baseURL, tokenURL)
 	if err != nil {
 		return fmt.Errorf("creating instance of client: %v", err)
 	}
@@ -122,7 +122,7 @@ func convertAssetTemplateToAssetType(template assetTemplate) api.AssetType {
 
 	// Properties are attributes that don't change often (our status subtype)
 	for _, prop := range template.Properties {
-		subtype := api.SUBTYPE_STATUS
+		subtype := api.STATUS
 		var attributes []attributeTemplateInfo
 		for _, dataType := range prop.DataTypes {
 			mapping := convertMapping(dataType.Enums)
@@ -178,7 +178,7 @@ func convertAssetTemplateToAssetType(template assetTemplate) api.AssetType {
 	// TODO: Once APIv2 supports it, this should be a "Category"
 	apiAsset.Attributes = append(apiAsset.Attributes, api.AssetTypeAttribute{
 		Name:      masterPropertyAttribute,
-		Subtype:   api.SUBTYPE_PROPERTY,
+		Subtype:   api.PROPERTY,
 		Enable:    api.PtrBool(true),
 		IsDigital: *api.NewNullableBool(api.PtrBool(true)),
 		Map: []map[string]any{
@@ -202,11 +202,11 @@ func convertAssetTemplateToAssetType(template assetTemplate) api.AssetType {
 func determineSubtype(direction string) api.DataSubtype {
 	switch strings.ToLower(direction) {
 	case "feedback":
-		return api.SUBTYPE_INPUT
+		return api.INPUT
 	case "command", "commandandfeedback":
-		return api.SUBTYPE_OUTPUT
+		return api.OUTPUT
 	default:
-		return api.SUBTYPE_INFO
+		return api.INFO
 	}
 }
 
@@ -222,7 +222,7 @@ func convertMapping(enum map[string]string) []map[string]any {
 }
 
 func FetchOntology(config appmodel.Configuration) (ontologyVersion int32, assetTypes []api.AssetType, assets []eliona.Asset, err error) {
-	client, err := newOpenBOSClient(config.Gwid, config.ClientID, config.ClientSecret, config.AppPublicAPIURL, baseURL, tokenURL)
+	client, err := newOpenBOSClient(config.GwId, config.ClientId, config.ClientSecret, config.AppPublicApiUrl, baseURL, tokenURL)
 	if err != nil {
 		return 0, nil, nil, fmt.Errorf("creating instance of client: %v", err)
 	}
@@ -364,7 +364,7 @@ func FetchOntology(config appmodel.Configuration) (ontologyVersion int32, assetT
 		Attributes: []api.AssetTypeAttribute{
 			{
 				Name:    "status",
-				Subtype: api.SUBTYPE_STATUS,
+				Subtype: api.STATUS,
 				Enable:  api.PtrBool(true),
 				Translation: *api.NewNullableTranslation(&api.Translation{
 					En: api.PtrString("Status"),
@@ -595,7 +595,7 @@ func buildAssetHierarchy(asset *eliona.Asset, assets *[]eliona.Asset, spaces map
 }
 
 func SubscribeToOntologyChanges(config appmodel.Configuration) error {
-	client, err := newOpenBOSClient(config.Gwid, config.ClientID, config.ClientSecret, config.AppPublicAPIURL, baseURL, tokenURL)
+	client, err := newOpenBOSClient(config.GwId, config.ClientId, config.ClientSecret, config.AppPublicApiUrl, baseURL, tokenURL)
 	if err != nil {
 		return fmt.Errorf("creating instance of client: %v", err)
 	}
@@ -606,7 +606,7 @@ func SubscribeToOntologyChanges(config appmodel.Configuration) error {
 }
 
 func SubscribeToDataChanges(config appmodel.Configuration) error {
-	client, err := newOpenBOSClient(config.Gwid, config.ClientID, config.ClientSecret, config.AppPublicAPIURL, baseURL, tokenURL)
+	client, err := newOpenBOSClient(config.GwId, config.ClientId, config.ClientSecret, config.AppPublicApiUrl, baseURL, tokenURL)
 	if err != nil {
 		return fmt.Errorf("creating instance of client: %v", err)
 	}
@@ -617,7 +617,7 @@ func SubscribeToDataChanges(config appmodel.Configuration) error {
 }
 
 func FetchAlarmRules(config appmodel.Configuration) ([]AlarmRule, error) {
-	client, err := newOpenBOSClient(config.Gwid, config.ClientID, config.ClientSecret, config.AppPublicAPIURL, baseURL, tokenURL)
+	client, err := newOpenBOSClient(config.GwId, config.ClientId, config.ClientSecret, config.AppPublicApiUrl, baseURL, tokenURL)
 	if err != nil {
 		return nil, fmt.Errorf("creating instance of client: %v", err)
 	}
@@ -631,7 +631,7 @@ func FetchAlarmRules(config appmodel.Configuration) ([]AlarmRule, error) {
 }
 
 func SubscribeToAlarms(config appmodel.Configuration) error {
-	client, err := newOpenBOSClient(config.Gwid, config.ClientID, config.ClientSecret, config.AppPublicAPIURL, baseURL, tokenURL)
+	client, err := newOpenBOSClient(config.GwId, config.ClientId, config.ClientSecret, config.AppPublicApiUrl, baseURL, tokenURL)
 	if err != nil {
 		return fmt.Errorf("creating instance of client: %v", err)
 	}
@@ -647,7 +647,7 @@ type AttributeData struct {
 }
 
 func PutData(config appmodel.Configuration, attributesData []AttributeData) error {
-	client, err := newOpenBOSClient(config.Gwid, config.ClientID, config.ClientSecret, config.AppPublicAPIURL, baseURL, tokenURL)
+	client, err := newOpenBOSClient(config.GwId, config.ClientId, config.ClientSecret, config.AppPublicApiUrl, baseURL, tokenURL)
 	if err != nil {
 		return fmt.Errorf("creating instance of client: %v", err)
 	}
@@ -655,7 +655,7 @@ func PutData(config appmodel.Configuration, attributesData []AttributeData) erro
 }
 
 func AcknowledgeAlarm(config appmodel.Configuration, sessionID, ackedBy, comment string) error {
-	client, err := newOpenBOSClient(config.Gwid, config.ClientID, config.ClientSecret, config.AppPublicAPIURL, baseURL, tokenURL)
+	client, err := newOpenBOSClient(config.GwId, config.ClientId, config.ClientSecret, config.AppPublicApiUrl, baseURL, tokenURL)
 	if err != nil {
 		return fmt.Errorf("creating instance of client: %v", err)
 	}
@@ -678,7 +678,7 @@ func AcknowledgeAlarm(config appmodel.Configuration, sessionID, ackedBy, comment
 }
 
 func CancelSubscriptions(config appmodel.Configuration) error {
-	client, err := newOpenBOSClient(config.Gwid, config.ClientID, config.ClientSecret, config.AppPublicAPIURL, baseURL, tokenURL)
+	client, err := newOpenBOSClient(config.GwId, config.ClientId, config.ClientSecret, config.AppPublicApiUrl, baseURL, tokenURL)
 	if err != nil {
 		return fmt.Errorf("creating instance of client: %v", err)
 	}

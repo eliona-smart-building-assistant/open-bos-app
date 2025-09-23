@@ -21,65 +21,64 @@ import (
 	appmodel "open-bos/app/model"
 	"time"
 
-	api "github.com/eliona-smart-building-assistant/go-eliona-api-client/v2"
-	"github.com/eliona-smart-building-assistant/go-eliona/asset"
-	"github.com/eliona-smart-building-assistant/go-eliona/client"
+	api "github.com/eliona-smart-building-assistant/go-eliona-api-client/v3"
+	"github.com/eliona-smart-building-assistant/go-eliona/v2/asset"
+	"github.com/eliona-smart-building-assistant/go-eliona/v2/client"
 	"github.com/eliona-smart-building-assistant/go-utils/log"
 )
 
 func CreateAssets(config appmodel.Configuration, assets []Asset) error {
-	var elionaAssets []asset.AssetWithParentReferences
+	var elionaAssets []asset.AssetLikeWithParentReferences
 	for _, a := range assets {
-		elionaAssets = append(elionaAssets, asset.AssetWithParentReferences(&a))
+		elionaAssets = append(elionaAssets, asset.AssetLikeWithParentReferences(&a))
 	}
-	for _, projectId := range config.ProjectIDs {
-		roots, err := fetchRootsFromEliona(assets, projectId)
-		if err != nil {
-			return fmt.Errorf("fetching root: %v", err)
-		}
-		log.Debug("eliona", "started creating assets for projectID %v", projectId)
-		// todo: this does not return assets created anymore, but total number of assets!
-		assetsCreated, err := asset.CreateAssetsBulk(elionaAssets, projectId)
-		if err != nil {
-			return err
-		}
 
-		for _, root := range roots {
-			// Restore root to allow moving the whole structure to subdirectories in Eliona.
-			_, err := asset.UpsertAsset(*root)
-			if err != nil {
-				return fmt.Errorf("returning root asset to its original state")
-			}
-		}
-		log.Debug("eliona", "finished creating %v assets", assetsCreated)
-		if assetsCreated != 0 {
-			if err := notifyUser(config.UserId, projectId, assetsCreated); err != nil {
-				return fmt.Errorf("notifying user about CAC: %v", err)
-			}
-		}
-
-		log.Debug("eliona", "started upserting properties data for assets")
-		if err := upsertData(assets, projectId); err != nil {
-			return fmt.Errorf("upserting data: %v", err)
-		}
-		log.Debug("eliona", "finished upserting properties data for assets")
-
+	roots, err := fetchRootsFromEliona(config.ApiKey, assets)
+	if err != nil {
+		return fmt.Errorf("fetching root: %v", err)
 	}
+	log.Debug("eliona", "started creating assets for site %s", config.ElionaSiteId)
+	// todo: this does not return assets created anymore, but total number of assets!
+	assetsCreated, err := asset.CreateAssetsBulk(client.ApiEndpointString(), config.ApiKey, elionaAssets)
+	if err != nil {
+		return err
+	}
+
+	for _, root := range roots {
+		// Restore root to allow moving the whole structure to subdirectories in Eliona.
+		_, err := asset.UpsertAsset(client.ApiEndpointString(), config.ApiKey, *root)
+		if err != nil {
+			return fmt.Errorf("returning root asset to its original state")
+		}
+	}
+	log.Debug("eliona", "finished creating %v assets", assetsCreated)
+	if assetsCreated != 0 {
+		if err := notifyUser(config.ApiKey, config.UserId, assetsCreated); err != nil {
+			return fmt.Errorf("notifying user about CAC: %v", err)
+		}
+	}
+
+	log.Debug("eliona", "started upserting properties data for assets")
+	if err := upsertData(client.ApiEndpointString(), config.ApiKey, assets); err != nil {
+		return fmt.Errorf("upserting data: %v", err)
+	}
+	log.Debug("eliona", "finished upserting properties data for assets")
+
 	return nil
 }
 
-func fetchRootsFromEliona(assets []Asset, projectId string) ([]*api.Asset, error) {
+func fetchRootsFromEliona(apiKey string, assets []Asset) ([]*api.Asset, error) {
 	var apiRoots []*api.Asset
 	for _, asset := range assets {
 		if asset.IsRootSpace {
-			rootID, err := asset.GetAssetID(projectId)
+			rootID, err := asset.GetAssetID()
 			if err != nil {
 				return nil, fmt.Errorf("getting root asset ID: %v", err)
 			}
 			if rootID == nil {
 				return nil, nil
 			}
-			root, err := getAsset(*rootID)
+			root, err := getAsset(apiKey, *rootID)
 			if err != nil {
 				return nil, fmt.Errorf("getting root asset from API: %v", err)
 			}
@@ -94,31 +93,31 @@ func fetchRootsFromEliona(assets []Asset, projectId string) ([]*api.Asset, error
 	return apiRoots, nil
 }
 
-func getAsset(assetId int32) (*api.Asset, error) {
-	asset, res, err := client.NewClient().AssetsAPI.
-		GetAssetById(client.AuthenticationContext(), assetId).
+func getAsset(apiKey string, assetId int32) (*api.Asset, error) {
+	a, res, err := client.NewClient(client.ApiEndpointString()).AssetsAPI.
+		GetAssetById(client.AuthenticationContext(apiKey), assetId).
 		Execute()
-	if res.StatusCode == http.StatusNotFound {
+	if res != nil && res.StatusCode == http.StatusNotFound {
 		return nil, nil
 	}
-	return asset, err
+	return a, err
 }
 
-func upsertData(assets []Asset, projectId string) error {
-	for _, asset := range assets {
-		assetID, err := asset.GetAssetID(projectId)
+func upsertData(apiEndpoint string, apiKey string, assets []Asset) error {
+	for _, a := range assets {
+		assetID, err := a.GetAssetID()
 		if err != nil {
 			return fmt.Errorf("getting asset ID: %v", err)
 		}
 		if assetID == nil {
-			return fmt.Errorf("assetID is nil for asset %v, project %v", asset.GetGAI(), projectId)
+			return fmt.Errorf("assetID is nil for asset %v", a.GetGAI())
 		}
 
-		for _, datapoint := range asset.Datapoints {
+		for _, datapoint := range a.Datapoints {
 			if datapoint.Data == nil || len(datapoint.Data) == 0 {
 				continue
 			}
-			if err := UpsertAssetData(*assetID, datapoint.Data, time.Now(), api.DataSubtype(datapoint.Subtype)); err != nil {
+			if err := UpsertAssetData(apiEndpoint, apiKey, *assetID, datapoint.Data, time.Now(), api.DataSubtype(datapoint.Subtype)); err != nil {
 				return fmt.Errorf("upserting asset data %v for asset ID %v subtype %v: %v", datapoint.Data, *assetID, datapoint.Subtype, err)
 			}
 		}
@@ -126,13 +125,12 @@ func upsertData(assets []Asset, projectId string) error {
 	return nil
 }
 
-func notifyUser(userId string, projectId string, assetsCreated int) error {
-	receipt, _, err := client.NewClient().CommunicationAPI.
-		PostNotification(client.AuthenticationContext()).
+func notifyUser(apiKey string, userId string, assetsCreated int) error {
+	receipt, _, err := client.NewClient(client.ApiEndpointString()).CommunicationAPI.
+		PostNotification(client.AuthenticationContext(apiKey)).
 		Notification(
 			api.Notification{
-				User:      userId,
-				ProjectId: *api.NewNullableString(&projectId),
+				User: userId,
 				Message: *api.NewNullableTranslation(&api.Translation{
 					De: api.PtrString(fmt.Sprintf("OpenBOS-Ontologie wurde synchronisiert. %v Assets werden synchron gehalten.", assetsCreated)),
 					En: api.PtrString(fmt.Sprintf("OpenBOS ontology was synchronized. %v assets are kept in sync.", assetsCreated)),

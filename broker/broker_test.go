@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	api "github.com/eliona-smart-building-assistant/go-eliona-api-client/v2"
+	api "github.com/eliona-smart-building-assistant/go-eliona-api-client/v3"
 	"github.com/eliona-smart-building-assistant/go-utils/common"
 	"github.com/stretchr/testify/assert"
 )
@@ -48,9 +48,9 @@ func TestFetchOntology(t *testing.T) {
 	config := appmodel.Configuration{
 		Id:              1,
 		Gwid:            "test-gwid",
-		ClientID:        "test-client-id",
+		ClientId:        "test-client-id",
 		ClientSecret:    "test-client-secret",
-		AppPublicAPIURL: ts.URL,
+		AppPublicApiUrl: ts.URL,
 		OntologyVersion: 1, // Previous version
 	}
 
@@ -154,9 +154,9 @@ func TestFetchOntologyWithComplexDataTypes(t *testing.T) {
 	config := appmodel.Configuration{
 		Id:              1,
 		Gwid:            "test-gwid",
-		ClientID:        "test-client-id",
+		ClientId:        "test-client-id",
 		ClientSecret:    "test-client-secret",
-		AppPublicAPIURL: "http://test-api-url",
+		AppPublicApiUrl: "http://test-api-url",
 		OntologyVersion: 1, // Previous version
 	}
 
@@ -404,9 +404,9 @@ func TestFetchOntologyWithSpaces(t *testing.T) {
 	config := appmodel.Configuration{
 		Id:              1,
 		Gwid:            "test-gwid",
-		ClientID:        "test-client-id",
+		ClientId:        "test-client-id",
 		ClientSecret:    "test-client-secret",
-		AppPublicAPIURL: "http://test-api-url",
+		AppPublicApiUrl: "http://test-api-url",
 		OntologyVersion: 1, // Previous version
 	}
 

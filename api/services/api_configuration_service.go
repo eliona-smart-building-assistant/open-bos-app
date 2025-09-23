@@ -99,16 +99,17 @@ func (s *ConfigurationAPIService) DeleteConfigurationById(ctx context.Context, c
 func toAPIConfig(appConfig appmodel.Configuration) apiserver.Configuration {
 	return apiserver.Configuration{
 		Id:              &appConfig.Id,
-		Gwid:            appConfig.Gwid,
-		ClientID:        appConfig.ClientID,
+		ElionaTenantId:  appConfig.ElionaTenantId,
+		ElionaSiteId:    appConfig.ElionaSiteId,
+		GwId:            appConfig.GwId,
+		ClientId:        appConfig.ClientId,
 		ClientSecret:    appConfig.ClientSecret,
-		AppPublicAPIURL: appConfig.AppPublicAPIURL,
+		AppPublicApiUrl: appConfig.AppPublicApiUrl,
 		AssetFilter:     toAPIAssetFilter(appConfig.AssetFilter),
 		Enable:          &appConfig.Enable,
 		RefreshInterval: appConfig.RefreshInterval,
 		RequestTimeout:  &appConfig.RequestTimeout,
 		Active:          &appConfig.Active,
-		ProjectIDs:      &appConfig.ProjectIDs,
 		UserId:          &appConfig.UserId,
 	}
 }
@@ -128,10 +129,12 @@ func toAPIAssetFilter(appAF [][]appmodel.FilterRule) (result [][]apiserver.Filte
 }
 
 func toAppConfig(apiConfig apiserver.Configuration) (appConfig appmodel.Configuration) {
-	appConfig.Gwid = apiConfig.Gwid
-	appConfig.ClientID = apiConfig.ClientID
+	appConfig.ElionaTenantId = apiConfig.ElionaTenantId
+	appConfig.ElionaSiteId = apiConfig.ElionaSiteId
+	appConfig.GwId = apiConfig.GwId
+	appConfig.ClientId = apiConfig.ClientId
 	appConfig.ClientSecret = apiConfig.ClientSecret
-	appConfig.AppPublicAPIURL = apiConfig.AppPublicAPIURL
+	appConfig.AppPublicApiUrl = apiConfig.AppPublicApiUrl
 
 	if apiConfig.Id != nil {
 		appConfig.Id = *apiConfig.Id
@@ -148,9 +151,6 @@ func toAppConfig(apiConfig apiserver.Configuration) (appConfig appmodel.Configur
 	}
 	if apiConfig.Enable != nil {
 		appConfig.Enable = *apiConfig.Enable
-	}
-	if apiConfig.ProjectIDs != nil {
-		appConfig.ProjectIDs = *apiConfig.ProjectIDs
 	}
 	return appConfig
 }

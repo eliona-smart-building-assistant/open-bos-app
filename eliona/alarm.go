@@ -16,19 +16,18 @@
 package eliona
 
 import (
-	"context"
 	"fmt"
 	"time"
 
-	api "github.com/eliona-smart-building-assistant/go-eliona-api-client/v2"
-	"github.com/eliona-smart-building-assistant/go-eliona/client"
+	api "github.com/eliona-smart-building-assistant/go-eliona-api-client/v3"
+	"github.com/eliona-smart-building-assistant/go-eliona/v2/client"
 )
 
-var CHECK_TYPE_EXTERNAL = "external"
+var CheckTypeExternal = "external"
 
-func submitAlarm(alarmID *int32, assetID int32, subtype, attribute string, priority api.AlarmPriority, subject string, message map[string]any) (int32, error) {
-	alarmRule, _, err := client.NewClient().AlarmRulesAPI.
-		PutAlarmRule(client.AuthenticationContext()).
+func submitAlarm(apiKey string, alarmID *int32, assetID int32, subtype, attribute string, priority api.AlarmPriority, subject string, message map[string]any) (int32, error) {
+	alarmRule, _, err := client.NewClient(client.ApiEndpointString()).AlarmRulesAPI.
+		PutAlarmRule(client.AuthenticationContext(apiKey)).
 		AlarmRule(api.AlarmRule{
 			Id:        *api.NewNullableInt32(alarmID),
 			AssetId:   assetID,
@@ -39,7 +38,7 @@ func submitAlarm(alarmID *int32, assetID int32, subtype, attribute string, prior
 			Message:   message,
 			Tags:      []string{},
 			Enable:    api.PtrBool(true),
-			CheckType: *api.NewNullableString(&CHECK_TYPE_EXTERNAL),
+			CheckType: *api.NewNullableString(&CheckTypeExternal),
 		}).
 		Execute()
 	if err != nil {
@@ -48,15 +47,15 @@ func submitAlarm(alarmID *int32, assetID int32, subtype, attribute string, prior
 	return alarmRule.GetId(), nil
 }
 
-func CreateAlarm(assetID int32, subtype, attribute string, priority api.AlarmPriority, subject string, message map[string]any) (int32, error) {
-	return submitAlarm(nil, assetID, subtype, attribute, priority, subject, message)
+func CreateAlarm(apiKey string, assetID int32, subtype, attribute string, priority api.AlarmPriority, subject string, message map[string]any) (int32, error) {
+	return submitAlarm(apiKey, nil, assetID, subtype, attribute, priority, subject, message)
 }
 
-func UpdateAlarm(alarmID int32, assetID int32, subtype, attribute string, priority api.AlarmPriority, subject string, message map[string]any) (int32, error) {
-	return submitAlarm(&alarmID, assetID, subtype, attribute, priority, subject, message)
+func UpdateAlarm(apiKey string, alarmID int32, assetID int32, subtype, attribute string, priority api.AlarmPriority, subject string, message map[string]any) (int32, error) {
+	return submitAlarm(apiKey, &alarmID, assetID, subtype, attribute, priority, subject, message)
 }
 
-func UpdateAlarmStatus(alarmID int32, message map[string]interface{}, appeared time.Time, ack bool, ackText string, closed bool) error {
+func UpdateAlarmStatus(apiKey string, alarmID int32, message map[string]interface{}, appeared time.Time, ack bool, ackText string, closed bool) error {
 	now := time.Now()
 
 	alarm := api.Alarm{
@@ -72,8 +71,8 @@ func UpdateAlarmStatus(alarmID int32, message map[string]interface{}, appeared t
 	if closed {
 		alarm.GoneTimestamp = *api.NewNullableTime(&now)
 	}
-	_, _, err := client.NewClient().AlarmsAPI.
-		PutAlarm(client.AuthenticationContext()).
+	_, _, err := client.NewClient(client.ApiEndpointString()).AlarmsAPI.
+		PutAlarm(client.AuthenticationContext(apiKey)).
 		Alarm(alarm).
 		Execute()
 	if err != nil {
@@ -82,9 +81,9 @@ func UpdateAlarmStatus(alarmID int32, message map[string]interface{}, appeared t
 	return nil
 }
 
-func GetUserName(userID string) (string, error) {
-	user, _, err := client.NewClient().UsersAPI.
-		GetUserById(context.Background(), userID).
+func GetUserName(apiKey string, userID string) (string, error) {
+	user, _, err := client.NewClient(client.ApiEndpointString()).UsersAPI.
+		GetUserById(client.AuthenticationContext(apiKey), userID).
 		Execute()
 	if err != nil {
 		return "", fmt.Errorf("getting user %v: %v", userID, err)

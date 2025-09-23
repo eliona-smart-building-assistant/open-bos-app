@@ -17,10 +17,11 @@ package main
 
 import (
 	"open-bos/app"
+	dbhelper "open-bos/db/helper"
 	"open-bos/webhook"
 	"time"
 
-	elionaapp "github.com/eliona-smart-building-assistant/go-eliona/app"
+	elionaapp "github.com/eliona-smart-building-assistant/go-eliona/v2/app"
 	"github.com/eliona-smart-building-assistant/go-utils/common"
 	"github.com/eliona-smart-building-assistant/go-utils/db"
 	"github.com/eliona-smart-building-assistant/go-utils/log"
@@ -48,6 +49,9 @@ func main() {
 
 	// Initialize the app
 	app.Initialize()
+
+	// Fetch the API keys configured for the app
+	dbhelper.FetchApiKeys(elionaapp.AppName())
 
 	// Starting the service to collect the data for this app.
 	common.WaitForWithOs(

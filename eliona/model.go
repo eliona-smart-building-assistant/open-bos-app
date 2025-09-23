@@ -21,7 +21,7 @@ import (
 	appmodel "open-bos/app/model"
 	conf "open-bos/db/helper"
 
-	"github.com/eliona-smart-building-assistant/go-eliona/utils"
+	"github.com/eliona-smart-building-assistant/go-eliona/v2/utils"
 	"github.com/eliona-smart-building-assistant/go-utils/common"
 )
 
@@ -49,13 +49,13 @@ type Asset struct {
 	Config *appmodel.Configuration
 }
 
-func (d *Asset) GetName() string {
-	return d.Name
+func (a *Asset) GetName() string {
+	return a.Name
 }
 
-func (d *Asset) AdheresToFilter(filter [][]appmodel.FilterRule) (bool, error) {
+func (a *Asset) AdheresToFilter(filter [][]appmodel.FilterRule) (bool, error) {
 	f := appFilterToCommonFilter(filter)
-	fp, err := utils.StructToMap(d)
+	fp, err := utils.StructToMap(a)
 	if err != nil {
 		return false, fmt.Errorf("converting struct to map: %v", err)
 	}
@@ -66,30 +66,34 @@ func (d *Asset) AdheresToFilter(filter [][]appmodel.FilterRule) (bool, error) {
 	return adheres, nil
 }
 
-func (d *Asset) GetDescription() string {
+func (a *Asset) GetDescription() string {
 	return ""
 }
 
-func (d *Asset) GetAssetType() string {
-	return "open_bos_" + d.TemplateID
+func (a *Asset) GetSiteID() string {
+	return a.Config.ElionaSiteId
 }
 
-func (d *Asset) GetGAI() string {
-	return "open_bos_" + d.ID
+func (a *Asset) GetAssetType() string {
+	return "open_bos_" + a.TemplateID
 }
 
-func (d *Asset) GetAssetID(projectID string) (*int32, error) {
-	return conf.GetAssetId(context.Background(), *d.Config, projectID, d.GetGAI())
+func (a *Asset) GetGAI() string {
+	return "open_bos_" + a.ID
 }
 
-func (d *Asset) SetAssetID(elionaAssetID int32, projectID string) error {
+func (a *Asset) GetAssetID() (*int32, error) {
+	return conf.GetAssetId(context.Background(), *a.Config, a.GetGAI())
+}
+
+func (a *Asset) SetAssetID(elionaAssetID int32) error {
 	ctx := context.Background()
-	assetID, err := conf.InsertAsset(ctx, *d.Config, projectID, d.GetGAI(), elionaAssetID, d.ID, d.IsRootSpace)
+	assetID, err := conf.InsertAsset(ctx, *a.Config, a.GetGAI(), elionaAssetID, a.ID, a.IsRootSpace)
 	if err != nil {
 		return fmt.Errorf("inserting asset to config db: %v", err)
 	}
 
-	if err := conf.InsertAssetAttributes(ctx, assetID, d.Datapoints); err != nil {
+	if err := conf.InsertAssetAttributes(ctx, assetID, a.Datapoints); err != nil {
 		return fmt.Errorf("inserting asset subtypes to config db: %v", err)
 	}
 

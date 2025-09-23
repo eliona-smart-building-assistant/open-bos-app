@@ -16,22 +16,28 @@ type Configuration struct {
 	// Internal identifier for the configured API (created automatically).
 	Id *int64 `json:"id,omitempty"`
 
+	// The Eliona tenant where the assets are created.
+	ElionaTenantId string `json:"elionaTenantId,omitempty"`
+
+	// The Eliona site where the assets are created.
+	ElionaSiteId string `json:"elionaSiteId,omitempty"`
+
 	// The ID of the gateway device used in the API requests (gwid).
-	Gwid string `json:"gwid,omitempty"`
+	GwId string `json:"gwId,omitempty"`
 
 	// The client ID used for OAuth 2.0 authentication.
-	ClientID string `json:"clientID,omitempty"`
+	ClientId string `json:"clientId,omitempty"`
 
 	// The client secret used for OAuth 2.0 authentication.
 	ClientSecret string `json:"clientSecret,omitempty"`
 
 	// URL of this app's public API. Inferred automatically from request.
-	AppPublicAPIURL string `json:"appPublicAPIURL,omitempty"`
+	AppPublicApiUrl string `json:"appPublicApiUrl,omitempty"`
 
 	// Flag to enable or disable fetching from this API
 	Enable *bool `json:"enable,omitempty"`
 
-	// Interval in seconds for collecting data from API
+	// Interval in hours for resubscribing to OpenBOS
 	RefreshInterval int32 `json:"refreshInterval,omitempty"`
 
 	// Timeout in seconds
@@ -42,9 +48,6 @@ type Configuration struct {
 
 	// Set to `true` by the app when running and to `false` when app is stopped
 	Active *bool `json:"active,omitempty"`
-
-	// List of Eliona project ids for which this device should collect data. For each project id all smart devices are automatically created as an asset in Eliona. The mapping between Eliona is stored as an asset mapping in the KentixONE app.
-	ProjectIDs *[]string `json:"projectIDs,omitempty"`
 
 	// ID of the last Eliona user who created or updated the configuration
 	UserId *string `json:"userId,omitempty"`

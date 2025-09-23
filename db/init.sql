@@ -19,7 +19,9 @@ create schema if not exists open_bos;
 create table if not exists open_bos.configuration
 (
 	id                   bigserial primary key,
-	gwid                 text not null,
+    eliona_tenant_id     text not null,
+    eliona_site_id       text not null,
+	gw_id                text not null,
 	client_id            text not null,
 	client_secret        text not null,
 	ontology_version     integer not null,
@@ -29,7 +31,6 @@ create table if not exists open_bos.configuration
 	asset_filter         json not null,
 	active               boolean not null default false,
 	enable               boolean not null default false,
-	project_ids          text[] not null,
 	user_id              text not null
 );
 
@@ -37,7 +38,6 @@ create table if not exists open_bos.asset
 (
 	id               bigserial primary key,
 	configuration_id bigserial not null references open_bos.configuration(id) ON DELETE CASCADE,
-	project_id       text      not null,
 	global_asset_id  text      not null,
 	provider_id      text      not null,
 	asset_id         integer,
@@ -70,4 +70,4 @@ CREATE TABLE IF NOT EXISTS open_bos.alarm (
 -- There is a transaction started in app.Init(). We need to commit to make the
 -- new objects available for all other init steps.
 -- Chain starts the same transaction again.
-commit and chain;
+-- commit and chain;

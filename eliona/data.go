@@ -19,14 +19,14 @@ import (
 	"fmt"
 	"time"
 
-	api "github.com/eliona-smart-building-assistant/go-eliona-api-client/v2"
-	"github.com/eliona-smart-building-assistant/go-eliona/asset"
+	api "github.com/eliona-smart-building-assistant/go-eliona-api-client/v3"
+	"github.com/eliona-smart-building-assistant/go-eliona/v2/asset"
 	"github.com/eliona-smart-building-assistant/go-utils/log"
 )
 
 const ClientReference string = "open-bos"
 
-func UpsertAssetData(assetID int32, assetData map[string]any, timestamp time.Time, subtype api.DataSubtype) error {
+func UpsertAssetData(apiEndpoint string, apiKey string, assetID int32, assetData map[string]any, timestamp time.Time, subtype api.DataSubtype) error {
 	cr := ClientReference
 	log.Debug("Eliona", "upserting %v data for asset '%v'", assetData, assetID)
 
@@ -38,14 +38,14 @@ func UpsertAssetData(assetID int32, assetData map[string]any, timestamp time.Tim
 		ClientReference: *api.NewNullableString(&cr),
 		// AssetTypeName: api.NullableString{}, No need to fill, it's only for selection
 	}
-	if err := asset.UpsertDataIfAssetExists(data); err != nil {
+	if err := asset.UpsertDataIfAssetExists(apiEndpoint, apiKey, data); err != nil {
 		return fmt.Errorf("upserting data: %v", err)
 	}
 	return nil
 }
 
-func GetAssetData(assetID int32, subtype string) (api.Data, error) {
-	datas, err := asset.GetData(assetID, subtype)
+func GetAssetData(apiEndpoint string, apiKey string, assetID int32, subtype string) (api.Data, error) {
+	datas, err := asset.GetData(apiEndpoint, apiKey, assetID, subtype)
 	if err != nil {
 		return api.Data{}, err
 	}
@@ -55,7 +55,7 @@ func GetAssetData(assetID int32, subtype string) (api.Data, error) {
 	return datas[0], nil
 }
 
-func UpsertData(assetID int32, assetData map[string]any, timestamp time.Time, subtype api.DataSubtype) error {
+func UpsertData(apiEndpoint string, apiKey string, assetID int32, assetData map[string]any, timestamp time.Time, subtype api.DataSubtype) error {
 	cr := ClientReference
 
 	data := api.Data{
@@ -66,7 +66,7 @@ func UpsertData(assetID int32, assetData map[string]any, timestamp time.Time, su
 		ClientReference: *api.NewNullableString(&cr),
 		// AssetTypeName: api.NullableString{}, No need to fill, it's only for selection
 	}
-	if err := asset.UpsertDataIfAssetExists(data); err != nil {
+	if err := asset.UpsertDataIfAssetExists(apiEndpoint, apiKey, data); err != nil {
 		return fmt.Errorf("upserting data: %v", err)
 	}
 	return nil

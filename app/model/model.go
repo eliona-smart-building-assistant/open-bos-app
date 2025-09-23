@@ -16,19 +16,21 @@
 package appmodel
 
 type Configuration struct {
+	ElionaTenantId  string
+	ElionaSiteId    string
 	Id              int64
-	Gwid            string
-	ClientID        string
+	GwId            string
+	ClientId        string
 	ClientSecret    string
 	OntologyVersion int32
-	AppPublicAPIURL string
+	AppPublicApiUrl string
 	RefreshInterval int32
 	RequestTimeout  int32
 	AssetFilter     [][]FilterRule
 	Enable          bool
 	Active          bool
-	ProjectIDs      []string
 	UserId          string
+	ApiKey          string
 }
 
 type FilterRule struct {
@@ -39,7 +41,6 @@ type FilterRule struct {
 type Asset struct {
 	ID            int64
 	Config        Configuration
-	ProjectID     string
 	GlobalAssetID string
 	ProviderID    string
 	AssetID       int32

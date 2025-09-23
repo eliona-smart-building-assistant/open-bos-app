@@ -18,7 +18,6 @@
   "useEnvironment": [
     "CONNECTION_STRING",
     "INIT_CONNECTION_STRING",
-    "API_ENDPOINT",
-    "API_TOKEN"
+    "API_ENDPOINT"
   ]
 }
