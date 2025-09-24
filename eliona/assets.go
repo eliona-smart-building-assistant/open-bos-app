@@ -52,9 +52,9 @@ func CreateAssets(config appmodel.Configuration, assets []Asset) error {
 		}
 	}
 	log.Debug("eliona", "finished creating %v assets", assetsCreated)
-	if assetsCreated != 0 {
-		if err := notifyUser(config.ApiKey, config.UserId, assetsCreated); err != nil {
-			return fmt.Errorf("notifying user about CAC: %v", err)
+	if assetsCreated != 0 && config.UserId != nil {
+		if err := notifyUser(config.ApiKey, *config.UserId, assetsCreated); err != nil {
+			log.Error("eliona", "notifying user about CAC: %v", err)
 		}
 	}
 

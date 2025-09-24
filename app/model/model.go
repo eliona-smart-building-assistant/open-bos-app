@@ -29,7 +29,7 @@ type Configuration struct {
 	AssetFilter     [][]FilterRule
 	Enable          bool
 	Active          bool
-	UserId          string
+	UserId          *string
 	ApiKey          string
 }
 

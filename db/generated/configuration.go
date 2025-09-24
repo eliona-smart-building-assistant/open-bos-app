@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/friendsofgo/errors"
+	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
@@ -24,20 +25,20 @@ import (
 
 // Configuration is an object representing the database table.
 type Configuration struct {
-	ID              int64      `boil:"id" json:"id" toml:"id" yaml:"id"`
-	ElionaTenantID  string     `boil:"eliona_tenant_id" json:"eliona_tenant_id" toml:"eliona_tenant_id" yaml:"eliona_tenant_id"`
-	ElionaSiteID    string     `boil:"eliona_site_id" json:"eliona_site_id" toml:"eliona_site_id" yaml:"eliona_site_id"`
-	GWID            string     `boil:"gw_id" json:"gw_id" toml:"gw_id" yaml:"gw_id"`
-	ClientID        string     `boil:"client_id" json:"client_id" toml:"client_id" yaml:"client_id"`
-	ClientSecret    string     `boil:"client_secret" json:"client_secret" toml:"client_secret" yaml:"client_secret"`
-	OntologyVersion int32      `boil:"ontology_version" json:"ontology_version" toml:"ontology_version" yaml:"ontology_version"`
-	AppPublicAPIURL string     `boil:"app_public_api_url" json:"app_public_api_url" toml:"app_public_api_url" yaml:"app_public_api_url"`
-	RefreshInterval int32      `boil:"refresh_interval" json:"refresh_interval" toml:"refresh_interval" yaml:"refresh_interval"`
-	RequestTimeout  int32      `boil:"request_timeout" json:"request_timeout" toml:"request_timeout" yaml:"request_timeout"`
-	AssetFilter     types.JSON `boil:"asset_filter" json:"asset_filter" toml:"asset_filter" yaml:"asset_filter"`
-	Active          bool       `boil:"active" json:"active" toml:"active" yaml:"active"`
-	Enable          bool       `boil:"enable" json:"enable" toml:"enable" yaml:"enable"`
-	UserID          string     `boil:"user_id" json:"user_id" toml:"user_id" yaml:"user_id"`
+	ID              int64       `boil:"id" json:"id" toml:"id" yaml:"id"`
+	ElionaTenantID  string      `boil:"eliona_tenant_id" json:"eliona_tenant_id" toml:"eliona_tenant_id" yaml:"eliona_tenant_id"`
+	ElionaSiteID    string      `boil:"eliona_site_id" json:"eliona_site_id" toml:"eliona_site_id" yaml:"eliona_site_id"`
+	GWID            string      `boil:"gw_id" json:"gw_id" toml:"gw_id" yaml:"gw_id"`
+	ClientID        string      `boil:"client_id" json:"client_id" toml:"client_id" yaml:"client_id"`
+	ClientSecret    string      `boil:"client_secret" json:"client_secret" toml:"client_secret" yaml:"client_secret"`
+	OntologyVersion int32       `boil:"ontology_version" json:"ontology_version" toml:"ontology_version" yaml:"ontology_version"`
+	AppPublicAPIURL string      `boil:"app_public_api_url" json:"app_public_api_url" toml:"app_public_api_url" yaml:"app_public_api_url"`
+	RefreshInterval int32       `boil:"refresh_interval" json:"refresh_interval" toml:"refresh_interval" yaml:"refresh_interval"`
+	RequestTimeout  int32       `boil:"request_timeout" json:"request_timeout" toml:"request_timeout" yaml:"request_timeout"`
+	AssetFilter     types.JSON  `boil:"asset_filter" json:"asset_filter" toml:"asset_filter" yaml:"asset_filter"`
+	Active          bool        `boil:"active" json:"active" toml:"active" yaml:"active"`
+	Enable          bool        `boil:"enable" json:"enable" toml:"enable" yaml:"enable"`
+	UserID          null.String `boil:"user_id" json:"user_id,omitempty" toml:"user_id" yaml:"user_id,omitempty"`
 
 	R *configurationR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L configurationL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -130,6 +131,62 @@ func (w whereHelpertypes_JSON) GTE(x types.JSON) qm.QueryMod {
 	return qmhelper.Where(w.field, qmhelper.GTE, x)
 }
 
+type whereHelpernull_String struct{ field string }
+
+func (w whereHelpernull_String) EQ(x null.String) qm.QueryMod {
+	return qmhelper.WhereNullEQ(w.field, false, x)
+}
+func (w whereHelpernull_String) NEQ(x null.String) qm.QueryMod {
+	return qmhelper.WhereNullEQ(w.field, true, x)
+}
+func (w whereHelpernull_String) LT(x null.String) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.LT, x)
+}
+func (w whereHelpernull_String) LTE(x null.String) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.LTE, x)
+}
+func (w whereHelpernull_String) GT(x null.String) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.GT, x)
+}
+func (w whereHelpernull_String) GTE(x null.String) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.GTE, x)
+}
+func (w whereHelpernull_String) LIKE(x null.String) qm.QueryMod {
+	return qm.Where(w.field+" LIKE ?", x)
+}
+func (w whereHelpernull_String) NLIKE(x null.String) qm.QueryMod {
+	return qm.Where(w.field+" NOT LIKE ?", x)
+}
+func (w whereHelpernull_String) ILIKE(x null.String) qm.QueryMod {
+	return qm.Where(w.field+" ILIKE ?", x)
+}
+func (w whereHelpernull_String) NILIKE(x null.String) qm.QueryMod {
+	return qm.Where(w.field+" NOT ILIKE ?", x)
+}
+func (w whereHelpernull_String) SIMILAR(x null.String) qm.QueryMod {
+	return qm.Where(w.field+" SIMILAR TO ?", x)
+}
+func (w whereHelpernull_String) NSIMILAR(x null.String) qm.QueryMod {
+	return qm.Where(w.field+" NOT SIMILAR TO ?", x)
+}
+func (w whereHelpernull_String) IN(slice []string) qm.QueryMod {
+	values := make([]interface{}, 0, len(slice))
+	for _, value := range slice {
+		values = append(values, value)
+	}
+	return qm.WhereIn(fmt.Sprintf("%s IN ?", w.field), values...)
+}
+func (w whereHelpernull_String) NIN(slice []string) qm.QueryMod {
+	values := make([]interface{}, 0, len(slice))
+	for _, value := range slice {
+		values = append(values, value)
+	}
+	return qm.WhereNotIn(fmt.Sprintf("%s NOT IN ?", w.field), values...)
+}
+
+func (w whereHelpernull_String) IsNull() qm.QueryMod    { return qmhelper.WhereIsNull(w.field) }
+func (w whereHelpernull_String) IsNotNull() qm.QueryMod { return qmhelper.WhereIsNotNull(w.field) }
+
 var ConfigurationWhere = struct {
 	ID              whereHelperint64
 	ElionaTenantID  whereHelperstring
@@ -144,7 +201,7 @@ var ConfigurationWhere = struct {
 	AssetFilter     whereHelpertypes_JSON
 	Active          whereHelperbool
 	Enable          whereHelperbool
-	UserID          whereHelperstring
+	UserID          whereHelpernull_String
 }{
 	ID:              whereHelperint64{field: "\"open_bos\".\"configuration\".\"id\""},
 	ElionaTenantID:  whereHelperstring{field: "\"open_bos\".\"configuration\".\"eliona_tenant_id\""},
@@ -159,7 +216,7 @@ var ConfigurationWhere = struct {
 	AssetFilter:     whereHelpertypes_JSON{field: "\"open_bos\".\"configuration\".\"asset_filter\""},
 	Active:          whereHelperbool{field: "\"open_bos\".\"configuration\".\"active\""},
 	Enable:          whereHelperbool{field: "\"open_bos\".\"configuration\".\"enable\""},
-	UserID:          whereHelperstring{field: "\"open_bos\".\"configuration\".\"user_id\""},
+	UserID:          whereHelpernull_String{field: "\"open_bos\".\"configuration\".\"user_id\""},
 }
 
 // ConfigurationRels is where relationship names are stored.
@@ -200,8 +257,8 @@ type configurationL struct{}
 
 var (
 	configurationAllColumns            = []string{"id", "eliona_tenant_id", "eliona_site_id", "gw_id", "client_id", "client_secret", "ontology_version", "app_public_api_url", "refresh_interval", "request_timeout", "asset_filter", "active", "enable", "user_id"}
-	configurationColumnsWithoutDefault = []string{"eliona_tenant_id", "eliona_site_id", "gw_id", "client_id", "client_secret", "ontology_version", "app_public_api_url", "asset_filter", "user_id"}
-	configurationColumnsWithDefault    = []string{"id", "refresh_interval", "request_timeout", "active", "enable"}
+	configurationColumnsWithoutDefault = []string{"eliona_tenant_id", "eliona_site_id", "gw_id", "client_id", "client_secret", "ontology_version", "app_public_api_url", "asset_filter"}
+	configurationColumnsWithDefault    = []string{"id", "refresh_interval", "request_timeout", "active", "enable", "user_id"}
 	configurationPrimaryKeyColumns     = []string{"id"}
 	configurationGeneratedColumns      = []string{}
 )

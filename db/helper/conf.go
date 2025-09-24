@@ -137,9 +137,10 @@ func toDbConfig(ctx context.Context, appConfig appmodel.Configuration) (dbConfig
 	dbConfig.AssetFilter = af
 	dbConfig.Active = appConfig.Active
 	dbConfig.Enable = appConfig.Enable
+	dbConfig.UserID = null.StringFromPtr(appConfig.UserId)
 
 	if env := frontend.GetEnvironment(ctx); env != nil {
-		dbConfig.UserID = env.UserId
+		dbConfig.UserID = null.StringFrom(env.UserId)
 
 		if appConfig.AppPublicApiUrl == "" {
 			dbConfig.AppPublicAPIURL = fmt.Sprintf("%s/apps-public/open-bos", env.Iss)
@@ -168,7 +169,7 @@ func toAppConfig(dbConfig *dbgen.Configuration) (appConfig appmodel.Configuratio
 	}
 	appConfig.AssetFilter = af
 	appConfig.Active = dbConfig.Active
-	appConfig.UserId = dbConfig.UserID
+	appConfig.UserId = dbConfig.UserID.Ptr()
 
 	// TODO: MUST be replaced by new multi tenancy app concept
 	if apiKey, ok := FetchedApiKeys[dbConfig.ElionaTenantID]; ok {

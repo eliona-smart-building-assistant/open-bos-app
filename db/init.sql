@@ -31,7 +31,7 @@ create table if not exists open_bos.configuration
 	asset_filter         json not null,
 	active               boolean not null default false,
 	enable               boolean not null default false,
-	user_id              uuid not null
+	user_id              uuid
 );
 
 create table if not exists open_bos.asset

@@ -110,7 +110,7 @@ func toAPIConfig(appConfig appmodel.Configuration) apiserver.Configuration {
 		RefreshInterval: appConfig.RefreshInterval,
 		RequestTimeout:  &appConfig.RequestTimeout,
 		Active:          &appConfig.Active,
-		UserId:          &appConfig.UserId,
+		UserId:          appConfig.UserId,
 	}
 }
 
@@ -135,6 +135,7 @@ func toAppConfig(apiConfig apiserver.Configuration) (appConfig appmodel.Configur
 	appConfig.ClientId = apiConfig.ClientId
 	appConfig.ClientSecret = apiConfig.ClientSecret
 	appConfig.AppPublicApiUrl = apiConfig.AppPublicApiUrl
+	appConfig.UserId = apiConfig.UserId
 
 	if apiConfig.Id != nil {
 		appConfig.Id = *apiConfig.Id
