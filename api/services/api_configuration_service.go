@@ -20,10 +20,10 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	apiserver "open-bos/api/generated"
-	appmodel "open-bos/app/model"
-	"open-bos/broker"
-	dbhelper "open-bos/db/helper"
+	apiserver "open-bos/v2/api/generated"
+	appmodel "open-bos/v2/app/model"
+	"open-bos/v2/broker"
+	dbhelper "open-bos/v2/db/helper"
 )
 
 // ConfigurationAPIService is a service that implements the logic for the ConfigurationAPIServicer

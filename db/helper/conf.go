@@ -26,9 +26,9 @@ import (
 
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 
-	appmodel "open-bos/app/model"
+	appmodel "open-bos/v2/app/model"
 
-	dbgen "open-bos/db/generated"
+	dbgen "open-bos/v2/db/generated"
 
 	"github.com/eliona-smart-building-assistant/go-eliona/v2/frontend"
 	"github.com/eliona-smart-building-assistant/go-utils/common"
@@ -199,7 +199,7 @@ func FetchApiKeys(appName string) {
 		ctx,
 		`SELECT tenant_id, api_key
 		 FROM public.eliona_app
-		 JOIN open_bos.configuration on (tenant_id = eliona_tenant_id::uuid)
+		 JOIN open_bos.configuration on (tenant_id = eliona_tenant_id)
 		 WHERE app_name = $1`,
 		appName,
 	)

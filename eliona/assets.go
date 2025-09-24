@@ -18,7 +18,7 @@ package eliona
 import (
 	"fmt"
 	"net/http"
-	appmodel "open-bos/app/model"
+	appmodel "open-bos/v2/app/model"
 	"time"
 
 	api "github.com/eliona-smart-building-assistant/go-eliona-api-client/v3"

@@ -18,7 +18,7 @@ package apiservices
 import (
 	"context"
 	"net/http"
-	apiserver "open-bos/api/generated"
+	apiserver "open-bos/v2/api/generated"
 )
 
 // CustomizationAPIService is a service that implements the logic for the CustomizationAPIServicer

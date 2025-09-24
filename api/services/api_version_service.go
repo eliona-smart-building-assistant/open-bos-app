@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	apiserver "open-bos/api/generated"
+	apiserver "open-bos/v2/api/generated"
 	"os"
 
 	"github.com/eliona-smart-building-assistant/go-utils/common"

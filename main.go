@@ -16,9 +16,9 @@
 package main
 
 import (
-	"open-bos/app"
-	dbhelper "open-bos/db/helper"
-	"open-bos/webhook"
+	"open-bos/v2/app"
+	dbhelper "open-bos/v2/db/helper"
+	"open-bos/v2/webhook"
 	"time"
 
 	elionaapp "github.com/eliona-smart-building-assistant/go-eliona/v2/app"

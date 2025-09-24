@@ -18,9 +18,9 @@ package broker
 import (
 	"errors"
 	"fmt"
-	appmodel "open-bos/app/model"
-	"open-bos/complexdata"
-	"open-bos/eliona"
+	appmodel "open-bos/v2/app/model"
+	"open-bos/v2/complexdata"
+	"open-bos/v2/eliona"
 	"strings"
 
 	api "github.com/eliona-smart-building-assistant/go-eliona-api-client/v3"

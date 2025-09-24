@@ -18,8 +18,8 @@ package eliona
 import (
 	"context"
 	"fmt"
-	appmodel "open-bos/app/model"
-	conf "open-bos/db/helper"
+	appmodel "open-bos/v2/app/model"
+	conf "open-bos/v2/db/helper"
 
 	"github.com/eliona-smart-building-assistant/go-eliona/v2/utils"
 	"github.com/eliona-smart-building-assistant/go-utils/common"

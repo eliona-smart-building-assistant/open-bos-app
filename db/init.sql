@@ -19,8 +19,8 @@ create schema if not exists open_bos;
 create table if not exists open_bos.configuration
 (
 	id                   bigserial primary key,
-    eliona_tenant_id     text not null,
-    eliona_site_id       text not null,
+    eliona_tenant_id     uuid not null,
+    eliona_site_id       uuid not null,
 	gw_id                text not null,
 	client_id            text not null,
 	client_secret        text not null,
@@ -31,7 +31,7 @@ create table if not exists open_bos.configuration
 	asset_filter         json not null,
 	active               boolean not null default false,
 	enable               boolean not null default false,
-	user_id              text not null
+	user_id              uuid not null
 );
 
 create table if not exists open_bos.asset

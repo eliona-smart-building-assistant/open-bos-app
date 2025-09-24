@@ -16,7 +16,7 @@
 package webhook
 
 import (
-	"open-bos/app"
+	"open-bos/v2/app"
 	"strings"
 
 	"context"
