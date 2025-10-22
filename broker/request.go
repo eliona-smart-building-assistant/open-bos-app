@@ -30,9 +30,8 @@ import (
 )
 
 // todo: change *scope* to prod as well
-const baseURL = "https://api.buildings.ability.abb/buildings/openbos/apiproxy/v1"
-
-// const baseURL = "https://dev.api.buildings.ability.abb/buildings/openbos/apiproxy/v1"
+// const baseURL = "https://api.buildings.ability.abb/buildings/openbos/apiproxy/v1"
+const baseURL = "https://dev.api.buildings.ability.abb/buildings/openbos/apiproxy/v1"
 
 const tokenURL = "https://login.microsoftonline.com/372ee9e0-9ce0-4033-a64a-c07073a91ecd/oauth2/v2.0/token"
 
@@ -71,8 +70,8 @@ func (c *openBOSClient) authenticateWithClientCredentials() error {
 	data.Set("grant_type", "client_credentials")
 	data.Set("client_id", c.clientID)
 	data.Set("client_secret", c.clientSecret)
-	data.Set("scope", "api://openbos/.default")
-	//	data.Set("scope", "api://dev.openbos/.default")
+	//data.Set("scope", "api://openbos/.default")
+	data.Set("scope", "api://dev.openbos/.default")
 
 	req, err := http.NewRequest("POST", c.tokenURL, bytes.NewBufferString(data.Encode()))
 	if err != nil {
