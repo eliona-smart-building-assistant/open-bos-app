@@ -16,16 +16,17 @@
 package main
 
 import (
+	"context"
+	elionabackend "github.com/eliona-smart-building-assistant/backend-frm/pkg/eliona"
+	"github.com/eliona-smart-building-assistant/backend-frm/pkg/postgres"
+	elionaapp "github.com/eliona-smart-building-assistant/go-eliona/v2/app"
+	"github.com/eliona-smart-building-assistant/go-utils/common"
+	"github.com/eliona-smart-building-assistant/go-utils/log"
+	"github.com/volatiletech/sqlboiler/v4/boil"
 	"open-bos/v2/app"
 	dbhelper "open-bos/v2/db/helper"
 	"open-bos/v2/webhook"
 	"time"
-
-	elionaapp "github.com/eliona-smart-building-assistant/go-eliona/v2/app"
-	"github.com/eliona-smart-building-assistant/go-utils/common"
-	"github.com/eliona-smart-building-assistant/go-utils/db"
-	"github.com/eliona-smart-building-assistant/go-utils/log"
-	"github.com/volatiletech/sqlboiler/v4/boil"
 )
 
 // The main function starts the app by starting all services necessary for this app and waits
@@ -34,8 +35,12 @@ func main() {
 	log.Info("main", "Starting the app.")
 
 	// Set default database to use boil.*G functions.
-	database := db.Database(elionaapp.AppName())
-	defer database.Close()
+	pool, err := elionabackend.GetDatabasePoolWithOverrideRole(context.Background(), "eliona", "api-v2", 10, postgres.WithResetOnAcquire())
+	if err != nil {
+		log.Fatal("Database", "Cannot open database: %v", err)
+	}
+	defer pool.Close(context.Background())
+	database := pool.StdlibDB()
 	boil.SetDB(database)
 
 	// Set the database logging level.
@@ -44,14 +49,12 @@ func main() {
 		boil.DebugWriter = log.GetWriter(log.TraceLevel, "database")
 	}
 
-	// Necessary to close used init resources, because db.Pool() is used in this app.
-	defer db.ClosePool()
-
+	// TODO: App init inside apps is no longer supported. MUST be replaced by new multi tenancy app concept.
 	// Initialize the app
-	app.Initialize()
+	// app.Initialize()
 
 	// Fetch the API keys configured for the app
-	dbhelper.FetchApiKeys(elionaapp.AppName())
+	dbhelper.FetchApiKeys(elionaapp.AppName(), database)
 
 	// Starting the service to collect the data for this app.
 	common.WaitForWithOs(

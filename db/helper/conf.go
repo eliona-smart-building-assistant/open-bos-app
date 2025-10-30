@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/eliona-smart-building-assistant/go-utils/db"
 	"log"
 
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
@@ -187,16 +186,12 @@ var FetchedApiKeys map[string]string
 
 // FetchApiKeys TODO: MUST be replaced by new multi tenancy app concept
 // Deprecated
-func FetchApiKeys(appName string) {
+func FetchApiKeys(appName string, database *sql.DB) {
 	ctx := context.Background()
-
-	// Necessary to close used init resources
-	conn := db.NewInitConnectionWithContextAndApplicationName(ctx, appName)
-	defer conn.Close(ctx)
 
 	apiKeys := make(map[string]string)
 
-	rows, err := conn.Query(
+	rows, err := database.QueryContext(
 		ctx,
 		`SELECT tenant_id, api_key
 		 FROM public.eliona_app

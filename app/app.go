@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/eliona-smart-building-assistant/go-eliona/v2/client"
-	"github.com/jackc/pgx/v4"
 	"net/http"
 	apiserver "open-bos/v2/api/generated"
 	apiservices "open-bos/v2/api/services"
@@ -34,11 +33,9 @@ import (
 	"time"
 
 	api "github.com/eliona-smart-building-assistant/go-eliona-api-client/v3"
-	"github.com/eliona-smart-building-assistant/go-eliona/v2/app"
 	"github.com/eliona-smart-building-assistant/go-eliona/v2/asset"
 	"github.com/eliona-smart-building-assistant/go-eliona/v2/frontend"
 	"github.com/eliona-smart-building-assistant/go-utils/common"
-	"github.com/eliona-smart-building-assistant/go-utils/db"
 	utilshttp "github.com/eliona-smart-building-assistant/go-utils/http"
 	"github.com/eliona-smart-building-assistant/go-utils/log"
 )
@@ -56,68 +53,68 @@ func changeAppStatus(status int) {
 	Heartbeat()
 }
 
-// Initialize TODO: MUST be replaced by new multi tenancy app concept
-// Deprecated
-func Initialize() {
-	ctx := context.Background()
-
-	// Necessary to close used init resources
-	conn := db.NewInitConnectionWithContextAndApplicationName(ctx, app.AppName())
-	defer conn.Close(ctx)
-
-	// TODO: Remove this quick fix later with new multi tenancy app concept (calling endpoint with HTTP encryption)
-	initialized, err := getInitialized(ctx, conn, app.AppName())
-	if err != nil {
-		log.Fatal("init", "error during initialization: %w", err)
-	}
-
-	if !initialized {
-		err := db.ExecFile(conn, "db/init.sql")
-		if err != nil {
-			log.Fatal("init", "error during initialization: %w", err)
-		}
-
-		_, err = conn.Exec(context.Background(), fmt.Sprintf("select fixprivilege('%s','%s')", strings.ReplaceAll(app.AppName(), "-", "_"), db.Username()))
-		if err != nil {
-			log.Fatal("init", "error during initialization: %w", err)
-		}
-
-		err = setInitialized(ctx, conn, app.AppName(), true)
-		if err != nil {
-			log.Fatal("init", "error during initialization: %w", err)
-		}
-	}
-}
-
-// getInitialized TODO: MUST be replaced by new multi tenancy app concept
-// Deprecated
-func getInitialized(ctx context.Context, conn *pgx.Conn, appName string) (bool, error) {
-	var initialized bool
-	err := conn.QueryRow(
-		ctx,
-		`SELECT initialized FROM public.eliona_store WHERE app_name = $1`,
-		appName,
-	).Scan(&initialized)
-
-	if err != nil {
-		return false, err
-	}
-
-	return initialized, nil
-}
-
-// setInitialized TODO: MUST be replaced by new multi tenancy app concept
-// Deprecated
-func setInitialized(ctx context.Context, conn *pgx.Conn, appName string, initialized bool) error {
-	_, err := conn.Exec(
-		ctx,
-		`UPDATE public.eliona_store SET initialized = $1 WHERE app_name = $2`,
-		initialized,
-		appName,
-	)
-
-	return err
-}
+//// Initialize TODO: MUST be replaced by new multi tenancy app concept
+//// Deprecated
+//func Initialize() {
+//	ctx := context.Background()
+//
+//	// Necessary to close used init resources
+//	conn := db.NewInitConnectionWithContextAndApplicationName(ctx, app.AppName())
+//	defer conn.Close(ctx)
+//
+//	// TODO: Remove this quick fix later with new multi tenancy app concept (calling endpoint with HTTP encryption)
+//	initialized, err := getInitialized(ctx, conn, app.AppName())
+//	if err != nil {
+//		log.Fatal("init", "error during initialization: %w", err)
+//	}
+//
+//	if !initialized {
+//		err := db.ExecFile(conn, "db/init.sql")
+//		if err != nil {
+//			log.Fatal("init", "error during initialization: %w", err)
+//		}
+//
+//		_, err = conn.Exec(context.Background(), fmt.Sprintf("select fixprivilege('%s','%s')", strings.ReplaceAll(app.AppName(), "-", "_"), db.Username()))
+//		if err != nil {
+//			log.Fatal("init", "error during initialization: %w", err)
+//		}
+//
+//		err = setInitialized(ctx, conn, app.AppName(), true)
+//		if err != nil {
+//			log.Fatal("init", "error during initialization: %w", err)
+//		}
+//	}
+//}
+//
+//// getInitialized TODO: MUST be replaced by new multi tenancy app concept
+//// Deprecated
+//func getInitialized(ctx context.Context, conn *pgx.Conn, appName string) (bool, error) {
+//	var initialized bool
+//	err := conn.QueryRow(
+//		ctx,
+//		`SELECT initialized FROM public.eliona_store WHERE app_name = $1`,
+//		appName,
+//	).Scan(&initialized)
+//
+//	if err != nil {
+//		return false, err
+//	}
+//
+//	return initialized, nil
+//}
+//
+//// setInitialized TODO: MUST be replaced by new multi tenancy app concept
+//// Deprecated
+//func setInitialized(ctx context.Context, conn *pgx.Conn, appName string, initialized bool) error {
+//	_, err := conn.Exec(
+//		ctx,
+//		`UPDATE public.eliona_store SET initialized = $1 WHERE app_name = $2`,
+//		initialized,
+//		appName,
+//	)
+//
+//	return err
+//}
 
 var notifyNoConfigsOnce sync.Once
 
